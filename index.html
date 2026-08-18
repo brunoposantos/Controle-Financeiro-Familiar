@@ -975,7 +975,11 @@ const ONEDRIVE_CONFIG = {
   clientId: (window.ONEDRIVE_CLIENT_ID || '74fbd7fd-9910-4708-b643-44a863a2cdad'),
   // 'common' aceita tanto contas pessoais (Microsoft/OneDrive pessoal) quanto contas corporativas/escolares.
   authority: 'https://login.microsoftonline.com/common',
-  redirectUri: window.location.origin + window.location.pathname,
+  // Normaliza para a URL da PASTA (sem "/index.html" no final), independente de como o usuário abriu a
+  // página — assim a URI de redirecionamento fica estável e bate com um único valor cadastrado no App
+  // Registration, mesmo em hospedagem estática tipo GitHub Pages (ex.:
+  // https://usuario.github.io/Controle-Financeiro-Familiar/).
+  redirectUri: window.location.origin + window.location.pathname.replace(/index\.html?$/i, ''),
   // Only os escopos estritamente necessários para ler/gravar os arquivos do app (seção 6 do requisito).
   scopes: ['User.Read', 'Files.ReadWrite'],
   // Pasta única, na raiz do OneDrive do usuário, onde os arquivos do app ficam — ponto único de
