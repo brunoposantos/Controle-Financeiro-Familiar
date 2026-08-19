@@ -40,6 +40,25 @@
   --radius:10px;
   --mono:'Roboto Mono', ui-monospace, monospace;
   --sans:'Inter', system-ui, sans-serif;
+  --sp-1:4px;
+  --sp-2:8px;
+  --sp-3:12px;
+  --sp-4:16px;
+  --sp-5:20px;
+  --sp-6:24px;
+  --sp-7:32px;
+  --sp-8:40px;
+  --radius-sm:8px;
+  --radius-md:14px;
+  --radius-lg:20px;
+  --radius-full:999px;
+  --touch-min:44px;
+  --bottom-nav-h:60px;
+  --fab-size:56px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);
+  --safe-right:env(safe-area-inset-right,0px);
 }
 *{box-sizing:border-box;}
 html{margin:0;padding:0;overflow-x:hidden;overflow-y:visible;}
@@ -151,6 +170,7 @@ input,select{font-family:var(--sans);}
 }
 .app-title h1{font-size:28px;margin:0;font-weight:700;letter-spacing:.3px;}
 .app-title p{margin:2px 2px 0;font-size:14px;color:#b9c9ea;}
+.app-title-tab-atual{display:none;color:var(--gold)!important;font-weight:700;font-size:12.5px!important;}
 .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:16px;flex-wrap:wrap;}
 .period-select{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:15px;margin:13px 2px 0;flex-wrap:wrap;max-width:100%;}
 .period-select select{
@@ -205,43 +225,70 @@ input,select{font-family:var(--sans);}
 }
 .tab-btn:hover:not(.active){background:rgba(255,255,255,.08);color:#fff;}
 .tab-btn.active{background:var(--navy-50);color:var(--navy-900);font-weight:700;}
-.tabbar-mobile{display:none;position:relative;background:var(--navy-900);}
-.hamburger-btn{
-  width:100%;text-align:left;background:transparent;border:none;color:#fff;padding:13px 20px;
-  min-height:44px;font-size:14px;font-weight:700;font-family:var(--sans);display:flex;align-items:center;gap:10px;cursor:pointer;
-  position:relative;z-index:2;transition:background .15s;
+/* Navegação mobile: barra inferior fixa (padrão de apps financeiros) com as funções primárias sempre
+   visíveis, e um menu "Mais" (bottom sheet) para as funções secundárias — nunca todas as opções
+   espremidas na barra. */
+.bottom-nav{
+  display:none;position:fixed;left:0;right:0;bottom:0;z-index:210;
+  background:var(--navy-900);border-top:1px solid rgba(255,255,255,.08);
+  box-shadow:0 -4px 14px rgba(11,42,94,.18);
+  padding-bottom:var(--safe-bottom);padding-left:var(--safe-left);padding-right:var(--safe-right);
+  height:calc(var(--bottom-nav-h) + var(--safe-bottom));
 }
-.hamburger-btn:hover{background:rgba(255,255,255,.08);}
-.hamburger-btn:active{background:rgba(255,255,255,.14);}
-.hamburger-btn .hamburger-icone{font-size:18px;line-height:1;display:inline-block;transition:transform .25s ease;color:var(--gold);}
-.hamburger-btn.aberto .hamburger-icone{transform:rotate(90deg);}
-.hamburger-btn .hamburger-atual{color:#dbe4f7;font-weight:600;font-size:12.5px;}
-.hamburger-btn:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
-/* Overlay: o menu mobile abre SOBRE o conteúdo (position:absolute), sem empurrar o layout da página —
-   por isso o painel de abas fica fora do fluxo normal do documento, ancorado logo abaixo do botão ☰. */
-.menu-mobile-lista{
-  position:absolute;top:100%;left:0;right:0;max-height:0;overflow:hidden;
-  background:var(--navy-900);transition:max-height .25s ease;z-index:2;
-  box-shadow:0 12px 28px rgba(0,0,0,.35);
+.bn-item{
+  flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  height:var(--bottom-nav-h);min-width:0;max-width:100%;background:transparent;border:none;color:#a9bbdd;
+  font-family:var(--sans);cursor:pointer;transition:color .15s;padding:4px 2px;overflow:hidden;
 }
-.menu-mobile-lista.aberto{max-height:420px;overflow-y:auto;}
+.bn-item .bn-icone{font-size:19px;line-height:1;}
+.bn-item .bn-rotulo{
+  font-size:10px;font-weight:600;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%;display:block;
+}
+.bn-item:hover{color:#dbe4f7;}
+.bn-item.active{color:var(--gold);}
+.bn-item:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
+/* Bottom sheet "Mais": desliza de baixo para cima, sobre um backdrop, sem empurrar o layout da página. */
+.mais-sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:220;background:#fff;
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:0 -12px 32px rgba(0,0,0,.28);
+  padding:10px 0 calc(14px + var(--safe-bottom));
+  padding-left:var(--safe-left);padding-right:var(--safe-right);
+  transform:translateY(110%);transition:transform .25s ease;max-height:70vh;overflow-y:auto;
+}
+.mais-sheet.aberto{transform:translateY(0);}
+.mais-sheet-alca{width:40px;height:4px;border-radius:var(--radius-full);background:var(--line);margin:0 auto 10px;}
+.mais-sheet-titulo{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#8393ac;padding:0 12px 8px 20px;}
+.mais-sheet-item{
+  display:flex;align-items:center;gap:14px;width:100%;min-height:var(--touch-min);text-align:left;
+  background:transparent;border:none;border-top:1px solid var(--line);box-sizing:border-box;
+  color:var(--ink);padding:12px 20px;font-family:var(--sans);cursor:pointer;transition:background .15s;
+}
+.mais-sheet-item:hover,.mais-sheet-item.active{background:var(--navy-50);}
+.mais-sheet-item:focus-visible{outline:2px solid var(--navy-900);outline-offset:-2px;}
+.mais-sheet-icone{font-size:20px;flex-shrink:0;}
+.mais-sheet-textos{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.mais-sheet-nome{font-size:14px;font-weight:700;color:var(--navy-950);}
+.mais-sheet-desc{font-size:11.5px;color:#6a7a97;}
 .menu-mobile-backdrop{
-  display:none;position:fixed;inset:0;background:rgba(11,42,94,.35);z-index:1;
+  display:none;position:fixed;inset:0;background:rgba(11,42,94,.35);z-index:215;
 }
 .menu-mobile-backdrop.aberto{display:block;}
-.tab-btn-mobile{
-  display:flex;align-items:center;width:100%;min-height:44px;text-align:left;background:transparent;
-  border:none;border-top:1px solid rgba(255,255,255,.1);border-left:3px solid transparent;box-sizing:border-box;
-  color:#dbe4f7;padding:13px 22px;font-size:13.5px;font-weight:600;font-family:var(--sans);cursor:pointer;
-  transition:background .15s,color .15s,border-color .15s;
+.fab-novo-lancamento{
+  display:none;position:fixed;right:calc(18px + var(--safe-right));z-index:205;
+  bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 18px);
+  width:var(--fab-size);height:var(--fab-size);border-radius:50%;border:none;
+  background:var(--gold);color:var(--navy-950);font-size:28px;line-height:1;font-weight:700;
+  box-shadow:0 8px 20px rgba(11,42,94,.35);cursor:pointer;transition:transform .15s,box-shadow .15s;
 }
-.tab-btn-mobile:hover:not(.active){background:rgba(255,255,255,.1);color:#fff;}
-.tab-btn-mobile:active{background:rgba(255,255,255,.16);}
-.tab-btn-mobile:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
-.tab-btn-mobile.active{background:var(--navy-800);color:#fff;font-weight:700;border-left-color:var(--gold);}
+.fab-novo-lancamento:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(11,42,94,.4);}
+.fab-novo-lancamento:active{transform:translateY(0);}
+.fab-novo-lancamento:focus-visible{outline:2px solid var(--navy-900);outline-offset:2px;}
 @media(max-width:700px){
   .tabbar{display:none;}
-  .tabbar-mobile{display:block;}
+  .bottom-nav{display:flex;}
+  .fab-novo-lancamento{display:flex;align-items:center;justify-content:center;}
+  main.app-main,.app>main{padding-bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);}
 }
 
 /* ---- Responsividade do cabeçalho e do menu de abas ---- */
@@ -257,11 +304,12 @@ input,select{font-family:var(--sans);}
   .tab-btn{padding:9px 14px 8px;font-size:12px;}
 }
 @media(max-width:600px){
-  .app-header{flex-direction:column;align-items:stretch;}
+  .app-header{flex-direction:column;align-items:stretch;padding:10px 14px 8px;}
   .app-title{gap:10px;}
-  .app-title .mark{height:52px;}
-  .app-title h1{font-size:18px;line-height:1.25;}
-  .app-title p{font-size:11.5px;}
+  .app-title .mark{height:38px;}
+  .app-title h1{font-size:15px;line-height:1.2;}
+  .app-title p{font-size:10.5px;display:none;}
+  .app-title p.app-title-tab-atual{display:block;}
   .header-right{width:100%;align-items:stretch;}
   .filebar{flex-wrap:wrap;font-size:9.5px;}
   .period-select{width:100%;justify-content:space-between;font-size:12px;}
@@ -341,6 +389,14 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 .kpi.receita .val{color:var(--receita);}
 .kpi.despesa .val{color:var(--despesa);}
 .kpi .bar{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold);}
+.dash-hero-saldo{
+  display:none;background:linear-gradient(135deg,var(--navy-900) 0%, var(--navy-950) 100%);color:#fff;
+  border-radius:var(--radius-lg);padding:var(--sp-5) var(--sp-6);margin-bottom:var(--sp-4);text-align:center;
+}
+.dash-hero-saldo-lbl{font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:#b9c9ea;}
+.dash-hero-saldo-val{font-family:var(--mono);font-size:32px;font-weight:700;margin-top:6px;color:var(--gold);}
+.dash-hero-saldo-val.neg{color:#ff8a7a;}
+@media(max-width:700px){ .dash-hero-saldo{display:block;} }
 
 .charts-row{display:grid;grid-template-columns:3fr 7fr;gap:14px;}
 @media(max-width:900px){.charts-row{grid-template-columns:1fr;}}
@@ -471,6 +527,39 @@ tbody tr:hover{background:var(--navy-50);}
 .tag.Fixo{background:#dcf0f5;color:var(--fixo);}
 .tag.Variavel{background:#fdecc8;color:var(--variavel);}
 .val-cell{font-family:var(--mono);font-weight:600;white-space:nowrap;}
+/* Lista mobile de Registros (item 10/11 do requisito de responsividade): substitui a tabela por cards
+   agrupados por data em telas estreitas — a tabela desktop continua existindo/funcionando sem alteração
+   nenhuma, só fica oculta nesse breakpoint (nunca overflow-x:auto forçado numa tabela com 9 colunas). */
+.reg-lista-mobile{display:none;}
+@media(max-width:700px){
+  .reg-tabela-principal{display:none;}
+  .reg-lista-mobile{display:block;}
+}
+.reg-grupo-data{margin-bottom:var(--sp-4);}
+.reg-grupo-data-titulo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#8393ac;padding:0 2px 6px;}
+.reg-card{
+  display:flex;align-items:flex-start;gap:8px;background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--radius-md);padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-2);position:relative;
+}
+.reg-card-principal{flex:1;min-width:0;}
+.reg-card-linha1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.reg-card-descricao{font-size:14px;font-weight:600;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.reg-card-valor{font-family:var(--mono);font-weight:700;font-size:15px;white-space:nowrap;}
+.reg-card-valor.neg{color:var(--despesa);}
+.reg-card-valor.pos{color:var(--receita);}
+.reg-card-linha2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:3px;}
+.reg-card-secundario{font-size:12px;color:#6a7a97;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.reg-card-menu{position:relative;flex-shrink:0;}
+.reg-card-menu-btn{min-width:var(--touch-min);min-height:var(--touch-min);font-size:18px;}
+.reg-card-menu-lista{
+  position:absolute;right:0;top:100%;z-index:30;background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius-sm);box-shadow:0 10px 24px rgba(11,42,94,.18);min-width:160px;overflow:hidden;
+}
+.reg-card-menu-lista button{
+  display:block;width:100%;text-align:left;min-height:var(--touch-min);padding:10px 16px;
+  background:transparent;border:none;font-family:var(--sans);font-size:13.5px;color:var(--ink);cursor:pointer;
+}
+.reg-card-menu-lista button:hover{background:var(--navy-50);}
 .val-cell.neg{color:var(--despesa);}
 .val-cell.pos{color:var(--receita);}
 
@@ -529,6 +618,13 @@ tbody tr:hover{background:var(--navy-50);}
 .icon-btn{background:transparent;border:none;color:#6a7a97;padding:4px;border-radius:5px;}
 .icon-btn:hover{background:var(--navy-100);color:var(--navy-900);}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+@media(max-width:700px){
+  .reg-busca-wrap{width:100%;margin-left:0!important;}
+  .reg-busca-wrap input[type="search"]{flex:1;min-width:0;}
+  /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento" (item 8 do requisito) — evita duplicar
+     a ação e a sobreposição do FAB fixo com este botão em telas estreitas. */
+  #btnNovoLancamento{display:none;}
+}
 .toolbar input[type=text], .toolbar input[type=search]{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;min-width:200px;}
 /* ---- Componente padronizado dos modais "Ver Extrato" e "Lançamentos futuros" (qualquer conta) ----
    Largura fixa generosa o bastante para caber todos os filtros numa única linha em desktop/telas largas
@@ -688,6 +784,19 @@ tbody tr:hover{background:var(--navy-50);}
   max-width:96vw; max-height:96vh;
 }
 @media(max-width:600px){ .modal{ resize:none; } } /* em telas pequenas, redimensionar manualmente prejudicaria mais do que ajudaria */
+/* Modais em telas pequenas (item 18 do requisito de responsividade): quase tela cheia, com cabeçalho e
+   rodapé fixos (já eram sticky) e o conteúdo ocupando o espaço restante — nunca um modal estreito com
+   conteúdo cortado, rolagem dupla ou botões fora da tela. */
+@media(max-width:700px){
+  .overlay{padding:0;align-items:flex-end;}
+  .modal{
+    width:100%;max-width:100vw;height:100%;max-height:100dvh;border-radius:0;
+    display:flex;flex-direction:column;resize:none;
+  }
+  .modal-head{border-radius:0;flex-shrink:0;}
+  .modal-body{flex:1;overflow-y:auto;}
+  .modal-foot{flex-shrink:0;flex-wrap:wrap;padding-bottom:calc(11px + var(--safe-bottom));}
+}
 .modal-head{
   padding:13px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;
   background:var(--navy-900);color:#fff;border-radius:12px 12px 0 0;position:sticky;top:0;
@@ -805,6 +914,30 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
 .filtro-multisel-lista{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
 .filtro-multisel-item{padding:3px 2px;}
 .filtros-barra{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+/* Botão "Filtros" com badge (item 12 do requisito de responsividade): só existe visualmente no mobile —
+   no desktop a barra de filtros já fica sempre visível, então o botão fica oculto por CSS. */
+.filtros-mobile-toggle{display:none;}
+.filtros-mobile-badge{
+  display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;
+  border-radius:var(--radius-full);background:var(--gold);color:var(--navy-950);font-size:11px;font-weight:700;
+}
+@media(max-width:700px){
+  .filtros-mobile-toggle{display:inline-flex;}
+  .filtros-barra{
+    display:none;position:fixed;left:0;right:0;bottom:0;z-index:220;background:#fff;
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:0 -12px 32px rgba(0,0,0,.28);
+    padding:16px var(--sp-5) calc(16px + var(--safe-bottom));flex-direction:column;align-items:stretch;
+    max-height:75vh;overflow-y:auto;
+  }
+  .filtros-barra.aberto-mobile{display:flex;}
+  .filtros-barra .filtro-data,.filtros-barra .filtro-multisel{width:100%;}
+  .filtros-barra .filtro-data-btn-abrir{width:100%;text-align:left;}
+  .filtros-barra-titulo-mobile{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:var(--navy-950);margin-bottom:6px;}
+  .filtros-barra-acoes-mobile{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
+}
+@media(min-width:701px){
+  .filtros-barra-titulo-mobile,.filtros-barra-acoes-mobile{display:none;}
+}
 summary{list-style:none;}
 summary::-webkit-details-marker{display:none;}
 summary::marker{content:'';}
@@ -2754,6 +2887,8 @@ let UI = {
   regPorPagina: 10,    // 10 | 25 | 50 | 100 | 'TODOS' — quantidade de registros por página na tabela de Registros
   regPagina: 1,        // página atual (1-based) da tabela de Registros
   regSelecionados: new Set(),
+  regCardMenuAberto: null, // id do lançamento com o menu de ações (✏️/📄/🗑️) aberto na lista mobile de Registros
+  filtrosMobileAberto: null, // prefixo ('Reg', ...) da barra de filtros aberta como painel/bottom sheet no mobile
   importStep: 0, // 0=fechado · 1=período+conta (pré-importação) · 2=escolher arquivo · 3=confirmar/mapear · 4=revisar e classificar
   importCatModal: null, // { index, tipo, grupo, categoria, subcategoria } — modal de classificação (Grupo → Categoria → Subcategoria) de uma linha da importação
   importRaw: null,
@@ -6372,6 +6507,7 @@ function render(){
         ${renderTabbar()}
       </div>
       <main>${renderTab()}</main>
+      ${(nivelAcessoPasta!=='leitura' && ['dashboard','registros','resumo'].includes(UI.tab) && !UI.menuMobileAberto && UI.filtrosMobileAberto==null) ? `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>` : ''}
       <div class="footnote">Controle Financeiro Familiar · Família Gomes Oliveira · dados salvos em configuracoes.cfg e registros.log</div>
     </div>
     ${UI.importStep>0 ? renderImportModal() : ""}
@@ -6535,7 +6671,7 @@ function renderHeader(){
       <img class="mark" src="${LOGO_APP}" alt="Logo">
 		<div>
 			<div>
-				<h1>Controle Financeiro Familiar</h1><p>Família Gomes Oliveira</p>
+				<h1>Controle Financeiro Familiar</h1><p>Família Gomes Oliveira</p><p class="app-title-tab-atual">${(TABS_TODAS.find(([id])=>id===UI.tab)||[])[1]||''}</p>
 			</div>
 			<div class="period-select">
 				<span>Período:</span>
@@ -6677,21 +6813,43 @@ function renderFileBanner(){
   return `<div class="banner">${partes.join(' ')} Use o menu <b>☰ Menu</b> no topo para salvar, fazer backup ou trocar de conta.</div>`;
 }
 
+const TABS_PRINCIPAIS = [
+  ["dashboard","📊","Painel Financeiro","Painel"],
+  ["registros","📒","Registros","Registros"],
+  ["resumo","📆","Fluxo de Caixa","Fluxo"],
+  ["metas","🎯","Metas de Gastos","Economias"],
+  ["inteligencia","🧠","Inteligência Financeira","Inteligência"],
+];
+const TABS_SECUNDARIAS = [
+  ["cartoes","💳","Contas e Cartões","Saldos, limites e faturas das suas contas e cartões"],
+  ["categorias","⚙️","Configurações","Categorias, backups, conta Microsoft e preferências"],
+];
+const TABS_TODAS = [["dashboard","📊 Painel Financeiro"],["inteligencia","🧠 Inteligência Financeira"],["cartoes","💳 Contas e Cartões"],["resumo","📆 Fluxo de Caixa"],["metas","🎯 Metas de Gastos"],["registros","📒 Registros"],["categorias","⚙️ Configurações"]];
 function renderTabbar(){
-  const tabs = [["dashboard","📊 Painel Financeiro"],["inteligencia","🧠 Inteligência Financeira"],["cartoes","💳 Contas e Cartões"],["resumo","📆 Fluxo de Caixa"],["metas","🎯 Metas de Gastos"],["registros","📒 Registros"],["categorias","⚙️ Configurações"]];
-  const tabAtual = tabs.find(([id])=>id===UI.tab);
+  const maisAberto = UI.menuMobileAberto;
+  const tabSecundariaAtiva = TABS_SECUNDARIAS.some(([id])=>id===UI.tab);
   return `
-  <nav class="tabbar">${tabs.map(([id,label])=>`<button class="tab-btn ${UI.tab===id?'active':''}" data-tab="${id}">${label}</button>`).join('')}</nav>
-  <div class="tabbar-mobile">
-    <button type="button" class="hamburger-btn ${UI.menuMobileAberto?'aberto':''}" id="btnMenuMobile" aria-label="${UI.menuMobileAberto?'Fechar menu de navegação':'Abrir menu de navegação'}" aria-expanded="${UI.menuMobileAberto?'true':'false'}">
-      <span class="hamburger-icone">${UI.menuMobileAberto?'❌':'☰'}</span><span class="hamburger-atual">${tabAtual?tabAtual[1]:''}</span>
+  <nav class="tabbar">${TABS_TODAS.map(([id,label])=>`<button class="tab-btn ${UI.tab===id?'active':''}" data-tab="${id}">${label}</button>`).join('')}</nav>
+  <nav class="bottom-nav">
+    ${TABS_PRINCIPAIS.map(([id,icone,,rotulo])=>`<button type="button" class="bn-item ${UI.tab===id?'active':''}" data-tab="${id}"><span class="bn-icone">${icone}</span><span class="bn-rotulo">${rotulo}</span></button>`).join('')}
+    <button type="button" class="bn-item ${maisAberto||tabSecundariaAtiva?'active':''}" id="btnMenuMobile" aria-label="${maisAberto?'Fechar mais opções':'Abrir mais opções'}" aria-expanded="${maisAberto?'true':'false'}">
+      <span class="bn-icone">${maisAberto?'✖️':'⋯'}</span><span class="bn-rotulo">Mais</span>
     </button>
-    <div class="menu-mobile-lista ${UI.menuMobileAberto?'aberto':''}">
-      <button type="button" class="tab-btn-mobile" id="btnMenuArquivoMobile">📁 Arquivo</button>
-      ${tabs.map(([id,label])=>`<button class="tab-btn-mobile ${UI.tab===id?'active':''}" data-tab="${id}">${label}</button>`).join('')}
-    </div>
+  </nav>
+  <div class="mais-sheet ${maisAberto?'aberto':''}" role="dialog" aria-modal="true" aria-label="Mais opções">
+    <div class="mais-sheet-alca"></div>
+    <div class="mais-sheet-titulo">Mais opções <button type="button" class="close-x-claro mais-sheet-fechar" id="btnFecharMaisSheet" title="Fechar">✕</button></div>
+    <button type="button" class="mais-sheet-item" id="btnMenuArquivoMobile">
+      <span class="mais-sheet-icone">📁</span>
+      <span class="mais-sheet-textos"><span class="mais-sheet-nome">Arquivo</span><span class="mais-sheet-desc">Salvar, sincronizar, backups e conta Microsoft</span></span>
+    </button>
+    ${TABS_SECUNDARIAS.map(([id,icone,nome,desc])=>`
+    <button type="button" class="mais-sheet-item ${UI.tab===id?'active':''}" data-tab="${id}">
+      <span class="mais-sheet-icone">${icone}</span>
+      <span class="mais-sheet-textos"><span class="mais-sheet-nome">${nome}</span><span class="mais-sheet-desc">${desc}</span></span>
+    </button>`).join('')}
   </div>
-  <div class="menu-mobile-backdrop ${UI.menuMobileAberto?'aberto':''}" id="menuMobileBackdrop"></div>`;
+  <div class="menu-mobile-backdrop ${maisAberto?'aberto':''}" id="menuMobileBackdrop"></div>`;
 }
 function renderTab(){
   if(UI.tab==="dashboard") return renderDashboard();
@@ -6708,11 +6866,16 @@ function renderTab(){
 function renderDashboard(){
   const d = calcDashboard(UI.ano, UI.mes);
   const competencia = `${UI.ano}-${pad2(UI.mes)}`;
+  const saldoAtual = calcSaldoAtualFluxoCaixa();
   return `
+  <div class="dash-hero-saldo">
+    <div class="dash-hero-saldo-lbl">💼 Saldo atual (hoje)</div>
+    <div class="dash-hero-saldo-val ${saldoAtual<0?'neg':''}">${fmtBRL(saldoAtual)}</div>
+  </div>
   <div class="grid-cards">
     <div class="kpi receita"><div class="bar"></div><div class="lbl">💰 Receitas do mês</div><div class="val">${fmtBRL(d.receitasTotal)}</div></div>
     <div class="kpi despesa"><div class="bar"></div><div class="lbl">💸 Despesas do mês</div><div class="val">${fmtBRL(d.despesasTotal)}</div></div>
-    <div class="kpi saldo"><div class="bar"></div><div class="lbl">⚖️ Saldo do mês</div><div class="val">${fmtBRL(d.saldo)}</div></div>
+    <div class="kpi saldo"><div class="bar"></div><div class="lbl">⚖️ Resultado do mês</div><div class="val">${fmtBRL(d.saldo)}</div></div>
     <div class="kpi"><div class="bar"></div><div class="lbl">🐖 % Poupança</div><div class="val">${fmtPercentSmart(d.poupanca*100)}</div></div>
   </div>
   ${(()=>{
@@ -7198,6 +7361,11 @@ function dataRangeLabel(f){
 function filtrosPadraoAtivos(f, campos){
   return !!(f.dataInicio || f.dataFim) || campos.some(c=>f[c.campo].size>0);
 }
+/* Contagem de filtros ativos — usada no badge do botão "Filtros" mobile (item 12 do requisito de
+   responsividade): 1 pelo período (se definido) + 1 por campo de seleção múltipla com alguma opção marcada. */
+function contarFiltrosPadraoAtivos(f, campos){
+  return (f.dataInicio || f.dataFim ? 1 : 0) + campos.filter(c=>f[c.campo].size>0).length;
+}
 /* Filtro de Data compacto: botão que abre um popover com períodos predefinidos + campos De/Até editáveis
    de forma independente (modo "Personalizado"). Aplica na hora, sem recarregar a página, e valida
    automaticamente para nunca deixar a data final ficar antes da inicial (ver bindFiltroDataRange). */
@@ -7495,6 +7663,62 @@ function aplicarEdicaoLote(m){
   if(alterados>0){ reconciliarPagamentosFatura(); scheduleSave(); }
   return alterados;
 }
+/* Rótulo do cabeçalho de grupo de data usado na lista mobile de Registros (item 11 do requisito de
+   responsividade): "Hoje"/"Ontem" para os dois dias mais recentes, senão "DD de mês" (com o ano só quando
+   diferente do ano corrente, pra não poluir a leitura). */
+function rotuloGrupoDataRegistro(dataISO){
+  if(!dataISO) return 'Sem data';
+  const hoje = hojeISO();
+  const d = new Date(); d.setDate(d.getDate()-1);
+  const ontem = d.toISOString().slice(0,10);
+  if(dataISO===hoje) return 'Hoje';
+  if(dataISO===ontem) return 'Ontem';
+  const [ano,mes,dia] = dataISO.split('-').map(Number);
+  const anoAtual = new Date().getFullYear();
+  return `${dia} de ${MESES[mes-1].toLowerCase()}${ano!==anoAtual?` de ${ano}`:''}`;
+}
+/* Lista mobile de Registros (item 10/11 do requisito): mesmos `pageList`/filtros/paginação da tabela
+   desktop, agrupados por cabeçalho de data, com cards em vez de colunas — sem rolagem horizontal. */
+function renderListaMobileRegistros(pageList){
+  if(!pageList.length) return '';
+  const grupos = [];
+  let grupoAtual = null;
+  pageList.forEach(t=>{
+    const rotulo = rotuloGrupoDataRegistro(t.data);
+    if(!grupoAtual || grupoAtual.rotulo!==rotulo){ grupoAtual = { rotulo, itens: [] }; grupos.push(grupoAtual); }
+    grupoAtual.itens.push(t);
+  });
+  return `
+  <div class="reg-lista-mobile">
+    ${grupos.map(g=>`
+    <div class="reg-grupo-data">
+      <div class="reg-grupo-data-titulo">${escapeHtml(g.rotulo)}</div>
+      ${g.itens.map(t=>`
+      <div class="reg-card">
+        <div class="reg-card-principal">
+          <div class="reg-card-linha1">
+            <span class="reg-card-descricao">${escapeHtml(t.descricao)}</span>
+            <span class="reg-card-valor ${t.tipo==='Despesa'?'neg':'pos'}">${t.tipo==='Despesa'?'-':''}${fmtBRL(t.valor)}</span>
+          </div>
+          <div class="reg-card-linha2">
+            <span class="reg-card-secundario">${t.grupo ? `${iconeGrupo(t.grupo)} ${escapeHtml(t.grupo)}` : 'Sem Grupo'} · ${escapeHtml(t.conta)}</span>
+            <span class="tag ${t.tipo}">${t.tipo}</span>
+          </div>
+          ${(t.totalParcelas || (t.parcelaFutura && t.competencia && t.competencia>chaveMes(UI.ano,UI.mes)) || t.responsavel || t.entreFamilia) ? `<div class="reg-descricao-tags">${t.totalParcelas ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}${(t.parcelaFutura && t.competencia && t.competencia>chaveMes(UI.ano,UI.mes)) ? `<span class="tag Variavel">⌛ Parcela futura</span>` : ''}${t.responsavel ? `<span class="tag Receita">🧑 ${escapeHtml(t.responsavel)}</span>` : ''}${t.entreFamilia ? `<span class="tag Variavel">🔁 Interna</span>` : ''}</div>` : ''}
+        </div>
+        <div class="reg-card-menu">
+          <button type="button" class="icon-btn reg-card-menu-btn" data-reg-card-menu="${t.id}" title="Mais ações" aria-haspopup="true" aria-expanded="${UI.regCardMenuAberto===t.id?'true':'false'}">⋮</button>
+          ${UI.regCardMenuAberto===t.id ? `
+          <div class="reg-card-menu-lista">
+            <button type="button" data-edit="${t.id}">✏️ Editar</button>
+            <button type="button" data-duplicar="${t.id}">📄 Duplicar</button>
+            <button type="button" data-del="${t.id}">🗑️ Excluir</button>
+          </div>` : ''}
+        </div>
+      </div>`).join('')}
+    </div>`).join('')}
+  </div>`;
+}
 function renderRegistros(){
   const f = UI.regFiltros;
   // Ordenação: Data (mais recente primeiro) → Tipo (Receita antes de Despesa) → Fatura/competência (crescente).
@@ -7564,31 +7788,43 @@ function renderRegistros(){
         <p style="margin-bottom:0;"><b>Ações de cada linha</b>: <b>✏️ Editar</b> abre o lançamento no formulário para alterar qualquer campo; <b>📄 Duplicar</b> cria uma cópia idêntica (mesma data, valor, categoria etc.) para agilizar lançamentos repetidos, sem afetar o original; <b>🗑️ Excluir</b> remove o lançamento — se ele fizer parte de uma transferência entre contas, o lado espelhado na outra conta é removido junto, e pede confirmação antes.</p>
       </div>
     </details>
-    <div class="toolbar" style="justify-content:flex-start;">
-      <div class="filtros-barra">
-        ${renderBarraFiltrosPadrao(f, 'Reg', [
-          {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:`${iconeGrupo(g)} ${g}`}))]},
-          {campo:'natureza', label:'Natureza', options:[{value:'Fixo',label:'Fixo'},{value:'Variável',label:'Variável'}]},
-          {campo:'tipo', label:'Tipo', options:[{value:'Despesa',label:'Despesa'},{value:'Receita',label:'Receita'}]},
-          {campo:'conta', label:'Conta', options:contasUsadas.map(c=>({value:c,label:c}))},
-          {campo:'fatura', label:'Fatura', options:faturasUsadas.map(c=>({value:c,label:competenciaLabel(c)}))},
-        ])}
-        ${filtrosPadraoAtivos(f, ['grupo','natureza','tipo','conta','fatura'].map(campo=>({campo}))) ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosReg">✕ Limpar filtros</button>` : ''}
+    ${(()=>{
+      const camposFiltroReg = [
+        {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:`${iconeGrupo(g)} ${g}`}))]},
+        {campo:'natureza', label:'Natureza', options:[{value:'Fixo',label:'Fixo'},{value:'Variável',label:'Variável'}]},
+        {campo:'tipo', label:'Tipo', options:[{value:'Despesa',label:'Despesa'},{value:'Receita',label:'Receita'}]},
+        {campo:'conta', label:'Conta', options:contasUsadas.map(c=>({value:c,label:c}))},
+        {campo:'fatura', label:'Fatura', options:faturasUsadas.map(c=>({value:c,label:competenciaLabel(c)}))},
+      ];
+      const qtdAtivos = contarFiltrosPadraoAtivos(f, camposFiltroReg);
+      return `
+    <div class="toolbar filtros-mobile-toolbar" style="justify-content:flex-start;">
+      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg">🔍 Filtros${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
+      <div class="filtros-barra ${UI.filtrosMobileAberto==='Reg'?'aberto-mobile':''}">
+        <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileReg" title="Fechar">✕</button></div>
+        ${renderBarraFiltrosPadrao(f, 'Reg', camposFiltroReg)}
+        <div class="filtros-barra-acoes-mobile">
+          ${qtdAtivos>0 ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosReg">✕ Limpar filtros</button>` : ''}
+          <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileReg">Aplicar</button>
+        </div>
       </div>
     </div>
+    ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
+      `;
+    })()}
     <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
     <div class="toolbar" style="margin-top:0;">
       ${list.length ? `<button class="btn btn-ghost" id="btnVerificarDuplicidade">🔍 Verificar duplicidade</button>` : ''}
       <button class="btn btn-gold" id="btnImportar">📥 Importar arquivo do banco</button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
-      <div style="display:flex;gap:10px;align-items:center;margin-left:auto;">
+      <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
         <input type="search" id="regBusca" placeholder="Buscar na descrição..." value="${escapeHtml(UI.regFiltro)}">
         <button class="btn btn-primary btn-sm" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
       </div>
     </div>
     ${list.length===0 ? `<div class="empty-state"><div class="big">🗒️</div>Nenhum lançamento encontrado com esses filtros.</div>
     <div class="registros-rodape registros-rodape-vazio">${rodapePaginacao}</div>` : `
-    <div class="table-wrap table-wrap-registros"><table class="tabela-registros">
+    <div class="table-wrap table-wrap-registros reg-tabela-principal"><table class="tabela-registros">
       <thead><tr>${renderColunaSelecaoLoteHead('Reg', pageList.map(t=>t.id), UI.regSelecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th>Natureza</th><th>Tipo</th><th>Conta</th><th>Fatura</th><th style="text-align:right;">Valor</th><th></th></tr></thead>
       <tbody>
         ${pageList.map(t=>`
@@ -7613,6 +7849,7 @@ function renderRegistros(){
           </tr>`).join('')}
       </tbody>
     </table></div>
+    ${renderListaMobileRegistros(pageList)}
     <div class="registros-rodape">${rodapePaginacao}</div>`}
   </div>
   `;
@@ -10863,8 +11100,9 @@ function bindEvents(){
   document.getElementById('btnMesSeguinte')?.addEventListener('click', ()=>{
     UI.mes += 1; if(UI.mes>12){ UI.mes=1; UI.ano+=1; } render();
   });
-  document.querySelectorAll('.tab-btn, .tab-btn-mobile').forEach(b=> b.addEventListener('click', ()=>{ UI.tab = b.dataset.tab; UI.menuMobileAberto = false; render(); }));
+  document.querySelectorAll('.tab-btn, .bn-item[data-tab], .mais-sheet-item[data-tab]').forEach(b=> b.addEventListener('click', ()=>{ UI.tab = b.dataset.tab; UI.menuMobileAberto = false; render(); }));
   document.getElementById('btnMenuMobile')?.addEventListener('click', ()=>{ UI.menuMobileAberto = !UI.menuMobileAberto; render(); });
+  document.getElementById('btnFecharMaisSheet')?.addEventListener('click', ()=>{ UI.menuMobileAberto = false; render(); });
   document.getElementById('menuMobileBackdrop')?.addEventListener('click', ()=>{ UI.menuMobileAberto = false; render(); });
   document.querySelectorAll('[data-grupo-details]').forEach(d=> d.addEventListener('toggle', ()=>{
     const g = d.dataset.grupoDetails;
@@ -11120,6 +11358,7 @@ function bindEvents(){
     render();
   };
   document.getElementById('btnNovoLancamento')?.addEventListener('click', ()=> abrirNovoLancamento(null));
+  document.getElementById('fabNovoLancamento')?.addEventListener('click', ()=> abrirNovoLancamento(null));
   // "+ Novo Lançamento" adicionado aos modais de Contas e Cartões — mesmo formulário, já com a conta/cartão
   // de origem pré-selecionada (ver data-modal-novo-lanc, escrito por renderBotoesAcoesLancamentoModal).
   document.querySelectorAll('[data-modal-novo-lanc]').forEach(b=> b.addEventListener('click', ()=>{
@@ -11586,6 +11825,31 @@ function bindEvents(){
   // padrões diferentes de seleção/edição/exclusão em lote na aplicação.
   if(UI.tab==='registros'){
     bindSelecaoLote('Reg', UI.regSelecionados, ()=>render());
+    // Botão "Filtros" com badge de contagem (item 12 do requisito de responsividade): no mobile, abre a
+    // mesma barra de filtros (sem alterar seu funcionamento) como um painel/bottom sheet; no desktop, a
+    // barra já fica sempre visível e este botão fica oculto por CSS.
+    document.getElementById('btnFiltrosMobileReg')?.addEventListener('click', ()=>{
+      UI.filtrosMobileAberto = UI.filtrosMobileAberto==='Reg' ? null : 'Reg'; render();
+    });
+    document.getElementById('filtrosMobileBackdropReg')?.addEventListener('click', ()=>{
+      UI.filtrosMobileAberto = null; render();
+    });
+    document.getElementById('btnFecharFiltrosMobileReg')?.addEventListener('click', ()=>{
+      UI.filtrosMobileAberto = null; render();
+    });
+    document.getElementById('btnAplicarFiltrosMobileReg')?.addEventListener('click', ()=>{
+      UI.filtrosMobileAberto = null; render();
+    });
+    // Menu de ações (✏️/📄/🗑️) de cada card na lista mobile de Registros — mesmo padrão de "um aberto por
+    // vez" usado nos demais menus contextuais da aplicação (☰ Menu, Mais opções).
+    document.querySelectorAll('[data-reg-card-menu]').forEach(b=> b.addEventListener('click', e=>{
+      e.stopPropagation();
+      UI.regCardMenuAberto = UI.regCardMenuAberto===b.dataset.regCardMenu ? null : b.dataset.regCardMenu;
+      render();
+    }));
+    if(UI.regCardMenuAberto){
+      document.addEventListener('click', ()=>{ UI.regCardMenuAberto = null; render(); }, { once:true });
+    }
   }
 
   document.getElementById('btnNovaProjecao')?.addEventListener('click', ()=>{
