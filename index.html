@@ -960,6 +960,16 @@ tr.linha-saldo-atual .saldo-destaque{background:var(--gold);color:var(--navy-950
    dependência de caminhos locais do dispositivo (C:\, D:\ etc.) nem de escolha manual de pasta pelo
    usuário — a pasta é fixa e configurável apenas aqui (ONEDRIVE_CONFIG.pastaApp).
 
+   MULTIUSUÁRIO / PASTA COMPARTILHADA: os arquivos moram sempre no OneDrive do PROPRIETÁRIO da pasta —
+   nenhum outro usuário tem uma cópia própria. Cada pessoa autentica com a SUA PRÓPRIA conta Microsoft
+   (nunca com a senha/token do proprietário) e a aplicação localiza a pasta compartilhada via Microsoft
+   Graph (link de compartilhamento resolvido por /shares/{id}/driveItem, com fallback para
+   /me/drive/sharedWithMe) — nunca por um caminho tipo "/me/drive/root:/..." fixo, que só funcionaria para
+   a conta do proprietário. Depois de resolvida uma única vez, a pasta vira uma referência {driveId,
+   itemId} e todo o resto do módulo endereça arquivos por caminho RELATIVO a essa referência (ver
+   oneDriveClient._raiz/_itemUrl), então o mesmo código funciona tanto para o proprietário quanto para
+   qualquer pessoa com quem ele compartilhou a pasta.
+
    Configuração do App Registration (Microsoft Entra ID / Azure AD):
    1) Portal Azure → Microsoft Entra ID → Registros de aplicativo → Novo registro.
       - Tipos de conta com suporte: "Contas em qualquer diretório organizacional e contas pessoais da
@@ -969,7 +979,12 @@ tr.linha-saldo-atual .saldo-destaque{background:var(--gold);color:var(--navy-950
    2) Em "Permissões de API", adicione (Microsoft Graph → Delegada): Files.ReadWrite, offline_access,
       User.Read. Não é necessário client secret — SPAs usam PKCE, e um client_secret NUNCA deve ser
       colocado neste arquivo (ele ficaria visível a qualquer pessoa que abra o index.html).
-   3) Copie o "ID do aplicativo (cliente)" gerado e cole abaixo em CLIENT_ID. */
+   3) Copie o "ID do aplicativo (cliente)" gerado e cole abaixo em CLIENT_ID.
+   4) O PROPRIETÁRIO da pasta "Controle Financeiro Familiar" no OneDrive deve compartilhá-la com as
+      demais contas Microsoft da família (botão "Compartilhar" no OneDrive → conceder "Pode editar" ou
+      "Pode visualizar" conforme o caso — seção 4 do requisito) e colar o link gerado abaixo em
+      `pastaCompartilhadaLink`. Sem esse link, cada usuário só consegue enxergar a pasta na PRÓPRIA conta
+      (funciona para o proprietário testar sozinho, mas não é multiusuário de verdade). */
 const ONEDRIVE_CONFIG = {
   // ID do aplicativo (cliente) do App Registration no Microsoft Entra ID — ver instruções acima.
   clientId: (window.ONEDRIVE_CLIENT_ID || '74fbd7fd-9910-4708-b643-44a863a2cdad'),
@@ -980,21 +995,34 @@ const ONEDRIVE_CONFIG = {
   // Registration, mesmo em hospedagem estática tipo GitHub Pages (ex.:
   // https://usuario.github.io/Controle-Financeiro-Familiar/).
   redirectUri: window.location.origin + window.location.pathname.replace(/index\.html?$/i, ''),
-  // Only os escopos estritamente necessários para ler/gravar os arquivos do app (seção 6 do requisito).
+  // Escopos estritamente necessários para ler/gravar os arquivos do app e identificar o usuário
+  // autenticado (seção 6 e 14 do requisito).
   scopes: ['User.Read', 'Files.ReadWrite'],
-  // Pasta única, na raiz do OneDrive do usuário, onde os arquivos do app ficam — ponto único de
-  // configuração (seção 9 do requisito): mudar aqui move o app inteiro para outra pasta, sem precisar
-  // caçar caminhos espalhados pelo código.
+  // Link de compartilhamento da pasta "Controle Financeiro Familiar" no OneDrive do proprietário (gerado
+  // por ele em OneDrive → botão direito na pasta → Compartilhar → Copiar link). Ponto único de
+  // configuração para o acesso multiusuário (seção 3 e 9 do requisito) — deixe em branco (window.ONEDRIVE_SHARE_LINK
+  // ausente) só durante o primeiro teste do proprietário sozinho; a aplicação cai de volta para o próprio
+  // OneDrive dele nesse caso (ver localizarPastaCompartilhada).
+  pastaCompartilhadaLink: (window.ONEDRIVE_SHARE_LINK || ''),
+  // Nome da pasta — usado (a) como nome ao criá-la pela primeira vez no OneDrive do proprietário, e (b)
+  // para localizá-la em /me/drive/sharedWithMe quando não há link de compartilhamento configurado.
   pastaApp: 'Controle Financeiro Familiar',
-  pastaBackups: 'Controle Financeiro Familiar/Backups',
+  pastaBackups: 'Backups',
   nomeArquivoCfg: 'configuracoes.cfg',
   nomeArquivoReg: 'registros.log',
+  nomeArquivoAuditoria: 'auditoria.log',
 };
 
 /* ---------- Autenticação (MSAL.js / Microsoft Identity Platform, OAuth2 + PKCE) ---------- */
 let msalApp = null;
-let msalConta = null; // conta Microsoft autenticada nesta sessão (null = não autenticado)
+let msalConta = null; // conta Microsoft autenticada nesta sessão (null = não autenticado) — cada usuário usa a própria
 let oneDriveIndisponivelMsg = null; // guarda o motivo textual da última falha de rede/serviço do Graph, para as telas de erro (seção 8)
+/* Nível de acesso do usuário autenticado à pasta compartilhada (seção 4 do requisito):
+   'edicao' | 'leitura' | null (ainda não verificado). Detectado em verificarPermissaoPasta() a partir das
+   permissões reais devolvidas pelo Graph — a interface se adapta a isso (ver UI.somenteLeitura em uso
+   abaixo), mas cada operação de escrita TAMBÉM é protegida pela resposta real da API (403 = sem permissão
+   de verdade), nunca só pela interface escondendo botões. */
+let nivelAcessoPasta = null;
 
 function msalConfigurado(){
   return !!(ONEDRIVE_CONFIG.clientId && ONEDRIVE_CONFIG.clientId!=='COLOQUE_AQUI_O_CLIENT_ID_DO_APP_REGISTRATION');
@@ -1064,9 +1092,10 @@ class ErroOneDrive extends Error{
 function registrarErroOneDrive(e){ oneDriveIndisponivelMsg = (e && (e.mensagemAmigavel||e.message)) || String(e); console.error('OneDrive:', e); }
 function mapearErroGraph(status, e, contexto){
   if(status===401) return new ErroOneDrive('token-expirado', 'Sua sessão com a Microsoft expirou. Faça login novamente.', e);
-  if(status===403) return new ErroOneDrive('sem-permissao', 'Sua conta Microsoft não tem permissão para acessar os arquivos do app no OneDrive. Verifique as permissões concedidas ao aplicativo.', e);
-  if(status===404) return new ErroOneDrive('nao-encontrado', `Arquivo ou pasta não encontrado no OneDrive${contexto?` (${contexto})`:''}.`, e);
+  if(status===403) return new ErroOneDrive('sem-permissao', 'Sua conta Microsoft não tem permissão de edição para esta operação na pasta compartilhada. Peça ao proprietário para conceder acesso de edição, ou continue apenas visualizando os dados.', e);
+  if(status===404) return new ErroOneDrive('nao-encontrado', `Arquivo ou pasta não encontrado no OneDrive${contexto?` (${contexto})`:''}. Se você não é o proprietário, confirme se a pasta ainda está compartilhada com sua conta.`, e);
   if(status===409) return new ErroOneDrive('ja-existe', 'Já existe um item com este nome nesta pasta do OneDrive.', e);
+  if(status===412) return new ErroOneDrive('conflito-versao', 'Os dados foram alterados por outro usuário enquanto esta sessão estava aberta. Sua alteração NÃO foi salva para evitar sobrescrever o que a outra pessoa gravou.', e);
   if(status===0 || status===undefined) return new ErroOneDrive('sem-conexao', 'Não foi possível conectar ao OneDrive. Verifique sua conexão com a internet e tente novamente.', e);
   if(status===503 || status===502 || status===504) return new ErroOneDrive('indisponivel', 'O OneDrive está temporariamente indisponível. Tente novamente em instantes.', e);
   return new ErroOneDrive('erro', `Falha ao comunicar com o OneDrive${contexto?` (${contexto})`:''}: ${e?.message||status||'erro desconhecido'}.`, e);
@@ -1075,6 +1104,16 @@ function mapearErroGraph(status, e, contexto){
 /* ---------- Cliente Microsoft Graph — ÚNICO ponto de chamadas HTTP à API do OneDrive ---------- */
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
 function encodeGraphPath(caminho){ return caminho.split('/').map(encodeURIComponent).join('/'); }
+/* Codificação de link de compartilhamento exigida pelo Graph para o endpoint /shares/{id}/driveItem —
+   "u!" + base64url (sem padding) da URL original. Documentado pela Microsoft como a forma oficial de
+   resolver um link de compartilhamento em um driveItem, independente de QUAL conta autenticada está
+   acessando (desde que ela tenha permissão) — é exatamente o mecanismo que permite a pasta compartilhada
+   funcionar para qualquer usuário da família, não só para o proprietário (seção 3 do requisito). */
+function codificarLinkCompartilhamento(url){
+  const base64 = btoa(unescape(encodeURIComponent(url)));
+  const base64url = base64.replace(/=+$/,'').replace(/\//g,'_').replace(/\+/g,'-');
+  return 'u!' + base64url;
+}
 async function graphFetch(pathOrUrl, options){
   let token;
   try{ token = await obterTokenGraph(); }
@@ -1093,62 +1132,138 @@ async function graphFetch(pathOrUrl, options){
   return resp;
 }
 const oneDriveClient = {
+  _raiz: null, // { driveId, itemId } da pasta "Controle Financeiro Familiar" já resolvida — ver localizarPastaCompartilhada()
   async me(){ const r = await graphFetch('/me'); return r.json(); },
-  /* Garante que a pasta do app (e a subpasta de Backups) existem, criando-as se preciso — sem depender de
-     nenhum caminho local, tudo resolvido por caminho relativo à raiz do OneDrive do usuário. */
-  async ensureAppFolder(){
-    await this._ensureFolder(ONEDRIVE_CONFIG.pastaApp);
-    await this._ensureFolder(ONEDRIVE_CONFIG.pastaBackups);
+  /* ===== Localização da pasta compartilhada (seção 3 do requisito) =====
+     Resolve a pasta "Controle Financeiro Familiar" para uma referência {driveId, itemId} única, válida
+     tanto para o proprietário quanto para qualquer conta com quem ele compartilhou a pasta — nunca por um
+     caminho fixo tipo "/me/drive/root:/..." (que só existe na conta do próprio proprietário). Ordem:
+       1) Link de compartilhamento configurado (ONEDRIVE_CONFIG.pastaCompartilhadaLink) — funciona para
+          QUALQUER conta com permissão, é o caminho recomendado para uso multiusuário real.
+       2) /me/drive/sharedWithMe — cobre o caso de a pasta já aparecer automaticamente compartilhada com a
+          conta atual, sem precisar colar o link.
+       3) Fallback: a própria pasta na raiz do OneDrive da conta atual, criando-a se preciso — cobre o
+          primeiro uso do proprietário, antes de compartilhar com mais ninguém.
+     Resolvida uma vez por sessão (this._raiz fica em cache); todo o resto do módulo endereça arquivos por
+     caminho relativo a essa referência (ver _itemUrl). */
+  async localizarPastaCompartilhada(){
+    if(this._raiz) return this._raiz;
+    if(ONEDRIVE_CONFIG.pastaCompartilhadaLink){
+      const encoded = codificarLinkCompartilhamento(ONEDRIVE_CONFIG.pastaCompartilhadaLink);
+      const r = await graphFetch(`/shares/${encoded}/driveItem?$select=id,parentReference,folder`);
+      const item = await r.json();
+      if(!item.folder) throw new ErroOneDrive('erro', 'O link de compartilhamento configurado não aponta para uma pasta.');
+      this._raiz = { driveId: item.parentReference.driveId, itemId: item.id };
+      return this._raiz;
+    }
+    try{
+      const r = await graphFetch(`/me/drive/sharedWithMe?$select=name,remoteItem`);
+      const dados = await r.json();
+      const achado = (dados.value||[]).find(i => i.remoteItem && i.remoteItem.folder && i.name===ONEDRIVE_CONFIG.pastaApp);
+      if(achado){
+        this._raiz = { driveId: achado.remoteItem.parentReference.driveId, itemId: achado.remoteItem.id };
+        return this._raiz;
+      }
+    }catch(e){ /* sem itens compartilhados, ou usuário é o próprio proprietário — segue para o fallback */ }
+    // Fallback: pasta na raiz do próprio OneDrive da conta atual (uso individual / primeira configuração
+    // do proprietário, antes de compartilhar a pasta com mais alguém).
+    const drive = await (await graphFetch('/me/drive?$select=id')).json();
+    await this._ensureFolderNaRaizPropria();
+    const item = await (await graphFetch(`/me/drive/root:/${encodeGraphPath(ONEDRIVE_CONFIG.pastaApp)}?$select=id`)).json();
+    this._raiz = { driveId: drive.id, itemId: item.id };
+    return this._raiz;
   },
-  async _ensureFolder(caminho){
-    const existe = await this.existe(caminho);
+  async _ensureFolderNaRaizPropria(){
+    try{ await graphFetch(`/me/drive/root:/${encodeGraphPath(ONEDRIVE_CONFIG.pastaApp)}`); return; }
+    catch(e){ if(!(e instanceof ErroOneDrive && e.tipo==='nao-encontrado')) throw e; }
+    await graphFetch('/me/drive/root/children', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: ONEDRIVE_CONFIG.pastaApp, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }),
+    }).catch(e=>{ if(!(e instanceof ErroOneDrive) || e.tipo!=='ja-existe') throw e; });
+  },
+  /* Garante que a subpasta de Backups existe dentro da pasta raiz já resolvida. */
+  async ensureBackupsFolder(){
+    const existe = await this.existe(ONEDRIVE_CONFIG.pastaBackups);
     if(existe) return;
-    const partes = caminho.split('/');
-    const nome = partes.pop();
-    const pastaPai = partes.join('/');
-    const parentUrl = pastaPai ? `/me/drive/root:/${encodeGraphPath(pastaPai)}:/children` : '/me/drive/root/children';
-    await graphFetch(parentUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: nome, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }),
-    }).catch(e=>{
-      // 'fail' em cima de uma pasta que passou a existir entre a checagem e a criação (corrida entre
-      // dispositivos/abas, ou entre computador e celular) não é um erro real — a pasta já está lá, que é
-      // o objetivo (Graph responde 409 Conflict nesse caso).
-      if(!(e instanceof ErroOneDrive) || e.tipo!=='ja-existe') throw e;
-    });
+    await graphFetch(this._itemUrl('') + '/children', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: ONEDRIVE_CONFIG.pastaBackups, folder: {}, '@microsoft.graph.conflictBehavior': 'fail' }),
+    }).catch(e=>{ if(!(e instanceof ErroOneDrive) || e.tipo!=='ja-existe') throw e; });
+  },
+  /* ===== Permissões (seção 4 do requisito) =====
+     Detecta se o usuário autenticado tem edição ou só leitura na pasta compartilhada, a partir das
+     permissões reais devolvidas pelo Graph (não é um "achismo" da interface). A conta é comparada pelo
+     "oid" (object id no Azure AD) presente no ID token — o mesmo identificador que o Graph usa em
+     grantedToV2.user.id nas entradas de permissão explícitas para um usuário específico.
+     Quando não há entrada explícita para o usuário (ex.: link "qualquer pessoa com o link pode editar",
+     ou o próprio proprietário acessando sua própria pasta — que sempre tem edição total), assume-se
+     edição para o proprietário e, por segurança, uma tentativa real de escrita é o que decide para os
+     demais casos (ver tratamento de 403 em escreverTexto/graphFetch — nunca só a interface escondendo
+     botões, como pede o requisito). */
+  async verificarPermissaoPasta(){
+    try{
+      const r = await graphFetch(this._itemUrl('') + '/permissions');
+      const dados = await r.json();
+      const meuOid = msalConta?.idTokenClaims?.oid || msalConta?.idTokenClaims?.sub || msalConta?.localAccountId;
+      let melhorNivel = null;
+      for(const perm of (dados.value||[])){
+        const identidades = [perm.grantedToV2?.user, ...(perm.grantedToIdentitiesV2||[]).map(i=>i.user)].filter(Boolean);
+        const souEu = identidades.some(u => u.id===meuOid) || (!identidades.length && perm.link); // link genérico ("qualquer pessoa com o link") também se aplica a mim
+        if(!souEu) continue;
+        const nivel = (perm.roles||[]).includes('write') ? 'edicao' : 'leitura';
+        if(nivel==='edicao') melhorNivel = 'edicao';
+        else if(!melhorNivel) melhorNivel = 'leitura';
+      }
+      return melhorNivel || 'edicao'; // sem entrada específica encontrada = provavelmente o próprio dono acessando sua pasta
+    }catch(e){
+      // Sem conseguir consultar /permissions (comum em contas pessoais para itens não compartilhados por
+      // link), assume edição — a proteção real continua sendo a resposta 403 da própria API em qualquer
+      // tentativa de escrita, que é tratada especificamente em toda a aplicação (ver ErroOneDrive
+      // 'sem-permissao').
+      return 'edicao';
+    }
+  },
+  _itemUrl(caminhoRelativo){
+    if(!this._raiz) throw new ErroOneDrive('erro', 'Pasta do OneDrive ainda não localizada.');
+    const base = `/drives/${this._raiz.driveId}/items/${this._raiz.itemId}`;
+    return caminhoRelativo ? `${base}:/${encodeGraphPath(caminhoRelativo)}` : base;
   },
   async existe(caminhoRelativo){
-    try{ await graphFetch(`/me/drive/root:/${encodeGraphPath(caminhoRelativo)}`); return true; }
+    try{ await graphFetch(this._itemUrl(caminhoRelativo)); return true; }
     catch(e){ if(e instanceof ErroOneDrive && e.tipo==='nao-encontrado') return false; throw e; }
   },
   async metadados(caminhoRelativo){
-    const r = await graphFetch(`/me/drive/root:/${encodeGraphPath(caminhoRelativo)}`);
+    const r = await graphFetch(`${this._itemUrl(caminhoRelativo)}?$select=id,name,eTag,cTag,size,lastModifiedDateTime,file,folder`);
     return r.json();
   },
   async lerTexto(caminhoRelativo){
-    const r = await graphFetch(`/me/drive/root:/${encodeGraphPath(caminhoRelativo)}:/content`);
+    const r = await graphFetch(`${this._itemUrl(caminhoRelativo)}:/content`);
     return r.text();
   },
   /* Grava o conteúdo por upload simples (arquivos deste app — CSV de texto — ficam muito abaixo do limite
      de 4MB do endpoint de upload simples do Graph). Só retorna sucesso depois que o Graph confirmar (HTTP
      2xx) a gravação — ver graphFetch, que lança erro em qualquer resposta não-OK — para nunca sinalizar
-     "salvo" sem confirmação real do OneDrive (seção 8 do requisito, proteção contra perda de dados). */
-  async escreverTexto(caminhoRelativo, conteudo){
-    const r = await graphFetch(`/me/drive/root:/${encodeGraphPath(caminhoRelativo)}:/content`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      body: new Blob([conteudo], { type: 'text/plain;charset=utf-8' }),
+     "salvo" sem confirmação real do OneDrive (seção 8 do requisito, proteção contra perda de dados).
+     CONCORRÊNCIA OTIMISTA (seção 8 do requisito): quando `etagEsperado` é informado, envia o cabeçalho
+     If-Match — o Graph recusa a gravação com HTTP 412 se o arquivo tiver sido alterado por outra pessoa
+     desde a última leitura, em vez de deixar uma gravação sobrescrever silenciosamente a da outra pessoa
+     ("última gravação vence" é exatamente o que este mecanismo evita). Retorna o driveItem resultante
+     (que já traz o eTag NOVO, usado como referência para a próxima gravação). */
+  async escreverTexto(caminhoRelativo, conteudo, etagEsperado){
+    const headers = { 'Content-Type': 'text/plain; charset=utf-8' };
+    if(etagEsperado) headers['If-Match'] = etagEsperado;
+    const r = await graphFetch(`${this._itemUrl(caminhoRelativo)}:/content`, {
+      method: 'PUT', headers, body: new Blob([conteudo], { type: 'text/plain;charset=utf-8' }),
     });
     return r.json();
   },
   async listarPasta(caminhoRelativo){
-    const r = await graphFetch(`/me/drive/root:/${encodeGraphPath(caminhoRelativo)}:/children?$select=name,file,folder,size,lastModifiedDateTime`);
+    const r = await graphFetch(`${this._itemUrl(caminhoRelativo)}:/children?$select=id,name,file,folder,size,lastModifiedDateTime,eTag`);
     const dados = await r.json();
     return dados.value || [];
   },
   async excluir(caminhoRelativo){
-    await graphFetch(`/me/drive/root:/${encodeGraphPath(caminhoRelativo)}`, { method: 'DELETE' });
+    await graphFetch(this._itemUrl(caminhoRelativo), { method: 'DELETE' });
   },
 };
 
@@ -1158,17 +1273,21 @@ const oneDriveClient = {
    a lógica de leitura/gravação/backup já escrita contra essa interface funcione sem duplicação, agora
    contra o OneDrive em vez do disco local. */
 class OneDriveFileHandle{
-  constructor(caminhoRelativo, nome){ this.kind = 'file'; this.caminho = caminhoRelativo; this.name = nome; }
+  constructor(caminhoRelativo, nome){ this.kind = 'file'; this.caminho = caminhoRelativo; this.name = nome; this.etag = null; }
   async getFile(){
     const meta = await oneDriveClient.metadados(this.caminho).catch(e=>{ throw e; });
     const texto = await oneDriveClient.lerTexto(this.caminho);
+    this.etag = meta.eTag || null; // referência de versão para a próxima gravação (If-Match — ver escreverTexto)
     return { text: async()=>texto, lastModified: meta.lastModifiedDateTime ? new Date(meta.lastModifiedDateTime).getTime() : Date.now(), size: meta.size||texto.length };
   }
   async createWritable(){
     let buffer = '';
     return {
       write: async(conteudo)=>{ buffer = conteudo; },
-      close: async()=>{ await oneDriveClient.escreverTexto(this.caminho, buffer); },
+      close: async()=>{
+        const item = await oneDriveClient.escreverTexto(this.caminho, buffer, this.etag);
+        this.etag = item.eTag || null; // atualiza a referência para a versão recém-gravada
+      },
     };
   }
   async queryPermission(){ return msalConta ? 'granted' : 'denied'; }
@@ -1180,7 +1299,9 @@ class OneDriveDirectoryHandle{
     const itens = await oneDriveClient.listarPasta(this.caminho);
     for(const item of itens){
       if(!item.file) continue; // só arquivos interessam aqui (backups .bkp) — pastas são ignoradas, como no FS nativo
-      yield [item.name, new OneDriveFileHandle(`${this.caminho}/${item.name}`, item.name)];
+      const h = new OneDriveFileHandle(`${this.caminho}/${item.name}`, item.name);
+      h.etag = item.eTag || null;
+      yield [item.name, h];
     }
   }
   async getFileHandle(nome, opcoes){
@@ -2602,6 +2723,7 @@ let UI = {
   modalTaxasConversao: null,
   modalParcelasEmprestimo: null, // { itens: [{descricao, parcelasRestantes}] } — pede o total de parcelas de empréstimos novos detectados no contracheque
   modalFecharSessao: null, // { resolve } — confirmação de 3 opções (Salvar e fechar/Fechar sem salvar/Cancelar)
+  modalConflitoGravacao: null, // { tipo, resolve } — conflito de versão (ETag) ao gravar (seção 8/9 do requisito multiusuário)
   menuArquivoAberto: false, // menu de ações do arquivo de trabalho (Abrir/Salvar/Backup/Restaurar/Desconectar) no cabeçalho
   backupModal: null, // { aba:'historico'|'config', backups:[...]|null, carregando:bool } — tela "Backup e Restauração" (null = fechada)
   cartoesSecaoAtiva: 'contas', // 'contas' | 'cartoes' — qual painel do acordeão da aba Contas e Cartões está expandido
@@ -2723,6 +2845,7 @@ const CAMADAS_MODAL = [
   'duplicarMesesEditarItem',           // ovDuplicarMesesEditarItem — editar uma ocorrência da prévia
 
   // Nível topo — sempre por cima de absolutamente tudo
+  'modalConflitoGravacao',              // conflito de versão (ETag) ao gravar no OneDrive
   'modalFecharSessao',
 ];
 /* true/false — se o modal correspondente à propriedade `prop` de UI está aberto agora. Funciona igual
@@ -2821,6 +2944,27 @@ function atualizarFilebarInfoDOM(){
   el.title = filebarInfoTooltip();
 }
 setInterval(atualizarFilebarInfoDOM, 30000);
+/* ===================== Sincronização entre usuários (seção 13 do requisito) =====================
+   A aplicação pode ficar aberta por horas com outra pessoa editando a mesma pasta compartilhada nesse
+   meio tempo. Em vez de perguntar à API a cada poucos segundos (o requisito pede para não gerar
+   requisições desnecessárias), o mecanismo PRINCIPAL de detecção é o próprio If-Match na hora de salvar
+   (ver escreverTexto/writeToHandle) — barato, e cobre o caso que importa de verdade (dois SALVAMENTOS
+   colidindo). Isto aqui é só um aviso NÃO bloqueante e de baixa frequência para o caso de alguém ficar
+   horas só olhando a tela sem salvar nada: só sinaliza que existe uma versão mais nova, nunca recarrega
+   nem descarta nada sozinho — a decisão de quando atualizar continua sempre do usuário. */
+let dadosDesatualizadosExternos = false;
+async function verificarAlteracoesExternas(){
+  if(!UI.appIniciado || !msalConta || !fileHandleCfg || !fileHandleReg || dadosDesatualizadosExternos) return;
+  try{
+    const [metaCfg, metaReg] = await Promise.all([
+      oneDriveClient.metadados(ONEDRIVE_CONFIG.nomeArquivoCfg),
+      oneDriveClient.metadados(ONEDRIVE_CONFIG.nomeArquivoReg),
+    ]);
+    const mudou = (fileHandleCfg.etag && metaCfg.eTag!==fileHandleCfg.etag) || (fileHandleReg.etag && metaReg.eTag!==fileHandleReg.etag);
+    if(mudou){ dadosDesatualizadosExternos = true; render(); }
+  }catch(e){ /* falha silenciosa — não interrompe o uso; a próxima gravação continua protegida pelo If-Match de qualquer forma */ }
+}
+setInterval(verificarAlteracoesExternas, 3*60000);
 function idbOpen(){
   return new Promise((resolve,reject)=>{
     const req = indexedDB.open('financas-db', 1);
@@ -3153,6 +3297,13 @@ async function writeToHandle(tipo){
   const handle = tipo==='reg' ? fileHandleReg : fileHandleCfg;
   if(!handle) return false;
   const nomeArquivo = tipo==='reg' ? 'registros.log' : 'configuracoes.cfg';
+  // Proteção real por permissão (seção 4 do requisito: "não confiar apenas em ocultar botões") — mesmo que
+  // a UI de algum jeito deixe chamar isto com só leitura, a gravação é recusada aqui também, antes de
+  // qualquer chamada à API.
+  if(nivelAcessoPasta==='leitura'){
+    alert(`⚠️ Sua conta tem apenas permissão de leitura na pasta compartilhada — não é possível salvar alterações em ${nomeArquivo}.`);
+    return false;
+  }
   // Segunda camada de proteção, independente da checagem em loadFromHandle: nunca grava um registros.log VAZIO
   // por cima de um arquivo que já tinha lançamentos reais — se algo mais no app zerar STATE.transactions
   // por engano, ainda assim os dados no disco não são apagados sem confirmação.
@@ -3174,7 +3325,29 @@ async function writeToHandle(tipo){
     return true;
   }catch(e){
     console.error('Falha ao salvar CSV', e);
-    alert(`⚠️ Não foi possível salvar as alterações no arquivo ${nomeArquivo}.\n\nSuas alterações continuam aqui na tela, mas ainda NÃO foram gravadas no arquivo. Tente novamente ou reconecte o arquivo.\n\nDetalhe: `+e.message);
+    // Conflito de versão (ETag/If-Match — seções 8 e 9 do requisito): outro usuário/sessão alterou este
+    // arquivo desde a última leitura. NUNCA sobrescreve automaticamente — oferece recarregar a versão
+    // atual ou cancelar, e só então (se o usuário decidir tentar de novo) uma nova gravação é tentada.
+    if(e instanceof ErroOneDrive && e.tipo==='conflito-versao'){
+      registrarAuditoria('conflito-gravacao', nomeArquivo, 'conflito');
+      const decisao = await confirmarConflitoGravacao(tipo);
+      if(decisao==='recarregar'){
+        const status = await carregarUmArquivoDoOneDrive(tipo);
+        if(tipo==='reg') fileStatusReg = status; else fileStatusCfg = status;
+        STATE.dirty = false;
+        render();
+      }
+      return false;
+    }
+    if(e instanceof ErroOneDrive && e.tipo==='sem-permissao'){
+      nivelAcessoPasta = 'leitura'; // a API é a autoridade real — a UI se adapta a partir de agora
+      registrarAuditoria('gravacao', nomeArquivo, 'sem-permissao');
+      alert(`⚠️ Sua conta Microsoft não tem mais permissão de edição nesta pasta compartilhada.\n\nSuas alterações continuam aqui na tela, mas não foram gravadas em ${nomeArquivo}.`);
+      render();
+      return false;
+    }
+    registrarAuditoria('gravacao', nomeArquivo, 'falha', e.mensagemAmigavel||e.message);
+    alert(`⚠️ Não foi possível salvar as alterações no arquivo ${nomeArquivo}.\n\nSuas alterações continuam aqui na tela, mas ainda NÃO foram gravadas no arquivo. Tente novamente ou reconecte o arquivo.\n\nDetalhe: `+(e.mensagemAmigavel||e.message));
     return false;
   }
 }
@@ -3229,14 +3402,22 @@ async function initPersistence(){
   STATE.ready = true;
   render();
 }
-/* Único ponto que resolve a pasta do app no OneDrive e carrega (ou detecta a ausência d)os dois
-   arquivos — chamado tanto na inicialização quanto logo após o login. */
+/* Único ponto que localiza a pasta compartilhada, verifica a permissão do usuário autenticado e carrega
+   (ou detecta a ausência d)os dois arquivos — chamado tanto na inicialização quanto logo após o login.
+   Segue exatamente a ordem do requisito (seção 6): autenticação → identificar usuário → localizar pasta
+   compartilhada → verificar permissões → localizar arquivos → carregar .cfg → carregar .log. */
 async function carregarArquivosDoOneDrive(){
   oneDriveIndisponivelMsg = null;
   try{
-    await oneDriveClient.ensureAppFolder();
-    const caminhoCfg = `${ONEDRIVE_CONFIG.pastaApp}/${ONEDRIVE_CONFIG.nomeArquivoCfg}`;
-    const caminhoReg = `${ONEDRIVE_CONFIG.pastaApp}/${ONEDRIVE_CONFIG.nomeArquivoReg}`;
+    await oneDriveClient.localizarPastaCompartilhada();
+    nivelAcessoPasta = await oneDriveClient.verificarPermissaoPasta();
+    await oneDriveClient.ensureBackupsFolder().catch(e=>{
+      // Sem permissão de criar a subpasta de Backups não impede o resto do app — só o backup fica
+      // indisponível para quem só tem leitura (ver renderização condicionada a nivelAcessoPasta).
+      if(!(e instanceof ErroOneDrive && e.tipo==='sem-permissao')) throw e;
+    });
+    const caminhoCfg = ONEDRIVE_CONFIG.nomeArquivoCfg;
+    const caminhoReg = ONEDRIVE_CONFIG.nomeArquivoReg;
     fileHandleCfg = new OneDriveFileHandle(caminhoCfg, ONEDRIVE_CONFIG.nomeArquivoCfg);
     fileHandleReg = new OneDriveFileHandle(caminhoReg, ONEDRIVE_CONFIG.nomeArquivoReg);
     dirHandleBackup = new OneDriveDirectoryHandle(ONEDRIVE_CONFIG.pastaBackups, 'Backups');
@@ -3249,27 +3430,55 @@ async function carregarArquivosDoOneDrive(){
   }
 }
 async function carregarUmArquivoDoOneDrive(tipo){
-  try{ await loadFromHandle(tipo); return 'conectado'; }
+  try{ await loadFromHandle(tipo); dadosDesatualizadosExternos = false; return 'conectado'; }
   catch(e){ registrarErroOneDrive(e); return 'erro'; }
 }
-/* Cria (na pasta do OneDrive) qualquer um dos dois arquivos que ainda não exista — usada tanto pelo botão
-   da tela inicial quanto pelo menu — sem nenhum diálogo de escolha de local: o caminho é sempre o fixado
-   em ONEDRIVE_CONFIG (seção 9 do requisito). */
+/* Cria (na pasta compartilhada do OneDrive) qualquer um dos dois arquivos que ainda não exista — usada
+   tanto pelo botão da tela inicial quanto pelo menu — sem nenhum diálogo de escolha de local: o caminho é
+   sempre o fixado em ONEDRIVE_CONFIG (seção 9 do requisito). Bloqueada para quem só tem permissão de
+   leitura (seção 4 e 6 do requisito: "se possuir somente leitura, informar que não possui permissão"). */
 async function criarArquivosFaltantesNoOneDrive(){
   if(!msalConta){ const ok = await loginOneDrive(); return ok; }
+  if(nivelAcessoPasta==='leitura'){
+    alert('Você tem apenas permissão de leitura nesta pasta compartilhada e não pode criar os arquivos iniciais. Peça ao proprietário para criá-los, ou para conceder permissão de edição à sua conta.');
+    return false;
+  }
   try{
     if(fileStatusCfg==='nao-existe'){ await writeToHandle('cfg'); fileStatusCfg = 'conectado'; }
     if(fileStatusReg==='nao-existe'){ await writeToHandle('reg'); fileStatusReg = 'conectado'; }
     STATE.dirty = false;
     registrarAtualizacaoDados();
+    registrarAuditoria('criar-arquivos-iniciais', `${ONEDRIVE_CONFIG.nomeArquivoCfg}, ${ONEDRIVE_CONFIG.nomeArquivoReg}`, 'sucesso');
     render();
     return true;
   }catch(e){
     registrarErroOneDrive(e);
+    registrarAuditoria('criar-arquivos-iniciais', `${ONEDRIVE_CONFIG.nomeArquivoCfg}, ${ONEDRIVE_CONFIG.nomeArquivoReg}`, 'falha', e.mensagemAmigavel||e.message);
     alert(`⚠️ Não foi possível criar os arquivos no OneDrive.\n\n${e.mensagemAmigavel||e.message}`);
     render();
     return false;
   }
+}
+/* ===================== Auditoria (seção 15 do requisito) =====================
+   Registro leve de operações críticas (backup, restauração, exclusão, alteração de configurações,
+   conflitos de gravação, falhas de autenticação) num arquivo à parte (auditoria.log, formato JSON Lines —
+   uma operação por linha) na pasta compartilhada do OneDrive. NÃO substitui registros.log, que continua
+   sendo o único arquivo de dados financeiros (ver comentário no topo do requisito) — auditoria.log só
+   existe para responder "quem fez o quê e quando" entre os usuários da pasta compartilhada. Identifica o
+   usuário só pelo e-mail/username da conta Microsoft (já seria exposto de qualquer forma pela própria
+   autenticação) — nenhum dado pessoal adicional é guardado.
+   Best-effort: uma falha ao registrar auditoria (ex.: sem permissão de escrita, para quem só tem leitura)
+   NUNCA deve interromper ou reverter a operação real que está sendo auditada — por isso todo erro aqui é
+   só logado no console, nunca propagado. */
+function usuarioAtualLabel(){ return msalConta?.username || msalConta?.name || 'desconhecido'; }
+async function registrarAuditoria(operacao, arquivo, resultado, detalhes){
+  try{
+    if(!oneDriveClient._raiz || nivelAcessoPasta==='leitura') return; // sem pasta resolvida ainda, ou sem permissão de escrever
+    const entrada = { usuario:usuarioAtualLabel(), dataHora:new Date().toISOString(), operacao, arquivo:arquivo||'', resultado, ...(detalhes?{detalhes:String(detalhes)}:{}) };
+    let atual = '';
+    try{ atual = await oneDriveClient.lerTexto(ONEDRIVE_CONFIG.nomeArquivoAuditoria); }catch(e){ /* arquivo ainda não existe — começa vazio */ }
+    await oneDriveClient.escreverTexto(ONEDRIVE_CONFIG.nomeArquivoAuditoria, atual + JSON.stringify(entrada) + '\n');
+  }catch(e){ console.error('Auditoria: falha ao registrar (ignorada)', e); }
 }
 /* Tenta carregar de novo o(s) arquivo(s) que ficaram com erro/token expirado — sem diálogo, sempre contra
    o mesmo caminho fixo no OneDrive. */
@@ -3414,8 +3623,12 @@ function nomeArquivoBackup(tipo){
    configuração). "Conectar" aqui significa apenas garantir que já estamos autenticados e que ela existe. */
 async function conectarPastaBackup(){
   if(!msalConta){ return await loginOneDrive(); }
-  try{ await oneDriveClient.ensureAppFolder(); dirHandleBackup = new OneDriveDirectoryHandle(ONEDRIVE_CONFIG.pastaBackups, 'Backups'); return true; }
-  catch(e){ registrarErroOneDrive(e); return false; }
+  try{
+    await oneDriveClient.localizarPastaCompartilhada();
+    await oneDriveClient.ensureBackupsFolder();
+    dirHandleBackup = new OneDriveDirectoryHandle(ONEDRIVE_CONFIG.pastaBackups, 'Backups');
+    return true;
+  }catch(e){ registrarErroOneDrive(e); return false; }
 }
 async function obterPastaBackup(silencioso){
   if(!dirHandleBackup) dirHandleBackup = new OneDriveDirectoryHandle(ONEDRIVE_CONFIG.pastaBackups, 'Backups');
@@ -3505,6 +3718,8 @@ async function criarBackupNaPasta(tipo, silencioso){
 async function criarBackupManual(){
   ultimoErroBackup = null;
   if(!hasFSAccess){ alert('Integração com o OneDrive não configurada — defina ONEDRIVE_CONFIG.clientId.'); return; }
+  // Usuário só leitura não cria backups (seção 4 do requisito) — mesma proteção real de writeToHandle.
+  if(nivelAcessoPasta==='leitura'){ alert('Sua conta tem apenas permissão de leitura na pasta compartilhada e não pode criar backups.'); return; }
   let dir = await obterPastaBackup(true);
   if(!dir){
     if(!confirm('Nenhuma pasta de Backup conectada ainda.\n\nEscolher (ou criar) uma pasta "Backup" agora para guardar seus backups organizados e versionados?')) return;
@@ -3514,8 +3729,10 @@ async function criarBackupManual(){
   }
   const r = await criarBackupNaPasta('manual', false);
   if(r.ok){
+    registrarAuditoria('criar-backup', r.nome, 'sucesso');
     alert(`✅ Backup criado com sucesso.\n\nData/hora: ${formatarDataHoraCompleta(new Date())}\nArquivo: ${r.nome}\nTamanho: ${formatarTamanhoArquivo(r.tamanho)}\nRegistros: ${STATE.transactions.length}\nIntegridade: ✓ válido (checksum gerado)`);
   }else if(r.motivo==='erro'){
+    registrarAuditoria('criar-backup', null, 'falha', r.erro?.mensagemAmigavel||r.erro?.message||r.erro);
     alert(`Não foi possível criar o backup.\n\nMotivo técnico: ${r.erro?.message || r.erro?.name || r.erro}`);
   }
 }
@@ -3529,11 +3746,33 @@ function formatarTamanhoArquivo(bytes){
    recarrega a tela. Se qualquer etapa falhar, os dados atuais NUNCA são tocados antes da hora. Usada tanto
    pela ação "Restaurar" do histórico quanto por "Importar backup" (arquivo externo). */
 async function restaurarConteudoBackup(texto, origemDescricao){
+  // Restauração exige edição (seção 4 e 12 do requisito: "verificar se o usuário possui permissão de
+  // edição" é o PRIMEIRO passo, antes de qualquer outra coisa).
+  if(nivelAcessoPasta==='leitura'){
+    alert('Sua conta tem apenas permissão de leitura na pasta compartilhada e não pode restaurar backups.');
+    return false;
+  }
   const validacao = await validarConteudoBackup(texto);
   if(!validacao.valido){
     alert(`✕ Este backup está corrompido ou não pôde ser validado. A restauração foi bloqueada para proteger os dados atuais.\n\nMotivo: ${validacao.motivo}`);
     return false;
   }
+  // Seção 12, passo 6: confere se os arquivos atuais ainda têm a mesma versão (ETag) de quando esta sessão
+  // os carregou pela última vez — se outra pessoa alterou nesse meio tempo, cancela e pede nova
+  // sincronização em vez de restaurar por cima de uma alteração que esta sessão nem chegou a ver.
+  try{
+    const [metaCfg, metaReg] = await Promise.all([
+      fileHandleCfg ? oneDriveClient.metadados(ONEDRIVE_CONFIG.nomeArquivoCfg) : null,
+      fileHandleReg ? oneDriveClient.metadados(ONEDRIVE_CONFIG.nomeArquivoReg) : null,
+    ]);
+    const cfgMudou = fileHandleCfg && metaCfg && fileHandleCfg.etag && metaCfg.eTag!==fileHandleCfg.etag;
+    const regMudou = fileHandleReg && metaReg && fileHandleReg.etag && metaReg.eTag!==fileHandleReg.etag;
+    if(cfgMudou || regMudou){
+      alert('✕ Restauração cancelada: os dados no OneDrive foram alterados por outra pessoa desde que esta sessão os carregou pela última vez.\n\nRecarregue os dados atuais (☰ Menu → 🔓 Tentar novamente) antes de tentar restaurar de novo.');
+      registrarAuditoria('restaurar-backup', origemDescricao, 'cancelado-desatualizado');
+      return false;
+    }
+  }catch(e){ /* não foi possível checar a versão atual — segue para a confirmação normal abaixo */ }
   const dataBackupTxt = validacao.meta?.criadoEm ? formatarDataHoraCompleta(new Date(validacao.meta.criadoEm)) : '(data não registrada neste backup)';
   const dataAtualTxt = ultimaAtualizacaoDados ? formatarDataHoraCompleta(ultimaAtualizacaoDados) : '(nenhum dado carregado ainda)';
   const aviso = `Restaurar backup?\n\nBackup selecionado: ${origemDescricao} — ${dataBackupTxt}${validacao.semMetadados?' (backup antigo, sem checagem de integridade por checksum)':''}\n\nOs dados atuais são de ${dataAtualTxt}.\n\nTodas as alterações feitas após essa data deixarão de fazer parte do estado restaurado.\n\nAntes de restaurar, será criado automaticamente um backup de segurança dos dados atuais.`;
@@ -3572,6 +3811,7 @@ async function restaurarConteudoBackup(texto, origemDescricao){
   registrarAtualizacaoDados();
   UI.backupModal = null;
   await salvarArquivos(); // grava imediatamente o resultado restaurado em configuracoes.cfg/registros.log no OneDrive
+  registrarAuditoria('restaurar-backup', origemDescricao, 'sucesso');
   alert('✅ Backup restaurado e já gravado em configuracoes.cfg/registros.log no OneDrive.');
   render();
   return true;
@@ -3599,6 +3839,7 @@ function importarBackupExterno(){
    mais explícita (seção 10: nunca excluir automaticamente sem confirmação), e nunca é permitido excluir o
    único backup válido restante. */
 async function excluirBackupDoHistorico(item, listaCompleta){
+  if(nivelAcessoPasta==='leitura'){ alert('Sua conta tem apenas permissão de leitura na pasta compartilhada e não pode excluir backups.'); return false; }
   const validosRestantes = listaCompleta.filter(b=>b.integro && b.nome!==item.nome);
   if(item.integro && validosRestantes.length===0){
     alert('Este é o único backup válido disponível — não é permitido excluí-lo.');
@@ -3608,8 +3849,8 @@ async function excluirBackupDoHistorico(item, listaCompleta){
   if(!confirm(`Excluir permanentemente o backup "${item.nome}"?${avisoExtra}\n\nEsta ação não pode ser desfeita.`)) return false;
   const dir = await obterPastaBackup(true);
   if(!dir) return false;
-  try{ await dir.removeEntry(item.nome); return true; }
-  catch(e){ alert(`Não foi possível excluir o backup.\n\nMotivo técnico: ${e.message||e}`); return false; }
+  try{ await dir.removeEntry(item.nome); registrarAuditoria('excluir-backup', item.nome, 'sucesso'); return true; }
+  catch(e){ registrarAuditoria('excluir-backup', item.nome, 'falha', e.mensagemAmigavel||e.message); alert(`Não foi possível excluir o backup.\n\nMotivo técnico: ${e.message||e}`); return false; }
 }
 /* Backup automático (seção 3, 11): "ao iniciar" dispara logo depois de clicar em <svg width="13" height="13" viewBox="-0.016 0 0.39 0.39" xmlns="http://www.w3.org/2000/svg"><path d="M.36.21v.001a.2.2 0 0 1-.015.07V.28C.317.345.253.39.179.39S.042.345.015.281V.28A.2.2 0 0 1 0 .211V.21C0 .152.028.1.072.067A.03.03 0 0 1 .095.061a.03.03 0 0 1 .019.012.03.03 0 0 1 .006.022.03.03 0 0 1-.012.02.12.12 0 0 0-.048.096.12.12 0 1 0 .192-.096.03.03 0 0 1-.012-.02.03.03 0 0 1 .006-.022.03.03 0 0 1 .02-.012.03.03 0 0 1 .022.006A.18.18 0 0 1 .36.21M.21.03v.151a.03.03 0 0 1-.06 0V.03q0-.013.009-.021T.18 0c.013-.001.016.003.021.009A.03.03 0 0 1 .21.03"/></svg>️ Iniciar App; "periódico"
    usa um timer; "após alterações" é chamado (com debounce) de dentro de scheduleSave(); "ao fechar" é
@@ -3647,6 +3888,16 @@ async function restaurarBackup(){ await importarBackupExterno(); } // nome antig
 function confirmarFecharComAlteracoes(){
   return new Promise(resolve=>{
     UI.modalFecharSessao = { resolve };
+    render();
+  });
+}
+/* Conflito de gravação por versão desatualizada (ETag — seção 8/9 do requisito multiusuário): resolve com
+   'recarregar' (descarta a alteração local e recarrega os dados atuais do OneDrive) ou 'cancelar' (só
+   cancela esta tentativa de salvar, mantém os dados como estão na tela para o usuário decidir manualmente
+   — nunca sobrescreve automaticamente a versão da outra pessoa). Usado por writeToHandle(). */
+function confirmarConflitoGravacao(tipo){
+  return new Promise(resolve=>{
+    UI.modalConflitoGravacao = { tipo, resolve };
     render();
   });
 }
@@ -5894,6 +6145,7 @@ function render(){
     ${UI.modalDuplicidade!==null ? renderModalDuplicidade() : ""}
     ${UI.aportesModal ? renderModalAportes() : ""}
     ${UI.duplicarMesesModal!==null ? renderDuplicarMesesModal() : ""}
+    ${UI.modalConflitoGravacao ? renderModalConflitoGravacao() : ""}
     ${UI.modalFecharSessao ? renderModalFecharSessao() : ""}
   `;
   bindEvents();
@@ -5934,7 +6186,7 @@ function renderTelaInicial(){
             <h1>Controle Financeiro Familiar</h1>
             <p class="subtitulo">Família Gomes Oliveira</p>
           </div>
-          <p class="hint">${msalConta ? `Conectado como <b>${escapeHtml(msalConta.username||msalConta.name||'')}</b><br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Entre com sua conta Microsoft para acessar seus dados no OneDrive.'}</p>
+          <p class="hint">${msalConta ? `Conectado como <b>${escapeHtml(msalConta.username||msalConta.name||'')}</b>${nivelAcessoPasta==='leitura'?' · <b>👁️ somente leitura</b>':(nivelAcessoPasta==='edicao'?' · <b>✏️ edição</b>':'')}<br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Entre com sua conta Microsoft para acessar seus dados no OneDrive.'}</p>
         </div>
       </div>
       ${!hasFSAccess ? `<div class="banner" style="text-align:left;margin-bottom:20px;">⚠️ Integração com o OneDrive ainda não configurada neste app. Defina <code>ONEDRIVE_CONFIG.clientId</code> no início do index.html com o ID do aplicativo do seu App Registration no Microsoft Entra ID (ver instruções no comentário do código-fonte).</div>` : ''}
@@ -5948,12 +6200,18 @@ function renderTelaInicial(){
             ? `<button class="btn btn-ghost" id="tiSairMicrosoft">🔌 Sair da conta Microsoft</button>`
             : `<button class="btn btn-gold" id="tiEntrarMicrosoft" ${!hasFSAccess?'disabled':''}>☁️ Entrar com a Microsoft</button>`}
         </div>
-        ${msalConta && faltamCriar ? `
+        ${msalConta && faltamCriar && nivelAcessoPasta!=='leitura' ? `
         <div class="ti-opcao">
           <div class="ti-opcao-icone">➕</div>
           <div class="ti-opcao-titulo">Criar arquivos no OneDrive</div>
           <div class="ti-opcao-desc">Os arquivos <b>configuracoes.cfg</b> e/ou <b>registros.log</b> ainda não existem em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>. Crie-os (vazios) para começar um controle financeiro novo.</div>
           <button class="btn btn-primary" id="tiCriarArquivos">➕ Criar arquivos no OneDrive</button>
+        </div>` : ''}
+        ${msalConta && faltamCriar && nivelAcessoPasta==='leitura' ? `
+        <div class="ti-opcao">
+          <div class="ti-opcao-icone">👁️</div>
+          <div class="ti-opcao-titulo">Somente leitura</div>
+          <div class="ti-opcao-desc">Os arquivos ainda não existem em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b> e sua conta tem apenas permissão de leitura nesta pasta — você não pode criá-los. Peça ao proprietário para criá-los, ou para conceder permissão de edição à sua conta.</div>
         </div>` : ''}
         ${msalConta && comErro ? `
         <div class="ti-opcao">
@@ -5967,7 +6225,7 @@ function renderTelaInicial(){
           <div class="ti-opcao-titulo">Tenho um backup</div>
           <div class="ti-opcao-desc">Restaure um backup <b>.bkp</b> salvo no OneDrive, ou importe um arquivo <b>.bkp</b> de fora do OneDrive.</div>
           <div class="ti-backup-acoes">
-            <button class="btn btn-backup-restaurar" id="tiRestaurarBackup" ${!hasFSAccess?'disabled':''}><svg width="13" height="13" viewBox="0 0 0.26 0.26" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" fill-rule="evenodd" d="M.228.146a.016.016 0 0 1 .016.016v.049a.033.033 0 0 1-.033.033H.049A.033.033 0 0 1 .016.211V.162a.016.016 0 0 1 .033 0v.049h.163V.162A.016.016 0 0 1 .228.146M.13.016a.016.016 0 0 1 .016.016v.075L.167.086A.016.016 0 1 1 .19.109l-.06.06-.06-.06A.016.016 0 0 1 .093.086l.021.021V.033A.016.016 0 0 1 .13.017"/></svg> Importar backup (.bkp)</button>
+            ${nivelAcessoPasta!=='leitura' ? `<button class="btn btn-backup-restaurar" id="tiRestaurarBackup" ${!hasFSAccess?'disabled':''}><svg width="13" height="13" viewBox="0 0 0.26 0.26" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" fill-rule="evenodd" d="M.228.146a.016.016 0 0 1 .016.016v.049a.033.033 0 0 1-.033.033H.049A.033.033 0 0 1 .016.211V.162a.016.016 0 0 1 .033 0v.049h.163V.162A.016.016 0 0 1 .228.146M.13.016a.016.016 0 0 1 .016.016v.075L.167.086A.016.016 0 1 1 .19.109l-.06.06-.06-.06A.016.016 0 0 1 .093.086l.021.021V.033A.016.016 0 0 1 .13.017"/></svg> Importar backup (.bkp)</button>` : ''}
             ${(hasFSAccess && msalConta) ? `<button type="button" class="btn btn-backup-historico" id="tiVerHistoricoBackups"><svg width="11" height="11" viewBox="0 0 0.206 0.206" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M.035.17.04.166zm.014.015v.007h.007V.185zm.048.014V.192L.096.206zM.103.103H.096l.002.005zm.09 0a.09.09 0 0 1-.09.09v.014A.1.1 0 0 0 .206.103zM.103.014a.09.09 0 0 1 .09.09h.014A.1.1 0 0 0 .103 0zm0-.014A.1.1 0 0 0 0 .103h.014A.09.09 0 0 1 .103.014zM.039.166A.1.1 0 0 1 .014.103H0a.1.1 0 0 0 .03.072zm-.01.009L.042.19l.01-.009L.039.166zm.074.018H.096v.013h.008zm0 0H.096v.013h.007zM.096.041v.062H.11V.041zm.002.067.041.041.01-.01L.108.098zM0 .193h.048V.179H0zM.055.186V.138H.041v.048z" fill="#000"/></svg> Ver histórico de backups (OneDrive)</button>` : ''}
           </div>
         </div>
@@ -5999,6 +6257,29 @@ function renderModalFecharSessao(){
         <button class="btn btn-ghost" id="fsCancelar">Cancelar</button>
         <button class="btn btn-danger" id="fsFecharSemSalvar">Fechar sem salvar</button>
         <button class="btn btn-primary" id="fsSalvarEFechar">💾 Salvar e fechar</button>
+      </div>
+    </div>
+  </div>`;
+}
+/* Conflito de versão (ETag) ao tentar gravar — seções 8 e 9 do requisito multiusuário: outro usuário
+   alterou o mesmo arquivo desde a última leitura desta sessão. Nunca oferece "salvar por cima mesmo
+   assim" — só recarregar a versão atual (perdendo a alteração local não salva) ou cancelar e decidir
+   depois manualmente, exatamente como pede a seção 9 do requisito ("nunca utilizar automaticamente a
+   estratégia última gravação vence"). */
+function renderModalConflitoGravacao(){
+  const nomeArquivo = UI.modalConflitoGravacao.tipo==='reg' ? 'registros.log' : 'configuracoes.cfg';
+  return `
+  <div class="overlay" id="ovConflitoGravacao" ${attrZIndexModal('modalConflitoGravacao')}>
+    <div class="modal" style="width:480px;">
+      <div class="modal-head"><h3>⚠️ Alterações de outro usuário</h3></div>
+      <div class="modal-body">
+        <p style="margin-top:0;">O arquivo <b>${nomeArquivo}</b> foi alterado por outra pessoa (ou outra sessão sua) enquanto você editava, e a sua gravação foi recusada para não sobrescrever essa alteração.</p>
+        <p><b>🔄 Recarregar dados atuais</b> — busca a versão mais recente do OneDrive; sua alteração pendente nesta tela será perdida.</p>
+        <p><b>✖ Cancelar minha alteração</b> — mantém o que está na tela por enquanto, sem salvar; revise antes de tentar de novo.</p>
+      </div>
+      <div class="modal-foot" style="flex-wrap:wrap;">
+        <button class="btn btn-ghost" id="cgCancelar">✖ Cancelar minha alteração</button>
+        <button class="btn btn-primary" id="cgRecarregar">🔄 Recarregar dados atuais</button>
       </div>
     </div>
   </div>`;
@@ -6035,14 +6316,15 @@ function renderHeader(){
         <div class="menu-arquivo-painel">
           ${hasFSAccess ? `
           ${(fileStatusCfg==='erro' || fileStatusReg==='erro' || fileStatusCfg==='token-expirado' || fileStatusReg==='token-expirado') ? `<button type="button" id="maReconectarPacote">🔓 Tentar novamente</button>` : ''}
-          <button type="button" id="maSalvar">💾 Salvar</button>
+          ${nivelAcessoPasta!=='leitura' ? `<button type="button" id="maSalvar">💾 Salvar</button>` : ''}
           <hr>
-          <button type="button" id="maBackup">📦 Criar backup agora</button>
-          <button type="button" id="maBackupRestauracao">☁️ Backup e Restauração</button>
-          <button type="button" id="maImportarBackup">📤️ Importar backup (.bkp)</button>
+          ${nivelAcessoPasta!=='leitura' ? `<button type="button" id="maBackup">📦 Criar backup agora</button>` : ''}
+          <button type="button" id="maBackupRestauracao">☁️ Backup e Restauração${nivelAcessoPasta==='leitura'?' (consultar)':''}</button>
+          ${nivelAcessoPasta!=='leitura' ? `<button type="button" id="maImportarBackup">📤️ Importar backup (.bkp)</button>` : ''}
           <button type="button" id="btnExportCSVPacote">⬇️ Baixar cópia local (.cfg + .log)</button>
           <hr>
           <button type="button" id="maFecharApp">🚪 Fechar aplicação</button>
+          <button type="button" id="maTrocarConta">🔀 Trocar de conta Microsoft</button>
           <button type="button" id="maDesconectar">🔌 Sair da conta Microsoft</button>
           ` : `
           <button type="button" id="btnExportCSVPacote">⬇️ Exportar pacote (.cfg + .log)</button>
@@ -6100,6 +6382,8 @@ function renderFileBanner(){
   if(fileStatusReg==='sem-suporte' || fileStatusCfg==='sem-suporte'){
     partes.push(`⚠️ Integração com o OneDrive não configurada (ONEDRIVE_CONFIG.clientId).`);
   }
+  if(nivelAcessoPasta==='leitura') partes.push(`👁️ <b>Modo somente leitura</b> — sua conta tem permissão de visualização nesta pasta compartilhada. Você pode consultar dados, lançamentos, histórico e backups, mas alterações, exclusões e novos backups não podem ser salvos.`);
+  if(dadosDesatualizadosExternos) partes.push(`🔄 <b>Os dados no OneDrive foram atualizados por outra pessoa</b> desde que esta sessão os carregou. Use <b>☰ Menu → 🔓 Tentar novamente</b> quando quiser atualizar (suas alterações pendentes aqui na tela não são perdidas até você recarregar).`);
   if(fileStatusReg==='token-expirado' || fileStatusCfg==='token-expirado') partes.push(`Sua sessão com a Microsoft expirou. Use <b>☰ Menu → 🔓 Tentar novamente</b> ou entre com a Microsoft de novo.`);
   if(fileStatusReg==='erro') partes.push(`⚠️ <b>Não foi possível acessar registros.log no OneDrive</b> agora${oneDriveIndisponivelMsg?`: ${escapeHtml(oneDriveIndisponivelMsg)}`:''}. Nada foi sobrescrito para proteger seus dados. Use <b>☰ Menu → 🔓 Tentar novamente</b>.`);
   if(fileStatusCfg==='erro') partes.push(`⚠️ <b>Não foi possível acessar configuracoes.cfg no OneDrive</b> agora${oneDriveIndisponivelMsg?`: ${escapeHtml(oneDriveIndisponivelMsg)}`:''}. Nada foi sobrescrito para proteger seus dados. Use <b>☰ Menu → 🔓 Tentar novamente</b>.`);
@@ -9003,12 +9287,12 @@ function renderBackupModal(){
         </div>
         <div class="info-card" style="margin-top:0;">
           <span class="info-card-icon">☁️</span>
-          <span>Pasta de Backup (OneDrive): <b>${escapeHtml(ONEDRIVE_CONFIG.pastaBackups)}</b></span>
+          <span>Pasta de Backup (OneDrive): <b>${escapeHtml(ONEDRIVE_CONFIG.pastaApp)}/${escapeHtml(ONEDRIVE_CONFIG.pastaBackups)}</b></span>
         </div>
 
         ${m.aba==='historico' ? `
         <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;">
-          <button type="button" class="btn btn-primary btn-sm" id="btnCriarBackupAgoraModal">🗄️ Criar backup agora</button>
+          ${nivelAcessoPasta!=='leitura' ? `<button type="button" class="btn btn-primary btn-sm" id="btnCriarBackupAgoraModal">🗄️ Criar backup agora</button>` : `<span></span>`}
           <button type="button" class="btn btn-ghost btn-sm" id="btnAtualizarListaBackup">↻ Atualizar lista</button>
         </div>
         ${m.carregando ? `<div class="empty-state"><div class="big">⏳</div>Lendo backups...</div>` :
@@ -9025,8 +9309,10 @@ function renderBackupModal(){
               <td style="text-align:right;">${b.qtdTransacoes ?? '—'}</td>
               <td style="text-align:center;" title="${escapeHtml(b.motivoInvalido||'')}">${b.integro ? (b.semMetadados?'⚠ Sem checksum':'✓ Válido') : '✕ Inválido'}</td>
               <td style="white-space:nowrap;text-align:right;">
+                ${nivelAcessoPasta!=='leitura' ? `
                 <button type="button" class="btn btn-primary btn-sm" data-restaurar-backup="${escapeHtml(b.nome)}" ${!b.integro?'disabled title="Backup inválido — restauração bloqueada"':''}>Restaurar</button>
                 <button type="button" class="icon-btn" data-excluir-backup="${escapeHtml(b.nome)}" title="Excluir">🗑️</button>
+                ` : ''}
               </td>
             </tr>`).join('')}
           </tbody>
@@ -10342,6 +10628,7 @@ function bindEvents(){
   document.getElementById('maBackupRestauracao')?.addEventListener('click', async ()=>{ UI.menuArquivoAberto=false; await abrirBackupModal(); });
   document.getElementById('maImportarBackup')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; importarBackupExterno(); });
   document.getElementById('maFecharApp')?.addEventListener('click', ()=> fecharAppVoltarTelaInicial());
+  document.getElementById('maTrocarConta')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; loginOneDrive(); });
   document.getElementById('maDesconectar')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; desconectarArquivos(); });
   // Tela inicial (sessão zerada)
   document.getElementById('tiEntrarMicrosoft')?.addEventListener('click', ()=>loginOneDrive());
@@ -10360,6 +10647,13 @@ function bindEvents(){
   });
   document.getElementById('fsSalvarEFechar')?.addEventListener('click', ()=>{
     const { resolve } = UI.modalFecharSessao; UI.modalFecharSessao = null; render(); resolve('salvar');
+  });
+  // Conflito de versão (ETag) ao gravar — outro usuário alterou o mesmo arquivo (seção 8/9 do requisito)
+  document.getElementById('cgCancelar')?.addEventListener('click', ()=>{
+    const { resolve } = UI.modalConflitoGravacao; UI.modalConflitoGravacao = null; render(); resolve('cancelar');
+  });
+  document.getElementById('cgRecarregar')?.addEventListener('click', ()=>{
+    const { resolve } = UI.modalConflitoGravacao; UI.modalConflitoGravacao = null; render(); resolve('recarregar');
   });
 
   function aplicarBuscaRegistros(){ UI.regFiltro = document.getElementById('regBusca')?.value || ''; UI.regPagina=1; render(); }

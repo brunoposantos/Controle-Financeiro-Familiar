@@ -34,15 +34,46 @@ Por padrão, os arquivos ficam em `OneDrive/Controle Financeiro Familiar/` (e os
 e `ONEDRIVE_CONFIG.pastaBackups` (ponto único de configuração, sem caminhos espalhados pelo
 código).
 
-## Uso
+## Uso multiusuário (pasta compartilhada)
+
+A aplicação foi feita para ser usada por mais de uma pessoa da família, cada uma com a **sua
+própria conta Microsoft** — nunca com a senha ou o token de outra pessoa. Os arquivos continuam
+morando só no OneDrive do proprietário; ninguém mais tem uma cópia própria.
+
+1. O **proprietário** cria a pasta `Controle Financeiro Familiar` no seu OneDrive (a própria
+   aplicação cria automaticamente no primeiro uso, se ainda não existir).
+2. No OneDrive, o proprietário clica com o botão direito na pasta → **Compartilhar**, escolhe
+   **"Pode editar"** ou **"Pode exibir"** para cada pessoa da família (conforme o nível de acesso
+   desejado — ver seção seguinte) e copia o link gerado.
+3. Cole esse link em `ONEDRIVE_CONFIG.pastaCompartilhadaLink` no `index.html` (ou defina
+   `window.ONEDRIVE_SHARE_LINK` antes de carregar a página, se preferir configurar por
+   ambiente/hospedagem sem editar o arquivo). **Sem esse link**, cada pessoa só enxerga a pasta na
+   própria conta — funciona para o proprietário testar sozinho, mas não é multiusuário de verdade.
+4. Cada pessoa da família abre a mesma URL da aplicação e entra com a **própria** conta Microsoft.
+   A aplicação localiza a pasta compartilhada automaticamente (via Microsoft Graph, não por um
+   caminho fixo) e verifica a permissão de cada uma:
+   - **Pode editar** → cria/altera/exclui lançamentos, atualiza configurações, cria e restaura
+     backups.
+   - **Pode exibir** → só consulta dados, histórico e backups; a interface indica "somente
+     leitura" e a própria API do Graph recusa qualquer tentativa de gravação (a proteção não
+     depende só da interface esconder botões).
+
+## Uso (fluxo geral)
 
 1. Hospede o `index.html` em qualquer servidor estático (ele é 100% client-side).
 2. Abra a URL — a aplicação pede login com a conta Microsoft (OAuth2, via redirecionamento).
-3. Após autenticar, ela verifica automaticamente se `configuracoes.cfg` e `registros.log` já
-   existem na pasta configurada do OneDrive:
+3. Após autenticar, ela localiza a pasta compartilhada, verifica a permissão da conta e checa se
+   `configuracoes.cfg` e `registros.log` já existem:
    - Se existirem, carrega os dados automaticamente.
-   - Se não existirem, oferece criá-los (vazios) para começar um controle financeiro novo.
+   - Se não existirem e a conta tem permissão de edição, oferece criá-los (vazios).
+   - Se não existirem e a conta só tem leitura, informa que não é possível criá-los.
 4. Toda alteração feita no app é gravada de volta nos mesmos arquivos no OneDrive (botão
-   **Salvar**, ou automaticamente ao restaurar um backup).
+   **Salvar**, ou automaticamente ao restaurar um backup) usando controle de concorrência otimista
+   por ETag (`If-Match`) — se outra pessoa gravou uma versão mais nova nesse meio-tempo, a
+   gravação é recusada e a aplicação oferece recarregar os dados atuais ou cancelar, nunca
+   sobrescreve silenciosamente.
 5. Backups (`.bkp`, com carimbo de data/hora) são criados, listados e restaurados diretamente da
    pasta `Backups` no OneDrive — sem nenhum download/upload manual como mecanismo principal.
+6. Um arquivo `auditoria.log` (JSON Lines) registra operações críticas (criação/restauração/
+   exclusão de backup, conflitos de gravação) com usuário, data/hora e resultado — não substitui
+   `registros.log`, que continua sendo o único arquivo de dados financeiros.
