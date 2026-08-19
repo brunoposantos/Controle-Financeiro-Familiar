@@ -468,6 +468,32 @@ table{width:100%;border-collapse:collapse;font-size:11px;}
 .tabela-fluxo th{padding:6px 8px;}
 .tabela-fluxo td:nth-child(2){overflow-wrap:break-word;word-break:break-word;}
 .tabela-fluxo .icon-btn{padding:2px;font-size:12px;}
+/* Fluxo de Caixa no mobile (item 13 do requisito de responsividade): a mesma tabela vira uma lista
+   vertical de cards — cada <tr> um card, cada <td> uma linha "rótulo: valor" — sem tocar no cálculo da
+   projeção nem duplicar a lógica de renderPainelProjecao/renderLinhaProjecao, só a apresentação. A linha
+   "Saldo do dia atual" continua destacada e na posição calculada dinamicamente pelo mês corrente. */
+@media(max-width:700px){
+  .tabela-fluxo{min-width:0;width:100%;display:block;}
+  .tabela-fluxo thead{display:none;}
+  .tabela-fluxo tbody{display:block;}
+  .tabela-fluxo tr{
+    display:block;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);
+    padding:8px 12px;margin-bottom:8px;
+  }
+  .tabela-fluxo tr.linha-saldo-atual{border-color:var(--gold);border-width:2px;}
+  .tabela-fluxo td{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;font-size:13px;
+    border-bottom:1px solid var(--navy-50);
+  }
+  .tabela-fluxo td:last-child{border-bottom:none;}
+  .tabela-fluxo td[data-label]:not([data-label=""])::before{
+    content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
+    color:#8393ac;flex-shrink:0;
+  }
+  .tabela-fluxo td.tabela-fluxo-acoes{justify-content:flex-end;gap:14px;}
+  .tabela-fluxo td.tabela-fluxo-acoes .icon-btn{min-width:var(--touch-min);min-height:var(--touch-min);font-size:16px;}
+  .tabela-fluxo .linha-saldo-atual-label{display:block;padding:5px 0;font-weight:700;}
+}
 thead th{
   text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.3px;text-transform:uppercase;
   color:#fff;background:var(--navy-800);padding:9px 10px;position:sticky;top:0;
@@ -790,7 +816,9 @@ tbody tr:hover{background:var(--navy-50);}
 @media(max-width:700px){
   .overlay{padding:0;align-items:flex-end;}
   .modal{
-    width:100%;max-width:100vw;height:100%;max-height:100dvh;border-radius:0;
+    /* !important necessário: muitos modais definem width inline (ex.: style="width:480px") — sem isso,
+       o estilo inline vence a regra da media query e o modal fica estreito no mobile em vez de tela cheia. */
+    width:100%!important;max-width:100vw!important;height:100%!important;max-height:100dvh!important;border-radius:0;
     display:flex;flex-direction:column;resize:none;
   }
   .modal-head{border-radius:0;flex-shrink:0;}
@@ -991,6 +1019,46 @@ summary::marker{content:'';}
 .aportes-subcategoria-bloco{margin:6px 0 0 10px;}
 .aportes-subcategoria-cabecalho{display:flex;justify-content:space-between;background:var(--navy-50,#eef2f9);padding:4px 10px;font-size:12px;font-weight:600;color:#4a5468;border-radius:4px;}
 .aportes-tabela-itens{width:100%;font-size:12px;border-collapse:collapse;}
+/* Classe genérica reutilizável para transformar qualquer tabela em cards empilhados no mobile (mesma
+   técnica já usada em Fluxo de Caixa/Cartões/Economias) — usar quando a tabela não tem nenhum estilo
+   bespoke próprio que já resolva isso. Cada <td> precisa de um atributo data-label. */
+.tabela-cards-mobile{width:100%;}
+@media(max-width:700px){
+  .tabela-cards-mobile{display:block;}
+  .tabela-cards-mobile thead{display:none;}
+  .tabela-cards-mobile tbody{display:block;}
+  .tabela-cards-mobile > tbody > tr{
+    display:block;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);
+    padding:8px 12px;margin-bottom:8px;
+  }
+  .tabela-cards-mobile td{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;font-size:13px;
+    border-bottom:1px solid var(--navy-50);text-align:left!important;white-space:normal!important;
+  }
+  .tabela-cards-mobile td:last-child{border-bottom:none;}
+  .tabela-cards-mobile td[data-label]:not([data-label=""])::before{
+    content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
+    color:#8393ac;flex-shrink:0;
+  }
+  .tabela-cards-mobile td[colspan]{display:block;border-bottom:none;padding:8px 0 0;}
+  /* Células com conteúdo em mais de uma linha (ex.: valor + faixa provável abaixo, via <br>) não cabem
+     lado a lado com o rótulo em flex-row sem estourar a largura — empilha rótulo acima do valor em vez de
+     lado a lado, preservando a quebra de linha interna da célula. */
+  .tabela-cards-mobile td.val-cell{display:block;text-align:right!important;}
+  .tabela-cards-mobile td.val-cell[data-label]:not([data-label=""])::before{display:block;text-align:left;margin-bottom:2px;}
+}
+/* Economias — modal "Aportes" no mobile (item 16 do requisito de responsividade): a hierarquia
+   Categoria → Subcategoria já é uma lista, não uma tabela; só a tabela de lançamentos de cada subcategoria
+   vira cards empilhados, sem rolagem horizontal. */
+@media(max-width:700px){
+  .aportes-tabela-itens{display:block;}
+  .aportes-tabela-itens tbody{display:block;}
+  .aportes-tabela-itens tr{display:block;padding:6px 4px;border-bottom:1px solid var(--line);}
+  .aportes-tabela-itens td{display:flex;justify-content:space-between;gap:8px;padding:2px 0;white-space:normal!important;}
+  .aportes-tabela-itens td[data-label]::before{
+    content:attr(data-label);font-size:10.5px;font-weight:600;text-transform:uppercase;color:#8393ac;flex-shrink:0;
+  }
+}
 .aportes-tabela-itens td{padding:4px 10px;border-bottom:1px solid var(--line);}
 .contas-financeiras-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;}
 .conta-financeira-card{
@@ -1086,6 +1154,31 @@ summary::marker{content:'';}
   opacity:0;transform:translateX(-3px);transition:opacity .15s ease,transform .15s ease;margin-left:0;vertical-align:middle;flex-shrink:0;
 }
 .linha-fatura:hover .edit-data-icon,.col-data-editavel:focus-within .edit-data-icon{opacity:1;transform:translateX(0);}
+/* Cartões no mobile (item 15 do requisito de responsividade): mesma técnica de card já usada no Fluxo de
+   Caixa — cada <tr> vira um card, sem depender de hover para revelar o ícone de editar (item 25: ações
+   nunca dependentes de hover em touch) nem duplicar a lógica de cálculo das faturas. */
+@media(max-width:700px){
+  .tabela-cartoes{min-width:0;width:100%;display:block;}
+  .tabela-cartoes thead{display:none;}
+  .tabela-cartoes tbody{display:block;}
+  .tabela-cartoes tr{
+    display:block;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);
+    padding:10px 14px;margin-bottom:10px;
+  }
+  .tabela-cartoes td{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;
+    border-bottom:1px solid var(--navy-50);text-align:left!important;
+  }
+  .tabela-cartoes td:last-child{border-bottom:none;}
+  .tabela-cartoes td[data-label]:not([data-label=""])::before{
+    content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
+    color:#8393ac;flex-shrink:0;
+  }
+  .tabela-cartoes td.col-importar-cartao{justify-content:flex-end;}
+  .tabela-cartoes .data-editavel-linha{justify-content:flex-end;}
+  .tabela-cartoes .edit-data-icon{opacity:1!important;transform:none!important;min-width:var(--touch-min);min-height:var(--touch-min);}
+  .tabela-cartoes .status-col{align-items:flex-end;}
+}
 .status-col{display:flex;flex-direction:column;gap:5px;align-items:center;}
 .status-pill-novo{
   border:none;border-radius:999px;padding:5px 12px;font-size:11.5px;font-weight:700;cursor:default;
@@ -5833,10 +5926,10 @@ function renderModalAportes(){
                   <div class="aportes-subcategoria-cabecalho"><span>${escapeHtml(subcategoria)}</span><span>${fmtBRL(totalSub)}</span></div>
                   <table class="aportes-tabela-itens"><tbody>
                     ${txsSub.map(t=>`<tr${txInPeriod(t,ano,mes) ? ' style="background:var(--navy-50);"' : ''}>
-                      <td style="white-space:nowrap;">${fmtData(t.data)}</td>
-                      <td>${escapeHtml(t.descricao)}</td>
-                      <td>${escapeHtml(t.conta)}</td>
-                      <td class="val-cell pos" style="text-align:right;">${fmtBRL(t.valor)}</td>
+                      <td data-label="Data" style="white-space:nowrap;">${fmtData(t.data)}</td>
+                      <td data-label="Descrição">${escapeHtml(t.descricao)}</td>
+                      <td data-label="Conta">${escapeHtml(t.conta)}</td>
+                      <td data-label="Valor" class="val-cell pos" style="text-align:right;">${fmtBRL(t.valor)}</td>
                     </tr>`).join('')}
                   </tbody></table>
                 </div>`;
@@ -8034,7 +8127,7 @@ function renderCartoes(){
         const progresso = (st.chave!=='paga' && st.chave!=='proxima' && st.chave!=='fechada-sem-lancamentos') ? progressoAteVencimento(st) : null;
         const infoPagamento = st.chave==='paga' ? (st.pagamento==='parcial' ? 'Parcialmente' : 'Totalmente') : (st.chave==='fechada-sem-lancamentos' ? 'Sem lançamentos' : null);
         return `<tr class="linha-fatura ${st.chave}">
-          <td>
+          <td data-label="">
             <div class="cartao-col">
               <span class="faixa-cartao" style="background:${corCartao(c)};"></span>
               ${logoInstituicaoCartaoHtml(c)}
@@ -8048,12 +8141,12 @@ function renderCartoes(){
               </div>
             </div>
           </td>
-          <td style="text-align:center;">
+          <td data-label="" class="col-importar-cartao" style="text-align:center;">
             <button type="button" class="icon-btn" data-importar-conta="${escapeHtml(c)}" title="Importar arquivo do banco" aria-label="Importar arquivo do banco">📥</button>
           </td>
-          <td class="val-cell ${v===0?'valor-zero':'valor-destaque'}" style="text-align:right;">${fmtBRL(v)}<button type="button" class="icon-btn btn-projecao" data-ver-fatura="${escapeHtml(c)}" title="Ver fatura">👁</button>
+          <td data-label="Valor da fatura" class="val-cell ${v===0?'valor-zero':'valor-destaque'}" style="text-align:right;">${fmtBRL(v)}<button type="button" class="icon-btn btn-projecao" data-ver-fatura="${escapeHtml(c)}" title="Ver fatura">👁</button>
           </td>
-          <td style="text-align:center;" class="col-data-editavel">
+          <td data-label="Fechamento" style="text-align:center;" class="col-data-editavel">
             <div class="data-editavel-linha">
               <div class="data-editavel-valor">
                 <span>${fechData||'<span class="hint">—</span>'}</span>
@@ -8062,7 +8155,7 @@ function renderCartoes(){
               <button type="button" class="icon-btn edit-data-icon" data-edit-fatura="${escapeHtml(c)}|${competencia}" title="Ajustar data de fechamento desta fatura">✏️</button>
             </div>
           </td>
-          <td style="text-align:center;" class="col-data-editavel">
+          <td data-label="Vencimento" style="text-align:center;" class="col-data-editavel">
             <div class="data-editavel-linha">
               <div class="data-editavel-valor">
                 <span>${vencData||'<span class="hint">—</span>'}</span>
@@ -8071,14 +8164,14 @@ function renderCartoes(){
               <button type="button" class="icon-btn edit-data-icon" data-edit-fatura="${escapeHtml(c)}|${competencia}" title="Ajustar data de vencimento desta fatura">✏️</button>
             </div>
           </td>
-          <td style="text-align:center;">
+          <td data-label="Status" style="text-align:center;">
             <div class="status-col">
               <span class="status-pill-novo ${st.chave}" title="${escapeHtml(tituloStatusFatura(st))}">${st.emoji} ${st.label}</span>
               ${progresso!==null ? `<div class="status-progresso" title="${escapeHtml(tooltipProgressoFatura(st))}"><div class="progress-track"><div class="progress-fill" style="width:${(progresso*100).toFixed(0)}%;background:${COR_STATUS_FATURA[st.chave]};"></div></div></div>` : ''}
               ${infoPagamento ? `<div class="status-pagamento-info" title="${escapeHtml(tituloStatusFatura(st))}">${infoPagamento}</div>` : ''}
             </div>
           </td>
-          <td style="text-align:right;">
+          <td data-label="Parcelado em aberto" style="text-align:right;">
             ${detalheParcelado.valor>0 ? `
             <div class="val-cell valor-destaque">${fmtBRL(detalheParcelado.valor)}<button type="button" class="icon-btn btn-projecao" data-projecao-cartao="${escapeHtml(c)}" title="Ver próximas faturas">👁</button>
 </div>
@@ -8497,14 +8590,14 @@ function renderLinhaProjecao(l){
   const tagTipo = l.tipo==='Receita' ? 'Receita' : 'Despesa';
   return `
     <tr data-proj-id="${l.id}">
-      <td style="text-align:center;font-family:var(--mono);">${pad2(l.dia)}</td>
-      <td>${escapeHtml(l.descricao)}${l.cartao ? ' 💳' : ''}</td>
-      <td><span class="tag ${tagTipo}">${tagTipo}</span></td>
-      <td class="val-cell ${l.tipo==='Despesa'?'neg':'pos'}" style="text-align:right;">
+      <td data-label="Dia" style="text-align:center;font-family:var(--mono);">${pad2(l.dia)}</td>
+      <td data-label="Descrição">${escapeHtml(l.descricao)}${l.cartao ? ' 💳' : ''}</td>
+      <td data-label="Tipo"><span class="tag ${tagTipo}">${tagTipo}</span></td>
+      <td data-label="Valor" class="val-cell ${l.tipo==='Despesa'?'neg':'pos'}" style="text-align:right;">
         ${l.cartao ? `<span title="Calculado automaticamente pelo total atual da fatura deste cartão no mês">${fmtBRL(l.valorCalculado)}</span>` : fmtBRL(l.valor)}
       </td>
-      <td class="val-cell saldo-destaque" style="text-align:right;">${fmtBRL(l.saldo)}</td>
-      <td style="white-space:nowrap;">
+      <td data-label="Saldo" class="val-cell saldo-destaque" style="text-align:right;">${fmtBRL(l.saldo)}</td>
+      <td data-label="" class="tabela-fluxo-acoes" style="white-space:nowrap;">
         <button class="icon-btn" data-proj-edit="${l.id}" data-proj-mes="${l.competencia}" title="Editar dia, descrição, tipo, valor ou cartão vinculado">✏️</button>
         <button class="icon-btn" data-proj-del="${l.id}" title="Remover lançamento">🗑️</button>
       </td>
@@ -8516,10 +8609,10 @@ function renderLinhaProjecao(l){
 function renderLinhaSaldoAtual(l){
   return `
     <tr class="linha-saldo-atual" data-saldo-atual="1">
-      <td style="text-align:center;font-family:var(--mono);">${pad2(l.dia)}</td>
+      <td data-label="Dia" style="text-align:center;font-family:var(--mono);">${pad2(l.dia)}</td>
       <td colspan="3" class="linha-saldo-atual-label">📍 Saldo do dia atual</td>
-      <td class="val-cell saldo-destaque" style="text-align:right;">${fmtBRL(l.saldo)}</td>
-      <td></td>
+      <td data-label="Saldo" class="val-cell saldo-destaque" style="text-align:right;">${fmtBRL(l.saldo)}</td>
+      <td data-label=""></td>
     </tr>`;
 }
 /* Um painel/mês da projeção, replicando exatamente a mesma estrutura de tabela. O 1º painel (idx 0) é o
@@ -8771,15 +8864,15 @@ function renderInteligencia(){
           <div style="margin-top:4px;"><b>Faixa provável:</b> ${fmtBRL(ult.faixaInferior)} a ${fmtBRL(ult.faixaSuperior)}</div>
         </div>
       </div>`; })() : ''}
-      <div class="table-wrap" style="max-height:none;"><table>
+      <div class="table-wrap" style="max-height:none;"><table class="tabela-cards-mobile">
         <thead><tr><th>Mês</th><th style="text-align:right;">Receita Prevista</th><th style="text-align:right;">Despesa Prevista</th><th style="text-align:right;">Saldo Previsto</th><th style="text-align:right;">Poupança</th></tr></thead>
         <tbody>
           ${ctx.projecoes.map(p=>`<tr style="${p.risco==='alto'?'background:#fbe4e1;':(p.risco==='medio'?'background:#fdf3d8;':'')}">
-            <td>${MESES[p.mes-1]}/${p.ano} ${p.risco==='alto'?'🔴':(p.risco==='medio'?'🟡':'')}</td>
-            <td style="text-align:right;">${fmtBRL(p.receitaProjetada)}</td>
-            <td style="text-align:right;">${fmtBRL(p.despesaProjetada)}</td>
-            <td class="val-cell ${p.saldoProjetado>=0?'pos':'neg'}" style="text-align:right;">${fmtBRL(p.saldoProjetado)}<br><span class="hint" style="margin:0;font-weight:400;">${fmtBRL(p.faixaInferior)} a ${fmtBRL(p.faixaSuperior)}</span></td>
-            <td style="text-align:right;">${fmtPercentSmart(p.poupancaProjetada*100)}</td>
+            <td data-label="Mês">${MESES[p.mes-1]}/${p.ano} ${p.risco==='alto'?'🔴':(p.risco==='medio'?'🟡':'')}</td>
+            <td data-label="Receita Prevista" style="text-align:right;">${fmtBRL(p.receitaProjetada)}</td>
+            <td data-label="Despesa Prevista" style="text-align:right;">${fmtBRL(p.despesaProjetada)}</td>
+            <td data-label="Saldo Previsto" class="val-cell ${p.saldoProjetado>=0?'pos':'neg'}" style="text-align:right;">${fmtBRL(p.saldoProjetado)}<br><span class="hint" style="margin:0;font-weight:400;">${fmtBRL(p.faixaInferior)} a ${fmtBRL(p.faixaSuperior)}</span></td>
+            <td data-label="Poupança" style="text-align:right;">${fmtPercentSmart(p.poupancaProjetada*100)}</td>
           </tr>`).join('')}
         </tbody>
       </table></div>
@@ -8814,7 +8907,7 @@ function renderInteligencia(){
   <div class="panel">
     <h2>Onde o dinheiro está mudando?</h2>
     <p class="hint" style="margin-top:-6px;">Clique numa linha para detalhar até os lançamentos que originaram o valor.</p>
-    <div class="table-wrap" style="max-height:none;"><table>
+    <div class="table-wrap" style="max-height:none;"><table class="tabela-cards-mobile">
       <thead><tr>
         <th data-sort-intel="grupo" style="cursor:pointer;">Grupo ${UI.intelOrdenacao.campo==='grupo'?(UI.intelOrdenacao.dir==='asc'?'▲':'▼'):''}</th>
         <th data-sort-intel="atual" style="text-align:right;cursor:pointer;">Atual ${UI.intelOrdenacao.campo==='atual'?(UI.intelOrdenacao.dir==='asc'?'▲':'▼'):''}</th>
@@ -8832,12 +8925,12 @@ function renderInteligencia(){
           if(typeof va==='string') return va.localeCompare(vb,'pt-BR')*dir;
           return (va-vb)*dir;
         }).map(g=>`<tr class="linha-drill-intel" data-drill-grupo="${escapeHtml(g.grupo)}" style="cursor:pointer;${UI.intelDrill.grupo===g.grupo?'background:var(--navy-50,#eef2f9);':''}">
-          <td>${UI.intelDrill.grupo===g.grupo?'➖':'➕'} ${iconeGrupo(g.grupo)} ${escapeHtml(g.grupo)}</td>
-          <td style="text-align:right;">${fmtBRL(g.atual)}</td>
-          <td style="text-align:right;">${fmtBRL(g.mediaHist)}</td>
-          <td style="text-align:center;" title="${escapeHtml(TENDENCIA_INFO[g.tendencia].tooltip)}">${TENDENCIA_INFO[g.tendencia].emoji}</td>
-          <td style="text-align:right;">${fmtBRL(g.projecao)}</td>
-          <td style="text-align:right;color:${g.variacao>=0?'var(--despesa)':'var(--receita)'};">${g.variacao>=0?'+':''}${fmtPercentSmart(g.variacao*100)}</td>
+          <td data-label="Grupo">${UI.intelDrill.grupo===g.grupo?'➖':'➕'} ${iconeGrupo(g.grupo)} ${escapeHtml(g.grupo)}</td>
+          <td data-label="Atual" style="text-align:right;">${fmtBRL(g.atual)}</td>
+          <td data-label="Média Histórica" style="text-align:right;">${fmtBRL(g.mediaHist)}</td>
+          <td data-label="Tendência" style="text-align:center;" title="${escapeHtml(TENDENCIA_INFO[g.tendencia].tooltip)}">${TENDENCIA_INFO[g.tendencia].emoji}</td>
+          <td data-label="Projeção" style="text-align:right;">${fmtBRL(g.projecao)}</td>
+          <td data-label="Variação" style="text-align:right;color:${g.variacao>=0?'var(--despesa)':'var(--receita)'};">${g.variacao>=0?'+':''}${fmtPercentSmart(g.variacao*100)}</td>
         </tr>
         ${UI.intelDrill.grupo===g.grupo ? `<tr><td colspan="6" style="padding:0;border-top:none;">${renderDrillIntel(f)}</td></tr>` : ''}`).join('')}
       </tbody>
