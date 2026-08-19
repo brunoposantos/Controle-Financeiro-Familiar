@@ -52,8 +52,8 @@ input,select{font-family:var(--sans);}
 .ti-cabecalho h1{font-size:42px;margin:0;color:var(--navy-950);}
 .ti-cabecalho .subtitulo{margin:4px 0 0;font-size:30px;font-weight:600;color:var(--gold-dark);}
 .ti-cabecalho .hint{color:#5b6b85;margin:0;width:100%;align-self:center;font-size:18px;font-style:italic;text-align:center;}
-.ti-opcoes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
-.ti-opcao{border:1px solid var(--line);border-radius:14px;padding:18px 16px;background:var(--navy-50,#f4f7fc);text-align:center;display:flex;flex-direction:column;align-items:center;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;}
+.ti-opcoes{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-bottom:28px;}
+.ti-opcao{flex:1 1 280px;max-width:320px;border:1px solid var(--line);border-radius:14px;padding:18px 16px;background:var(--navy-50,#f4f7fc);text-align:center;display:flex;flex-direction:column;align-items:center;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;}
 .ti-opcao:hover{border-color:var(--navy-300,#a9bbdd);box-shadow:0 8px 22px rgba(16,64,141,.1);transform:translateY(-2px);}
 .ti-opcao-icone{width:44px;height:44px;border-radius:50%;background:var(--navy-50,#f4f7fc);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px;}
 .ti-opcao-titulo{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--navy-900);margin-bottom:6px;}
@@ -77,7 +77,7 @@ input,select{font-family:var(--sans);}
   .ti-cabecalho .mark{height:110px;}
   .ti-cabecalho-textos{flex-direction:column;text-align:center;gap:10px;}
   .ti-cabecalho .hint{width:100%;}
-  .ti-opcoes{grid-template-columns:1fr;}
+  .ti-opcao{flex-basis:100%;max-width:100%;}
   .ti-rodape{flex-direction:column;align-items:stretch;}
   .ti-cta{width:100%;}
   .ti-cta .btn-iniciar-app{width:100%;}
@@ -3280,6 +3280,23 @@ async function reconectarArquivo(tipo){
   render();
 }
 async function reconectarPacote(){ await carregarArquivosDoOneDrive(); render(); }
+/* "Fechar aplicação" (menu ☰) — volta para a tela inicial (card) sem sair da conta Microsoft nem
+   desconectar os arquivos: STATE, msalConta e fileHandleCfg/fileHandleReg continuam intactos, só
+   UI.appIniciado volta a false (mesma flag que renderTelaInicial() usa — ver render()). Ao clicar em
+   "Iniciar App" de novo, os mesmos dados já carregados voltam a aparecer, sem precisar reconectar ao
+   OneDrive. Mesma proteção contra perda de dados usada em desconectarArquivos/reconectarPacote: se houver
+   alterações não salvas, pergunta antes de sair. */
+async function fecharAppVoltarTelaInicial(){
+  if(STATE.dirty){
+    const decisao = await confirmarFecharComAlteracoes();
+    if(decisao==='cancelar') return;
+    if(decisao==='salvar'){ const ok = await salvarArquivos(); if(!ok) return; }
+  }
+  UI.appIniciado = false;
+  UI.tab = "dashboard";
+  UI.menuArquivoAberto = false;
+  render();
+}
 /* "Desconectar" agora significa sair da conta Microsoft conectada (logoutRedirect) — verifica alterações
    não salvas primeiro, do mesmo jeito que antes, para nunca perder dados ainda não gravados no OneDrive. */
 async function desconectarArquivos(){
@@ -6025,6 +6042,7 @@ function renderHeader(){
           <button type="button" id="maImportarBackup">📤️ Importar backup (.bkp)</button>
           <button type="button" id="btnExportCSVPacote">⬇️ Baixar cópia local (.cfg + .log)</button>
           <hr>
+          <button type="button" id="maFecharApp">🚪 Fechar aplicação</button>
           <button type="button" id="maDesconectar">🔌 Sair da conta Microsoft</button>
           ` : `
           <button type="button" id="btnExportCSVPacote">⬇️ Exportar pacote (.cfg + .log)</button>
@@ -10323,6 +10341,7 @@ function bindEvents(){
   document.getElementById('maBackup')?.addEventListener('click', async ()=>{ UI.menuArquivoAberto=false; render(); await criarBackupManual(); render(); });
   document.getElementById('maBackupRestauracao')?.addEventListener('click', async ()=>{ UI.menuArquivoAberto=false; await abrirBackupModal(); });
   document.getElementById('maImportarBackup')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; importarBackupExterno(); });
+  document.getElementById('maFecharApp')?.addEventListener('click', ()=> fecharAppVoltarTelaInicial());
   document.getElementById('maDesconectar')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; desconectarArquivos(); });
   // Tela inicial (sessão zerada)
   document.getElementById('tiEntrarMicrosoft')?.addEventListener('click', ()=>loginOneDrive());
