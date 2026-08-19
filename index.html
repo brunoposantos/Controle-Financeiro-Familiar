@@ -237,11 +237,14 @@ input,select{font-family:var(--sans);}
 }
 .bn-item{
   flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  height:var(--bottom-nav-h);min-width:var(--touch-min);background:transparent;border:none;color:#a9bbdd;
-  font-family:var(--sans);cursor:pointer;transition:color .15s;padding:4px 2px;
+  height:var(--bottom-nav-h);min-width:0;max-width:100%;background:transparent;border:none;color:#a9bbdd;
+  font-family:var(--sans);cursor:pointer;transition:color .15s;padding:4px 2px;overflow:hidden;
 }
 .bn-item .bn-icone{font-size:19px;line-height:1;}
-.bn-item .bn-rotulo{font-size:10px;font-weight:600;line-height:1;white-space:nowrap;}
+.bn-item .bn-rotulo{
+  font-size:10px;font-weight:600;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%;display:block;
+}
 .bn-item:hover{color:#dbe4f7;}
 .bn-item.active{color:var(--gold);}
 .bn-item:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
@@ -255,7 +258,7 @@ input,select{font-family:var(--sans);}
 }
 .mais-sheet.aberto{transform:translateY(0);}
 .mais-sheet-alca{width:40px;height:4px;border-radius:var(--radius-full);background:var(--line);margin:0 auto 10px;}
-.mais-sheet-titulo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#8393ac;padding:0 20px 8px;}
+.mais-sheet-titulo{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#8393ac;padding:0 12px 8px 20px;}
 .mais-sheet-item{
   display:flex;align-items:center;gap:14px;width:100%;min-height:var(--touch-min);text-align:left;
   background:transparent;border:none;border-top:1px solid var(--line);box-sizing:border-box;
@@ -306,7 +309,7 @@ input,select{font-family:var(--sans);}
   .app-title .mark{height:38px;}
   .app-title h1{font-size:15px;line-height:1.2;}
   .app-title p{font-size:10.5px;display:none;}
-  .app-title-tab-atual{display:block;}
+  .app-title p.app-title-tab-atual{display:block;}
   .header-right{width:100%;align-items:stretch;}
   .filebar{flex-wrap:wrap;font-size:9.5px;}
   .period-select{width:100%;justify-content:space-between;font-size:12px;}
@@ -615,6 +618,13 @@ tbody tr:hover{background:var(--navy-50);}
 .icon-btn{background:transparent;border:none;color:#6a7a97;padding:4px;border-radius:5px;}
 .icon-btn:hover{background:var(--navy-100);color:var(--navy-900);}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+@media(max-width:700px){
+  .reg-busca-wrap{width:100%;margin-left:0!important;}
+  .reg-busca-wrap input[type="search"]{flex:1;min-width:0;}
+  /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento" (item 8 do requisito) — evita duplicar
+     a ação e a sobreposição do FAB fixo com este botão em telas estreitas. */
+  #btnNovoLancamento{display:none;}
+}
 .toolbar input[type=text], .toolbar input[type=search]{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;min-width:200px;}
 /* ---- Componente padronizado dos modais "Ver Extrato" e "Lançamentos futuros" (qualquer conta) ----
    Largura fixa generosa o bastante para caber todos os filtros numa única linha em desktop/telas largas
@@ -922,6 +932,11 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
   .filtros-barra.aberto-mobile{display:flex;}
   .filtros-barra .filtro-data,.filtros-barra .filtro-multisel{width:100%;}
   .filtros-barra .filtro-data-btn-abrir{width:100%;text-align:left;}
+  .filtros-barra-titulo-mobile{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:var(--navy-950);margin-bottom:6px;}
+  .filtros-barra-acoes-mobile{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
+}
+@media(min-width:701px){
+  .filtros-barra-titulo-mobile,.filtros-barra-acoes-mobile{display:none;}
 }
 summary{list-style:none;}
 summary::-webkit-details-marker{display:none;}
@@ -6492,7 +6507,7 @@ function render(){
         ${renderTabbar()}
       </div>
       <main>${renderTab()}</main>
-      ${(nivelAcessoPasta!=='leitura' && ['dashboard','registros','resumo'].includes(UI.tab)) ? `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>` : ''}
+      ${(nivelAcessoPasta!=='leitura' && ['dashboard','registros','resumo'].includes(UI.tab) && !UI.menuMobileAberto && UI.filtrosMobileAberto==null) ? `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>` : ''}
       <div class="footnote">Controle Financeiro Familiar · Família Gomes Oliveira · dados salvos em configuracoes.cfg e registros.log</div>
     </div>
     ${UI.importStep>0 ? renderImportModal() : ""}
@@ -6823,7 +6838,7 @@ function renderTabbar(){
   </nav>
   <div class="mais-sheet ${maisAberto?'aberto':''}" role="dialog" aria-modal="true" aria-label="Mais opções">
     <div class="mais-sheet-alca"></div>
-    <div class="mais-sheet-titulo">Mais opções</div>
+    <div class="mais-sheet-titulo">Mais opções <button type="button" class="close-x-claro mais-sheet-fechar" id="btnFecharMaisSheet" title="Fechar">✕</button></div>
     <button type="button" class="mais-sheet-item" id="btnMenuArquivoMobile">
       <span class="mais-sheet-icone">📁</span>
       <span class="mais-sheet-textos"><span class="mais-sheet-nome">Arquivo</span><span class="mais-sheet-desc">Salvar, sincronizar, backups e conta Microsoft</span></span>
@@ -7786,8 +7801,12 @@ function renderRegistros(){
     <div class="toolbar filtros-mobile-toolbar" style="justify-content:flex-start;">
       <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg">🔍 Filtros${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
       <div class="filtros-barra ${UI.filtrosMobileAberto==='Reg'?'aberto-mobile':''}">
+        <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileReg" title="Fechar">✕</button></div>
         ${renderBarraFiltrosPadrao(f, 'Reg', camposFiltroReg)}
-        ${qtdAtivos>0 ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosReg">✕ Limpar filtros</button>` : ''}
+        <div class="filtros-barra-acoes-mobile">
+          ${qtdAtivos>0 ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosReg">✕ Limpar filtros</button>` : ''}
+          <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileReg">Aplicar</button>
+        </div>
       </div>
     </div>
     ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
@@ -7798,7 +7817,7 @@ function renderRegistros(){
       ${list.length ? `<button class="btn btn-ghost" id="btnVerificarDuplicidade">🔍 Verificar duplicidade</button>` : ''}
       <button class="btn btn-gold" id="btnImportar">📥 Importar arquivo do banco</button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
-      <div style="display:flex;gap:10px;align-items:center;margin-left:auto;">
+      <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
         <input type="search" id="regBusca" placeholder="Buscar na descrição..." value="${escapeHtml(UI.regFiltro)}">
         <button class="btn btn-primary btn-sm" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
       </div>
@@ -11083,6 +11102,7 @@ function bindEvents(){
   });
   document.querySelectorAll('.tab-btn, .bn-item[data-tab], .mais-sheet-item[data-tab]').forEach(b=> b.addEventListener('click', ()=>{ UI.tab = b.dataset.tab; UI.menuMobileAberto = false; render(); }));
   document.getElementById('btnMenuMobile')?.addEventListener('click', ()=>{ UI.menuMobileAberto = !UI.menuMobileAberto; render(); });
+  document.getElementById('btnFecharMaisSheet')?.addEventListener('click', ()=>{ UI.menuMobileAberto = false; render(); });
   document.getElementById('menuMobileBackdrop')?.addEventListener('click', ()=>{ UI.menuMobileAberto = false; render(); });
   document.querySelectorAll('[data-grupo-details]').forEach(d=> d.addEventListener('toggle', ()=>{
     const g = d.dataset.grupoDetails;
@@ -11812,6 +11832,12 @@ function bindEvents(){
       UI.filtrosMobileAberto = UI.filtrosMobileAberto==='Reg' ? null : 'Reg'; render();
     });
     document.getElementById('filtrosMobileBackdropReg')?.addEventListener('click', ()=>{
+      UI.filtrosMobileAberto = null; render();
+    });
+    document.getElementById('btnFecharFiltrosMobileReg')?.addEventListener('click', ()=>{
+      UI.filtrosMobileAberto = null; render();
+    });
+    document.getElementById('btnAplicarFiltrosMobileReg')?.addEventListener('click', ()=>{
       UI.filtrosMobileAberto = null; render();
     });
     // Menu de ações (✏️/📄/🗑️) de cada card na lista mobile de Registros — mesmo padrão de "um aberto por
