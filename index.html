@@ -43,7 +43,7 @@ input,select{font-family:var(--sans);}
 
 .sticky-top{position:sticky;top:0;z-index:200;box-shadow:0 4px 14px rgba(11,42,94,.18);}
 .tela-inicial{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(180deg,var(--navy-50,#f4f7fc),#fff);}
-.tela-inicial-card{max-width:980px;width:100%;background:#fff;border:1px solid var(--line);border-radius:20px;padding:36px 40px;box-shadow:0 20px 60px rgba(16,64,141,.14);}
+.tela-inicial-card{max-width:1000px;width:100%;background:#fff;border:1px solid var(--line);border-radius:20px;padding:36px 40px;box-shadow:0 20px 60px rgba(16,64,141,.14);}
 .tela-inicial-card button:disabled{opacity:.5;cursor:not-allowed;}
 .ti-cabecalho{display:flex;align-items:center;gap:24px;margin-bottom:28px;text-align:center;}
 .ti-cabecalho .mark{height:200px;width:auto;flex-shrink:0;align-self:center;}
@@ -5917,14 +5917,14 @@ function renderTelaInicial(){
             <h1>Controle Financeiro Familiar</h1>
             <p class="subtitulo">Família Gomes Oliveira</p>
           </div>
-          <p class="hint">${msalConta ? `Conectado como <b>${escapeHtml(msalConta.username||msalConta.name||'')}</b> — dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Entre com sua conta Microsoft para acessar seus dados no OneDrive.'}</p>
+          <p class="hint">${msalConta ? `Conectado como <b>${escapeHtml(msalConta.username||msalConta.name||'')}</b><br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Entre com sua conta Microsoft para acessar seus dados no OneDrive.'}</p>
         </div>
       </div>
       ${!hasFSAccess ? `<div class="banner" style="text-align:left;margin-bottom:20px;">⚠️ Integração com o OneDrive ainda não configurada neste app. Defina <code>ONEDRIVE_CONFIG.clientId</code> no início do index.html com o ID do aplicativo do seu App Registration no Microsoft Entra ID (ver instruções no comentário do código-fonte).</div>` : ''}
       ${(hasFSAccess && comErro) ? `<div class="banner" style="text-align:left;margin-bottom:20px;">⚠️ ${escapeHtml(oneDriveIndisponivelMsg||'Não foi possível acessar os arquivos no OneDrive.')}</div>` : ''}
       <div class="ti-opcoes">
         <div class="ti-opcao">
-          <div class="ti-opcao-icone">☁️</div>
+          <div class="ti-opcao-icone"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 57.6 57.6" width="24" height="24" baseProfile="basic"><path fill="#0d47a1" d="M15.935 14.374C7.133 14.374.552 21.58.058 29.606c.307 1.729 1.314 5.144 2.893 4.969 1.973-.22 6.942 0 11.18-7.673 3.095-5.604 9.463-12.529 1.804-12.529"/><path fill="#1e88e5" d="M13.9 17.37c-2.959 4.685-6.942 11.398-8.286 13.51-1.599 2.511-5.83 1.444-5.48-2.156a16 16 0 0 0-.079.883c-.578 9.364 6.846 17.141 16.085 17.141 10.182 0 34.466-12.686 32.008-25.398-2.591-7.471-9.87-12.832-18.121-12.832s-13.54 4.753-16.127 8.851"/><path fill="#4fc3f7" d="M15.99 46.752s24.312.048 28.436.048c7.484 0 13.174-6.109 13.174-13.24s-5.804-13.202-13.174-13.202-11.614 5.513-14.802 11.532c-3.734 7.051-8.5 14.778-13.634 14.862"/></svg></div>
           <div class="ti-opcao-titulo">${msalConta ? 'Conta Microsoft' : 'Entrar com a Microsoft'}</div>
           <div class="ti-opcao-desc">${msalConta ? 'Sua conta já está conectada. Os arquivos são lidos e gravados diretamente no seu OneDrive.' : 'Autentique-se com sua conta Microsoft (OAuth2) para localizar e acessar os arquivos deste app no seu OneDrive.'}</div>
           ${msalConta
