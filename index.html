@@ -120,6 +120,30 @@ input,select{font-family:var(--sans);}
 .menu-arquivo-painel button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:9px 10px;border-radius:7px;background:none;border:none;font-size:13px;cursor:pointer;color:var(--ink);}
 .menu-arquivo-painel button:hover{color:var(--gold);}
 .menu-arquivo-painel hr{border:none;border-top:1px solid var(--line);margin:5px 2px;}
+.ma-painel-titulo{display:none;}
+.ma-item{align-items:center!important;gap:12px!important;}
+.ma-item-icone{font-size:19px;flex-shrink:0;}
+.ma-item-textos{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.ma-item-nome{font-size:13.5px;font-weight:600;}
+.ma-item-desc{display:none;}
+.menu-arquivo-backdrop{display:none;}
+/* Menu Arquivo no mobile (item 19 do requisito de responsividade): o mesmo dropdown compacto do desktop
+   vira um painel dedicado (bottom sheet), com título/fechar e uma descrição curta em cada item — nunca o
+   menu comprimido de desktop reaproveitado sem adaptação. */
+@media(max-width:700px){
+  .menu-arquivo-painel{
+    position:fixed;top:auto;bottom:0;left:0;right:0;min-width:0;width:100%;max-width:100vw;
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;z-index:220;padding:10px 0 calc(14px + var(--safe-bottom));
+    max-height:80vh;overflow-y:auto;box-shadow:0 -12px 32px rgba(0,0,0,.28);
+  }
+  .ma-painel-titulo{
+    display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;
+    color:var(--navy-950);padding:2px 16px 10px;
+  }
+  .ma-item{min-height:var(--touch-min);padding:10px 16px!important;}
+  .ma-item-desc{display:block;font-size:11.5px;color:#6a7a97;font-weight:400;white-space:normal;}
+  .menu-arquivo-backdrop{display:block;position:fixed;inset:0;background:rgba(11,42,94,.35);z-index:215;}
+}
 /* ---- Indicador ☁ OneDrive / SyncManager (itens 1, 16 e 17 do requisito) ---- */
 .sync-indicador-wrap{position:relative;}
 .sync-indicador{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s ease;}
@@ -966,6 +990,29 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
 @media(min-width:701px){
   .filtros-barra-titulo-mobile,.filtros-barra-acoes-mobile{display:none;}
 }
+/* Toasts (item 22 do requisito de responsividade) — empilham no canto superior direito no desktop/tablet,
+   e centralizados logo abaixo do cabeçalho no mobile, sempre acima da barra de navegação inferior. */
+#toastContainer{
+  position:fixed;top:calc(16px + var(--safe-top));right:calc(16px + var(--safe-right));z-index:999;
+  display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:min(360px, calc(100vw - 32px));
+}
+.toast{
+  display:flex;align-items:flex-start;gap:10px;background:var(--navy-950);color:#fff;border-radius:var(--radius-md);
+  padding:12px 14px;box-shadow:0 12px 28px rgba(0,0,0,.28);pointer-events:auto;
+  opacity:0;transform:translateY(-8px);transition:opacity .2s ease,transform .2s ease;
+}
+.toast.mostrar{opacity:1;transform:translateY(0);}
+.toast-erro{background:#7a2418;}
+.toast-icone{font-size:16px;flex-shrink:0;line-height:1.3;}
+.toast-texto{flex:1;font-size:13px;line-height:1.4;white-space:pre-line;}
+.toast-fechar{background:transparent;border:none;color:#fff;opacity:.7;cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;}
+.toast-fechar:hover{opacity:1;}
+@media(max-width:700px){
+  #toastContainer{
+    left:calc(12px + var(--safe-left));right:calc(12px + var(--safe-right));
+    top:auto;bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 12px);max-width:none;
+  }
+}
 summary{list-style:none;}
 summary::-webkit-details-marker{display:none;}
 summary::marker{content:'';}
@@ -1046,6 +1093,19 @@ summary::marker{content:'';}
      lado a lado, preservando a quebra de linha interna da célula. */
   .tabela-cards-mobile td.val-cell{display:block;text-align:right!important;}
   .tabela-cards-mobile td.val-cell[data-label]:not([data-label=""])::before{display:block;text-align:left;margin-bottom:2px;}
+  /* Backups (item 21 do requisito): "Restaurar" continua a ação principal, em destaque, numa linha própria. */
+  .tabela-cards-mobile td.backup-linha-acoes{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding-top:10px;}
+  .tabela-cards-mobile td.backup-linha-acoes .btn{width:100%;min-height:var(--touch-min);}
+  .tabela-cards-mobile td.backup-linha-acoes .icon-btn{align-self:center;min-height:var(--touch-min);min-width:var(--touch-min);}
+  /* Revisão da importação (item 20 do requisito): cada linha vira um card com os campos editáveis
+     empilhados (rótulo acima do campo, não ao lado) — os mesmos <input>/<select>, sem duplicar estado. */
+  .tabela-import-revisao td{display:block;padding:8px 0;}
+  .tabela-import-revisao td[data-label]:not([data-label=""])::before{display:block;margin-bottom:3px;}
+  .tabela-import-revisao td input[type="text"],
+  .tabela-import-revisao td input[type="date"],
+  .tabela-import-revisao td select{width:100%!important;box-sizing:border-box;min-height:var(--touch-min);}
+  .tabela-import-revisao td[data-label="Importar"]{display:flex;align-items:center;gap:8px;}
+  .tabela-import-revisao td[data-label="Importar"]::before{margin-bottom:0;}
 }
 /* Economias — modal "Aportes" no mobile (item 16 do requisito de responsividade): a hierarquia
    Categoria → Subcategoria já é uma lista, não uma tabela; só a tabela de lançamentos de cada subcategoria
@@ -3314,7 +3374,7 @@ async function aplicarSnapshotLocalPendente(){
     STATE.dirty = true;
     registrarAtualizacaoDados();
     atualizarSyncEstado();
-    alert(`✅ Alterações de ${formatarDataHoraCompleta(new Date(snap.ts))} recuperadas. Revise os dados e use Salvar (☰ Menu) para sincronizar com o OneDrive.`);
+    mostrarToast(`Alterações de ${formatarDataHoraCompleta(new Date(snap.ts))} recuperadas. Revise os dados e use Salvar (☰ Menu) para sincronizar com o OneDrive.`);
   }catch(e){
     alert('⚠️ Não foi possível aplicar as alterações salvas localmente — o arquivo pode estar corrompido.\n\nOs dados carregados do OneDrive foram preservados.');
   }
@@ -4190,7 +4250,7 @@ async function criarBackupManual(){
   const r = await criarBackupNaPasta('manual', false);
   if(r.ok){
     registrarAuditoria('criar-backup', r.nome, 'sucesso');
-    alert(`✅ Backup criado com sucesso.\n\nData/hora: ${formatarDataHoraCompleta(new Date())}\nArquivo: ${r.nome}\nTamanho: ${formatarTamanhoArquivo(r.tamanho)}\nRegistros: ${STATE.transactions.length}\nIntegridade: ✓ válido (checksum gerado)`);
+    mostrarToast(`Backup criado com sucesso.\nData/hora: ${formatarDataHoraCompleta(new Date())}\nArquivo: ${r.nome}\nTamanho: ${formatarTamanhoArquivo(r.tamanho)}\nRegistros: ${STATE.transactions.length}\nIntegridade: ✓ válido (checksum gerado)`);
   }else if(r.motivo==='erro'){
     registrarAuditoria('criar-backup', null, 'falha', r.erro?.mensagemAmigavel||r.erro?.message||r.erro);
     alert(`Não foi possível criar o backup.\n\nMotivo técnico: ${r.erro?.message || r.erro?.name || r.erro}`);
@@ -4272,7 +4332,7 @@ async function restaurarConteudoBackup(texto, origemDescricao){
   UI.backupModal = null;
   await salvarArquivos(); // grava imediatamente o resultado restaurado em configuracoes.cfg/registros.log no OneDrive
   registrarAuditoria('restaurar-backup', origemDescricao, 'sucesso');
-  alert('✅ Backup restaurado e já gravado em configuracoes.cfg/registros.log no OneDrive.');
+  mostrarToast('Backup restaurado e já gravado em configuracoes.cfg/registros.log no OneDrive.');
   render();
   return true;
 }
@@ -6600,7 +6660,7 @@ function render(){
         ${renderTabbar()}
       </div>
       <main>${renderTab()}</main>
-      ${(nivelAcessoPasta!=='leitura' && ['dashboard','registros','resumo'].includes(UI.tab) && !UI.menuMobileAberto && UI.filtrosMobileAberto==null) ? `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>` : ''}
+      ${(nivelAcessoPasta!=='leitura' && ['dashboard','registros','resumo'].includes(UI.tab) && !UI.menuMobileAberto && !UI.menuArquivoAberto && UI.filtrosMobileAberto==null) ? `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>` : ''}
       <div class="footnote">Controle Financeiro Familiar · Família Gomes Oliveira · dados salvos em configuracoes.cfg e registros.log</div>
     </div>
     ${UI.importStep>0 ? renderImportModal() : ""}
@@ -6757,6 +6817,15 @@ function renderModalConflitoGravacao(){
   </div>`;
 }
 
+/* Item do ☰ Menu (menu-arquivo-painel) — mesmo texto/ícone de antes, agora com uma descrição curta
+   (item 19 do requisito de responsividade: tela/painel de configurações dedicado ao mobile, com ícone,
+   nome e descrição curta por item, em vez do menu compacto de desktop reaproveitado sem adaptação). */
+function renderItemMenuArquivo(id, icone, nome, desc){
+  return `<button type="button" class="ma-item" id="${id}">
+    <span class="ma-item-icone">${icone}</span>
+    <span class="ma-item-textos"><span class="ma-item-nome">${nome}</span><span class="ma-item-desc">${escapeHtml(desc)}</span></span>
+  </button>`;
+}
 function renderHeader(){
   return `
   <header class="app-header">
@@ -6792,25 +6861,27 @@ function renderHeader(){
         <button type="button" class="btn btn-ghost btn-sm" id="btnMenuArquivo" style="color:#fff;border-color:rgba(255,255,255,.4);">☰ Menu ${UI.menuArquivoAberto?'▲':'▼'}</button>
         ${UI.menuArquivoAberto ? `
         <div class="menu-arquivo-painel">
+          <div class="ma-painel-titulo">☰ Menu <button type="button" class="close-x-claro" id="btnFecharMenuArquivo" title="Fechar">✕</button></div>
           ${hasFSAccess ? `
-          ${(fileStatusCfg==='erro' || fileStatusReg==='erro' || fileStatusCfg==='token-expirado' || fileStatusReg==='token-expirado') ? `<button type="button" id="maReconectarPacote">🔓 Tentar novamente</button>` : ''}
-          ${nivelAcessoPasta!=='leitura' ? `<button type="button" id="maSalvar">💾 Salvar</button>` : ''}
+          ${(fileStatusCfg==='erro' || fileStatusReg==='erro' || fileStatusCfg==='token-expirado' || fileStatusReg==='token-expirado') ? renderItemMenuArquivo('maReconectarPacote','🔓','Tentar novamente','Reconecta com o OneDrive depois de um erro ou sessão expirada') : ''}
+          ${nivelAcessoPasta!=='leitura' ? renderItemMenuArquivo('maSalvar','💾','Salvar','Grava as alterações pendentes no OneDrive agora') : ''}
           <hr>
-          ${nivelAcessoPasta!=='leitura' ? `<button type="button" id="maBackup">📦 Criar backup agora</button>` : ''}
-          <button type="button" id="maBackupRestauracao">☁️ Backup e Restauração${nivelAcessoPasta==='leitura'?' (consultar)':''}</button>
-          ${nivelAcessoPasta!=='leitura' ? `<button type="button" id="maImportarBackup">📤️ Importar backup (.bkp)</button>` : ''}
-          <button type="button" id="btnExportCSVPacote">⬇️ Baixar cópia local (.cfg + .log)</button>
+          ${nivelAcessoPasta!=='leitura' ? renderItemMenuArquivo('maBackup','📦','Criar backup agora','Salva uma cópia com carimbo de data/hora na pasta Backups') : ''}
+          ${renderItemMenuArquivo('maBackupRestauracao','☁️',`Backup e Restauração${nivelAcessoPasta==='leitura'?' (consultar)':''}`,'Histórico de backups no OneDrive, com opção de restaurar')}
+          ${nivelAcessoPasta!=='leitura' ? renderItemMenuArquivo('maImportarBackup','📤️','Importar backup (.bkp)','Restaura a partir de um arquivo .bkp salvo neste dispositivo') : ''}
+          ${renderItemMenuArquivo('btnExportCSVPacote','⬇️','Baixar cópia local (.cfg + .log)','Salva uma cópia dos arquivos de dados neste dispositivo')}
           <hr>
-          <button type="button" id="maFecharApp">🚪 Fechar aplicação</button>
-          <button type="button" id="maTrocarConta">🔀 Trocar de conta Microsoft</button>
-          <button type="button" id="maDesconectar">🔌 Sair da conta Microsoft</button>
+          ${renderItemMenuArquivo('maFecharApp','🚪','Fechar aplicação','Volta para a tela inicial, sem sair da conta Microsoft')}
+          ${renderItemMenuArquivo('maTrocarConta','🔀','Trocar de conta Microsoft','Sai e entra novamente com outra conta')}
+          ${renderItemMenuArquivo('maDesconectar','🔌','Sair da conta Microsoft','Encerra a sessão atual com a Microsoft')}
           ` : `
-          <button type="button" id="btnExportCSVPacote">⬇️ Exportar pacote (.cfg + .log)</button>
-          <button type="button" id="btnImportCSVPacote">⬆️ Importar pacote (.cfg + .log)</button>
+          ${renderItemMenuArquivo('btnExportCSVPacote','⬇️','Exportar pacote (.cfg + .log)','Salva uma cópia dos arquivos de dados neste dispositivo')}
+          ${renderItemMenuArquivo('btnImportCSVPacote','⬆️','Importar pacote (.cfg + .log)','Carrega arquivos .cfg/.log salvos neste dispositivo')}
           <input type="file" id="inputImportPacote" accept=".cfg,.log" multiple style="display:none;">
           `}
         </div>` : ''}
       </div>
+      ${UI.menuArquivoAberto ? `<div class="menu-arquivo-backdrop" id="menuArquivoBackdrop"></div>` : ''}
       <div class="filebar-info" title="${escapeHtml(filebarInfoTooltip())}">
         ${renderStatusResumoArquivos()}
       </div>
@@ -7663,7 +7734,7 @@ function bindSelecaoLote(prefixo, selecionados, onChange){
     selecionados.clear();
     scheduleSave();
     onChange();
-    setTimeout(()=>alert(`✅ ${removidos} lançamento${removidos===1?'':'s'} excluído${removidos===1?'':'s'} com sucesso.`), 50);
+    mostrarToast(`${removidos} lançamento${removidos===1?'':'s'} excluído${removidos===1?'':'s'} com sucesso.`);
   });
 }
 /* Exclusão em lote — reaproveita a MESMA regra da exclusão individual (ver handler de [data-del]): se um
@@ -9909,17 +9980,17 @@ function renderBackupModal(){
         ${m.carregando ? `<div class="empty-state"><div class="big">⏳</div>Lendo backups...</div>` :
           !msalConta ? `<div class="empty-state"><div class="big">☁️</div>Entre com sua conta Microsoft para ver o histórico de versões no OneDrive.</div>` :
           !m.backups || m.backups.length===0 ? `<div class="empty-state"><div class="big">🗄️</div>Nenhum backup encontrado nesta pasta ainda.</div>` : `
-        <div class="table-wrap" style="max-height:420px;"><table>
+        <div class="table-wrap" style="max-height:420px;"><table class="tabela-cards-mobile">
           <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Arquivo</th><th style="text-align:right;">Tamanho</th><th style="text-align:right;">Registros</th><th style="text-align:center;">Integridade</th><th></th></tr></thead>
           <tbody>
             ${m.backups.map(b=>`<tr>
-              <td style="white-space:nowrap;">${formatarDataHoraCurta(b.criadoEm)}</td>
-              <td>${BACKUP_TIPO_INFO[b.tipo]?.icone||''} ${BACKUP_TIPO_INFO[b.tipo]?.label||b.tipo}</td>
-              <td style="word-break:break-all;">${escapeHtml(b.nome)}</td>
-              <td style="text-align:right;white-space:nowrap;">${formatarTamanhoArquivo(b.tamanho)}</td>
-              <td style="text-align:right;">${b.qtdTransacoes ?? '—'}</td>
-              <td style="text-align:center;" title="${escapeHtml(b.motivoInvalido||'')}">${b.integro ? (b.semMetadados?'⚠ Sem checksum':'✓ Válido') : '✕ Inválido'}</td>
-              <td style="white-space:nowrap;text-align:right;">
+              <td data-label="Data/Hora" style="white-space:nowrap;">${formatarDataHoraCurta(b.criadoEm)}</td>
+              <td data-label="Tipo">${BACKUP_TIPO_INFO[b.tipo]?.icone||''} ${BACKUP_TIPO_INFO[b.tipo]?.label||b.tipo}</td>
+              <td data-label="Arquivo" style="word-break:break-all;">${escapeHtml(b.nome)}</td>
+              <td data-label="Tamanho" style="text-align:right;white-space:nowrap;">${formatarTamanhoArquivo(b.tamanho)}</td>
+              <td data-label="Registros" style="text-align:right;">${b.qtdTransacoes ?? '—'}</td>
+              <td data-label="Integridade" style="text-align:center;" title="${escapeHtml(b.motivoInvalido||'')}">${b.integro ? (b.semMetadados?'⚠ Sem checksum':'✓ Válido') : '✕ Inválido'}</td>
+              <td data-label="" class="backup-linha-acoes" style="white-space:nowrap;text-align:right;">
                 ${nivelAcessoPasta!=='leitura' ? `
                 <button type="button" class="btn btn-primary btn-sm" data-restaurar-backup="${escapeHtml(b.nome)}" ${!b.integro?'disabled title="Backup inválido — restauração bloqueada"':''}>Restaurar</button>
                 <button type="button" class="icon-btn" data-excluir-backup="${escapeHtml(b.nome)}" title="Excluir">🗑️</button>
@@ -10383,30 +10454,30 @@ function renderImportStep3(){
     ⚠️ ${qtdExatas>0?`<b>${qtdExatas}</b> lançamento(s) parecem já estar registrados (mesma data, valor e conta) — vieram <b>desmarcados</b> para não duplicar. `:''}
     ${qtdProvaveis>0?`<b>${qtdProvaveis}</b> lançamento(s) têm valor parecido com algo já registrado em data próxima — revise antes de confirmar.`:''}
   </div>` : ''}
-  <div class="table-wrap" style="max-height:380px;"><table>
+  <div class="table-wrap" style="max-height:380px;"><table class="tabela-cards-mobile tabela-import-revisao">
     <thead><tr><th>Importar</th><th>Status</th><th>Data</th><th>Descrição</th><th style="text-align:right;">Valor</th><th>Tipo</th><th>Subcategoria</th><th>Conta</th><th>Pgto</th><th>Parcela</th><th>Responsável</th><th>Interna</th><th></th></tr></thead>
     <tbody>
     ${UI.importParsed.map((r,i)=>`
       <tr style="${r.duplicata==='exata'?'background:#fbe7e4;':(r.duplicata==='provavel'?'background:#fff4de;':'')}">
-        <td style="text-align:center;"><input type="checkbox" data-imp="${i}" data-field="incluir" ${r.incluir?'checked':''}></td>
-        <td style="white-space:nowrap;">${r.duplicata==='exata' ? '<span class="tag Despesa">🔁 Já existe</span>' : (r.duplicata==='provavel' ? '<span class="tag Variavel">❓ Revisar</span>' : '<span class="tag Receita">🆕 Novo</span>')}</td>
-        <td><input type="date" data-imp="${i}" data-field="data" value="${r.data}" style="border:1px solid var(--line);border-radius:5px;padding:4px;"></td>
-        <td><input type="text" data-imp="${i}" data-field="descricao" value="${escapeHtml(r.descricao)}" style="border:1px solid var(--line);border-radius:5px;padding:4px;width:160px;"></td>
-        <td><input type="text" inputmode="decimal" data-imp="${i}" data-field="valor" value="${fmtMoedaInput(r.valor)}" class="val-cell ${r.valor<0?'neg':'pos'}" style="text-align:right;width:90px;border:1px solid var(--line);border-radius:5px;padding:4px;"></td>
-        <td><select data-imp="${i}" data-field="tipo" class="mini"><option value="Despesa" ${r.tipo==='Despesa'?'selected':''}>Despesa</option><option value="Receita" ${r.tipo==='Receita'?'selected':''}>Receita</option></select></td>
-        <td>${r.transferenciaInterna ? `<span class="hint">— (transferência interna)</span>` : `
+        <td data-label="Importar" style="text-align:center;"><input type="checkbox" data-imp="${i}" data-field="incluir" ${r.incluir?'checked':''}></td>
+        <td data-label="Status" style="white-space:nowrap;">${r.duplicata==='exata' ? '<span class="tag Despesa">🔁 Já existe</span>' : (r.duplicata==='provavel' ? '<span class="tag Variavel">❓ Revisar</span>' : '<span class="tag Receita">🆕 Novo</span>')}</td>
+        <td data-label="Data"><input type="date" data-imp="${i}" data-field="data" value="${r.data}" style="border:1px solid var(--line);border-radius:5px;padding:4px;"></td>
+        <td data-label="Descrição"><input type="text" data-imp="${i}" data-field="descricao" value="${escapeHtml(r.descricao)}" style="border:1px solid var(--line);border-radius:5px;padding:4px;width:160px;"></td>
+        <td data-label="Valor"><input type="text" inputmode="decimal" data-imp="${i}" data-field="valor" value="${fmtMoedaInput(r.valor)}" class="val-cell ${r.valor<0?'neg':'pos'}" style="text-align:right;width:90px;border:1px solid var(--line);border-radius:5px;padding:4px;"></td>
+        <td data-label="Tipo"><select data-imp="${i}" data-field="tipo" class="mini"><option value="Despesa" ${r.tipo==='Despesa'?'selected':''}>Despesa</option><option value="Receita" ${r.tipo==='Receita'?'selected':''}>Receita</option></select></td>
+        <td data-label="Subcategoria">${r.transferenciaInterna ? `<span class="hint">— (transferência interna)</span>` : `
           <button type="button" class="btn btn-ghost btn-sm" data-imp-cat-abrir="${i}" style="text-align:left;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">
             ${r.categoria ? escapeHtml(r.categoria) : '<span class="hint">— selecionar —</span>'}
           </button>`}
         </td>
-        <td><select data-imp="${i}" data-field="conta" class="mini">${contasOrdenadas().map(c=>`<option value="${c}" ${r.conta===c?'selected':''}>${c}</option>`).join('')}</select></td>
-        <td style="white-space:nowrap;"><span class="tag Fixo" title="Determinado automaticamente pelo tipo da conta">${escapeHtml(r.pgto)}</span></td>
-        <td style="white-space:nowrap;">${r.totalParcelas ? `<span class="tag Fixo">${r.parcelaAtual}/${r.totalParcelas}</span>` : `<span class="hint">—</span>`}</td>
-        <td><select data-imp="${i}" data-field="responsavel" class="mini">
+        <td data-label="Conta"><select data-imp="${i}" data-field="conta" class="mini">${contasOrdenadas().map(c=>`<option value="${c}" ${r.conta===c?'selected':''}>${c}</option>`).join('')}</select></td>
+        <td data-label="Pgto" style="white-space:nowrap;"><span class="tag Fixo" title="Determinado automaticamente pelo tipo da conta">${escapeHtml(r.pgto)}</span></td>
+        <td data-label="Parcela" style="white-space:nowrap;">${r.totalParcelas ? `<span class="tag Fixo">${r.parcelaAtual}/${r.totalParcelas}</span>` : `<span class="hint">—</span>`}</td>
+        <td data-label="Responsável"><select data-imp="${i}" data-field="responsavel" class="mini">
           <option value="" ${!r.responsavel?'selected':''}>—</option>
           ${[...STATE.responsaveis].sort((a,b)=>a.localeCompare(b,'pt-BR')).map(p=>`<option value="${escapeHtml(p)}" ${r.responsavel===p?'selected':''}>${escapeHtml(p)}</option>`).join('')}
         </select></td>
-        <td style="min-width:170px;">
+        <td data-label="Interna" style="min-width:170px;">
           ${r.elegivelTransferencia ? `
           <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;white-space:nowrap;">
             <input type="checkbox" data-imp-transferencia="${i}" ${r.transferenciaInterna?'checked':''}> ⇄ Transação Interna entre Contas
@@ -10416,7 +10487,7 @@ function renderImportStep3(){
             ${contasOrdenadas().filter(c=>c!==r.conta).map(c=>`<option value="${escapeHtml(c)}" ${r.contaTransferencia===c?'selected':''}>${r.tipo==='Receita'?'De: ':'Para: '}${escapeHtml(c)}</option>`).join('')}
           </select>` : ''}` : `<span class="hint">—</span>`}
         </td>
-        <td><button class="icon-btn" data-imp-del="${i}" title="Remover">🗑️</button></td>
+        <td data-label=""><button class="icon-btn" data-imp-del="${i}" title="Remover">🗑️</button></td>
       </tr>`).join('')}
     </tbody>
   </table></div>`;
@@ -11244,6 +11315,8 @@ function bindEvents(){
   document.getElementById('spTentarNovamente')?.addEventListener('click', ()=>{ UI.syncPainelAberto=false; syncUltimoErro=null; reconectarPacote(); });
   document.getElementById('spConectar')?.addEventListener('click', ()=>{ UI.syncPainelAberto=false; loginOneDrive(); });
   document.getElementById('btnMenuArquivo')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = !UI.menuArquivoAberto; render(); });
+  document.getElementById('btnFecharMenuArquivo')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = false; render(); });
+  document.getElementById('menuArquivoBackdrop')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = false; render(); });
   document.getElementById('btnMenuArquivoMobile')?.addEventListener('click', ()=>{ UI.menuMobileAberto = false; UI.menuArquivoAberto = true; render(); });
   document.getElementById('maReconectarPacote')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; reconectarPacote(); });
   document.getElementById('maSalvar')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; salvarArquivos(); });
@@ -11688,7 +11761,7 @@ function bindEvents(){
       return;
     }
     scheduleSave();
-    alert(`Replicação concluída até ${MESES[Number(r.competenciaFinal.slice(5,7))-1]}/${r.competenciaFinal.slice(0,4)}: ${r.criados} lançamento(s) criado(s), ${r.atualizados} atualizado(s), ${r.preservados} preservado(s) (já alterados manualmente ou já reais).`);
+    mostrarToast(`Replicação concluída até ${MESES[Number(r.competenciaFinal.slice(5,7))-1]}/${r.competenciaFinal.slice(0,4)}: ${r.criados} lançamento(s) criado(s), ${r.atualizados} atualizado(s), ${r.preservados} preservado(s) (já alterados manualmente ou já reais).`);
     render();
   }));
   document.getElementById('btnVerAportes')?.addEventListener('click', ()=>{ UI.aportesModal=true; render(); });
@@ -12465,7 +12538,7 @@ function bindEvents(){
       }
       UI.edicaoLoteModal = null;
       render();
-      setTimeout(()=>alert(`✅ ${alterados} lançamento${alterados===1?'':'s'} alterado${alterados===1?'':'s'} com sucesso.`), 50);
+      mostrarToast(`${alterados} lançamento${alterados===1?'':'s'} alterado${alterados===1?'':'s'} com sucesso.`);
     });
   }
 
@@ -12510,7 +12583,7 @@ function bindEvents(){
       if(maxDias) backupConfig.retencao.maxDias = Math.max(1, Number(maxDias)||90);
       await salvarConfigBackup();
       agendarTimerBackupPeriodico();
-      alert('✅ Configuração de backup salva.');
+      mostrarToast('Configuração de backup salva.');
       render();
     });
   }
@@ -13001,7 +13074,7 @@ function bindEvents(){
     // período/filtros já selecionados, sem necessidade de nenhum ajuste aqui.
     reconciliarPagamentosFatura(); // se este extrato trouxe uma despesa/receita de pagamento de fatura, já espelha
     scheduleSave();
-    if(ignorados>0) setTimeout(()=>alert(`${selecionados.length} lançamento(s) importado(s). ${ignorados} deixado(s) de fora por já estarem registrados.`), 50);
+    if(ignorados>0) mostrarToast(`${selecionados.length} lançamento(s) importado(s). ${ignorados} deixado(s) de fora por já estarem registrados.`);
   });
 }
 
@@ -13024,6 +13097,32 @@ function initBackToTop(){
   });
   atualizar();
 }
+/* Toasts (item 22 do requisito de responsividade): feedback visual não bloqueante para confirmações de
+   sucesso, no lugar do alert() nativo — usado só onde não há necessidade de interromper o fluxo até o
+   usuário confirmar (esses casos continuam usando alert()/confirm(), inalterados). Vive fora de #root, em
+   um container próprio anexado direto ao <body>, para nunca ser apagado pelo próximo render() (que
+   substitui todo o innerHTML de #root do zero) — os toasts não fazem parte do estado da aplicação. */
+function initToasts(){
+  if(document.getElementById('toastContainer')) return;
+  const el = document.createElement('div');
+  el.id = 'toastContainer';
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  document.body.appendChild(el);
+}
+function mostrarToast(mensagem, tipo){
+  const container = document.getElementById('toastContainer');
+  if(!container){ alert(mensagem); return; } // rede de segurança — nunca perde a mensagem
+  const el = document.createElement('div');
+  el.className = `toast toast-${tipo||'sucesso'}`;
+  el.innerHTML = `<span class="toast-icone">${tipo==='erro'?'⚠️':'✅'}</span><span class="toast-texto"></span><button type="button" class="toast-fechar" aria-label="Fechar">✕</button>`;
+  el.querySelector('.toast-texto').textContent = mensagem; // textContent — a mensagem pode conter dados do usuário
+  container.appendChild(el);
+  requestAnimationFrame(()=> el.classList.add('mostrar'));
+  const remover = ()=>{ el.classList.remove('mostrar'); setTimeout(()=> el.remove(), 250); };
+  const timer = setTimeout(remover, 5000);
+  el.querySelector('.toast-fechar').addEventListener('click', ()=>{ clearTimeout(timer); remover(); });
+}
 
 window.addEventListener('beforeunload', e=>{
   // Melhor esforço: dispara o backup automático "ao fechar" sem aguardar (navegadores não garantem que
@@ -13039,6 +13138,7 @@ window.addEventListener('beforeunload', e=>{
 initPersistence();
 initBackToTop();
 initPWA();
+initToasts();
 /* ===================== PWA: registro do Service Worker e atualização controlada (itens 11 e 12) ===================== */
 let swRegistroAtual = null;
 let swEmEspera = null; // novo Service Worker instalado, aguardando confirmação do usuário para assumir
