@@ -1497,6 +1497,28 @@ summary::marker{content:'';}
      baixo em vez de ficar na mesma linha (item 13 do requisito), mesmo com overflow:hidden/ellipsis no nome. */
   .tabela-cartoes td:first-child .cartao-col{min-width:0;}
   .tabela-cartoes td.col-importar-cartao{flex:0 0 auto;order:2;border-bottom:none;padding-bottom:8px;justify-content:flex-end;}
+  /* Item 16 do requisito: ordem explícita das linhas do card no mobile — identificação (1/2), valor da
+     fatura (3), fechamento+vencimento lado a lado (4), status (5), parcelado em aberto com o resumo de
+     compras/parcelas (6) — nunca depender da ordem "3" genérica/empatada por ordem de documento. */
+  .tabela-cartoes td:nth-child(3){order:3;}
+  .tabela-cartoes td:nth-child(6){order:5;}
+  .tabela-cartoes td:nth-child(7){order:6;}
+  /* Fechamento e Vencimento (colunas 4 e 5) formam duas colunas de largura equilibrada na mesma linha, em
+     vez de duas linhas cheias empilhadas — mesma técnica flex-basis:0 já usada nesta sessão para dividir
+     largura igualmente entre itens sem depender do tamanho do conteúdo. */
+  /* flex-basis:45% (não 0) é proposital aqui: junto com a linha anterior (Valor da fatura, basis:100%), o
+     total acumulado (100%+45%+45%=190%) ultrapassa a largura do container e força a quebra de linha ANTES
+     do par Fechamento/Vencimento — com basis:0 os dois ficavam "encaixados" na mesma linha do Valor da
+     fatura só que com largura zero (o algoritmo de quebra do flexbox só quebra quando o total excede o
+     espaço disponível, e 100%+0+0 nunca excede). min-width:0 continua garantindo que encolham se precisar. */
+  /* Coluna estreita demais para rótulo+valor lado a lado (como nas outras linhas) — rótulo empilha ACIMA
+     do valor em vez de à esquerda, senão o texto "Fechamento"/"Vencimento" espreme a data a ponto de
+     quebrar caractere por caractere (largura efetiva de cada metade gira em torno de 110-170px). */
+  .tabela-cartoes td:nth-child(4),.tabela-cartoes td:nth-child(5){
+    flex:1 1 45%;min-width:0;order:4;flex-direction:column;align-items:flex-start;gap:2px;
+  }
+  .tabela-cartoes td:nth-child(4) .data-editavel-linha,
+  .tabela-cartoes td:nth-child(5) .data-editavel-linha{justify-content:flex-start;width:100%;}
   .tabela-cartoes td:last-child{border-bottom:none;}
   .tabela-cartoes td[data-label]:not([data-label=""])::before{
     content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
