@@ -1119,6 +1119,22 @@ summary::marker{content:'';}
 .saldo-final-projetado.pos .val{color:var(--receita);}
 .saldo-final-projetado.neg{background:#fbe9e7;}
 .saldo-final-projetado.neg .val{color:var(--despesa);}
+/* Card colapsável de cada mês do Fluxo de Caixa (item 14 do requisito): cabeçalho clicável (título + resumo
+   do mês) sempre visível; a tabela de lançamentos e o saldo final só aparecem quando expandido — ver
+   .fluxo-mes-corpo, filho de <details>. */
+.fluxo-mes-summary{
+  cursor:pointer;display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;user-select:none;
+  margin:0 0 4px;
+}
+.fluxo-mes-titulo{
+  font-size:14px;letter-spacing:.4px;text-transform:uppercase;color:var(--navy-800);font-family:var(--mono);
+  font-weight:700;
+}
+.fluxo-mes-resumo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto;font-size:12.5px;}
+.fluxo-mes-resumo b{font-family:var(--mono);}
+.fluxo-mes-resumo b.pos{color:var(--receita);}
+.fluxo-mes-resumo b.neg{color:var(--despesa);}
+.fluxo-mes-details[open] .fluxo-mes-corpo{margin-top:6px;}
 .ajuda-fluxo{margin:18px 0;border:1px solid var(--line);border-radius:9px;background:#fff;}
 .ajuda-fluxo summary{
   cursor:pointer;padding:10px 14px;font-size:13px;font-weight:700;color:var(--navy-800);
@@ -3223,6 +3239,7 @@ let UI = {
   moverSubcategoriaModal: null, // { nome, tipo, grupo, categoria, grupoDestino, categoriaDestino } — mover uma subcategoria para outra categoria/grupo
   posicaoModal: null, // { nivel:'grupo'|'categoria'|'subcategoria', grupo, categoria, nome } — reposicionar (início/fim/depois de)
   gruposAbertos: new Set(),
+  fluxoMesesFechados: new Set(), // chaves "ano-mes" recolhidas manualmente no Fluxo de Caixa (item 14) — vazio por padrão = todos expandidos, igual ao comportamento anterior
   ajudaFluxoAberta: false,
   ajudaCartoesAberta: false,
   ajudaDashboardAberta: false,
@@ -8980,24 +8997,39 @@ function renderPainelProjecao(m, idx){
   const chDescricao = Math.max(20, (chDia+chTipo+chValor+chSaldo+chAcoes)*0.30);
   const chTotal = chDia + chDescricao + chTipo + chValor + chSaldo + chAcoes;
   const pct = ch => (ch/chTotal*100).toFixed(2);
+  // Item 14 do requisito de responsividade: cada mês vira um card colapsável — cabeçalho clicável (título +
+  // resumo do mês, sempre visíveis) e o detalhe (tabela de lançamentos + saldo final projetado) só aparece
+  // quando expandido. Usa <details>/<summary> nativos (mesmo padrão já usado nos Grupos de Configurações —
+  // ver data-grupo-details), com UI.fluxoMesesFechados guardando só as chaves recolhidas manualmente —
+  // vazio por padrão, então todos os meses continuam abertos como antes até o usuário recolher algum.
+  const chaveMesFluxo = `${m.ano}-${m.mes}`;
+  const abertoFluxo = !UI.fluxoMesesFechados.has(chaveMesFluxo);
   return `
   <div class="panel" style="margin-bottom:0;">
-    <h2><span>📅 ${MESES[m.mes-1]}/${m.ano}</span></h2>
-    ${idx===0
-      ? ``
-      : `<p class="hint" style="margin-top:0;">Saldo inicial <b>${fmtBRL(m.saldoInicial)}</b> (saldo final projetado do mês anterior)</p>`}
-    <div class="table-wrap" style="max-height:1335px;overflow-x:auto;"><table class="tabela-fluxo" style="table-layout:fixed;width:100%;">
-      <thead><tr>
-        <th style="text-align:center;width:${pct(chDia)}%;">Dia</th>
-        <th style="text-align:left;width:${pct(chDescricao)}%;">Descrição</th>
-        <th style="text-align:center;width:${pct(chTipo)}%;">Tipo</th>
-        <th style="text-align:right;width:${pct(chValor)}%;">Valor</th>
-        <th style="text-align:right;width:${pct(chSaldo)}%;">Saldo</th>
-        <th style="width:${pct(chAcoes)}%;"></th>
-      </tr></thead>
-      <tbody>${linhasHtml}</tbody>
-    </table></div>
-    <div class="saldo-final-projetado ${m.saldoFinal>=0?'pos':'neg'}"><span>Saldo final projetado</span><span class="val">${fmtBRL(m.saldoFinal)}</span></div>
+    <details class="fluxo-mes-details" ${abertoFluxo?'open':''} data-fluxo-mes-details="${chaveMesFluxo}">
+      <summary class="fluxo-mes-summary">
+        <span class="fluxo-mes-titulo">📅 ${MESES[m.mes-1]}/${m.ano}</span>
+        <span class="fluxo-mes-resumo">
+          ${idx===0 ? '' : `<span class="hint" style="margin:0;">Saldo inicial ${fmtBRL(m.saldoInicial)}</span>`}
+          <b class="${m.saldoFinal>=0?'pos':'neg'}">Saldo final ${fmtBRL(m.saldoFinal)}</b>
+        </span>
+        <span class="expand-arrow" data-arrow-for="fluxo-mes-${chaveMesFluxo}">${abertoFluxo?'➖':'➕'}</span>
+      </summary>
+      <div class="fluxo-mes-corpo">
+        <div class="table-wrap" style="max-height:1335px;overflow-x:auto;"><table class="tabela-fluxo" style="table-layout:fixed;width:100%;">
+          <thead><tr>
+            <th style="text-align:center;width:${pct(chDia)}%;">Dia</th>
+            <th style="text-align:left;width:${pct(chDescricao)}%;">Descrição</th>
+            <th style="text-align:center;width:${pct(chTipo)}%;">Tipo</th>
+            <th style="text-align:right;width:${pct(chValor)}%;">Valor</th>
+            <th style="text-align:right;width:${pct(chSaldo)}%;">Saldo</th>
+            <th style="width:${pct(chAcoes)}%;"></th>
+          </tr></thead>
+          <tbody>${linhasHtml}</tbody>
+        </table></div>
+        <div class="saldo-final-projetado ${m.saldoFinal>=0?'pos':'neg'}"><span>Saldo final projetado</span><span class="val">${fmtBRL(m.saldoFinal)}</span></div>
+      </div>
+    </details>
   </div>`;
 }
 /* ---------- Modal: editar os saldos iniciais das contas que compõem o Saldo Inicial do Fluxo de Caixa
@@ -11542,6 +11574,12 @@ function bindEvents(){
     const g = d.dataset.grupoDetails;
     if(d.open) UI.gruposAbertos.add(g); else UI.gruposAbertos.delete(g);
     const arrow = document.querySelector(`[data-arrow-for="grupo-${CSS.escape(g)}"]`);
+    if(arrow) arrow.textContent = d.open ? '➖' : '➕';
+  }));
+  document.querySelectorAll('[data-fluxo-mes-details]').forEach(d=> d.addEventListener('toggle', ()=>{
+    const chave = d.dataset.fluxoMesDetails;
+    if(d.open) UI.fluxoMesesFechados.delete(chave); else UI.fluxoMesesFechados.add(chave);
+    const arrow = document.querySelector(`[data-arrow-for="fluxo-mes-${CSS.escape(chave)}"]`);
     if(arrow) arrow.textContent = d.open ? '➖' : '➕';
   }));
   document.querySelector('[data-ajuda-fluxo]')?.addEventListener('toggle', e=>{ UI.ajudaFluxoAberta = e.target.open; });
