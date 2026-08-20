@@ -9773,6 +9773,27 @@ function renderHistoricoMetaPanel(competencia){
       <div class="kpi" style="border:none;"><div class="lbl">Menor gasto</div><div class="val" style="font-size:16px;">${fmtBRL(h.menor)}</div></div>
       <div class="kpi" style="border:none;"><div class="lbl">% médio de utilização</div><div class="val" style="font-size:16px;">${fmtPercentSmart(h.pctMedio)}</div></div>
     </div>
+    <!-- Detalhamento mês a mês (item 17 do requisito de responsividade): apresentação hierárquica e
+         comparável (Meta x Gasto x Diferença x Situação) de cada um dos 12 meses do gráfico acima — antes
+         só existia o gráfico, sem o dado mês a mês; usa tabela-cards-mobile (mesmo padrão genérico já
+         usado em Cartões/Metas), então no mobile vira uma lista de cards, mantendo a tabela no desktop. -->
+    <div class="table-wrap" style="margin-top:16px;"><table class="tabela-cards-mobile">
+      <thead><tr><th>Mês</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Diferença</th><th>Situação</th></tr></thead>
+      <tbody>
+      ${[...h.historico].reverse().map(x=>{
+        const diferenca = x.meta - x.gasto;
+        const situ = situacaoMeta(x.gasto, x.meta);
+        const info = SITUACAO_META_INFO[situ];
+        return `<tr>
+          <td data-label="Mês">${competenciaLabel(x.competencia)}</td>
+          <td class="val-cell" data-label="Meta" style="text-align:right;">${fmtBRL(x.meta)}</td>
+          <td class="val-cell" data-label="Gasto" style="text-align:right;">${fmtBRL(x.gasto)}</td>
+          <td class="val-cell ${diferenca<0?'neg':'pos'}" data-label="Diferença" style="text-align:right;">${fmtBRL(diferenca)}</td>
+          <td data-label="Situação"><span class="meta-situacao-tag" style="background:${info.cor}1a;color:${info.cor};">${info.emoji} ${info.label}</span></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>
   </div>`;
 }
 
