@@ -61,6 +61,17 @@
   --safe-right:env(safe-area-inset-right,0px);
 }
 *{box-sizing:border-box;}
+/* Regra global de segurança (item 11 do requisito de responsividade): nenhum conteúdo de um card deve
+   ultrapassar a largura do próprio card — texto quebra/reduz antes de vazar, nunca cria rolagem horizontal
+   por acidente. Cada componente mantém suas próprias regras específicas (tabelas convertidas em cards,
+   gráficos com max-width:100% etc.); isto é só uma rede de segurança por baixo delas. */
+.panel,.kpi,.card,.mini-card,.conta-financeira-card,.reg-card,.competencia-futura-card,.info-card,
+.cartoes-resumo-item,.aportes-categoria-bloco,.leitura-financeira-item{
+  min-width:0;max-width:100%;overflow-wrap:break-word;word-break:break-word;
+}
+.panel img,.kpi img,.card img,.mini-card img,.conta-financeira-card img,
+.panel svg,.kpi svg,.card svg,.mini-card svg,.conta-financeira-card svg,
+.panel canvas,.kpi canvas,.card canvas,.mini-card canvas,.conta-financeira-card canvas{max-width:100%;}
 html{margin:0;padding:0;overflow-x:hidden;overflow-y:visible;}
 body{margin:0;padding:0;font-family:var(--sans);background:var(--navy-50);color:var(--ink);min-height:100vh;}
 button{font-family:var(--sans);cursor:pointer;}
@@ -84,7 +95,16 @@ input,select{font-family:var(--sans);}
 .ti-opcao-icone{width:44px;height:44px;border-radius:50%;background:var(--navy-50,#f4f7fc);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px;}
 .ti-opcao-titulo{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--navy-900);margin-bottom:6px;}
 .ti-opcao-desc{font-size:12.5px;color:#5b6b85;margin-bottom:14px;flex:1;}
-.ti-opcao .btn{width:100%;}
+.ti-opcao .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;}
+.ti-opcao .btn svg{flex-shrink:0;}
+/* Status de conexão (🟢/🟡/🔴 — item 2 do requisito de responsividade), sempre acima do botão. */
+.ti-status-conexao{font-size:12.5px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:5px;}
+.ti-status-conectado{color:var(--receita);}
+.ti-status-conectando{color:var(--gold-dark);}
+.ti-status-desconectado{color:var(--despesa);}
+/* E-mail conectado: texto simples — nunca um link/mailto (item 2 do requisito), mesmo que o navegador
+   tente autodetectar o padrão de e-mail. */
+.ti-email-conectado{-webkit-user-select:text;user-select:text;text-decoration:none!important;cursor:text;}
 .ti-opcao-fallback{margin-top:8px;width:100%;}
 .ti-rodape{border-top:1px solid var(--line);padding-top:22px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
 .ti-checklist{display:flex;flex-direction:column;gap:8px;flex:1;min-width:220px;}
@@ -116,8 +136,8 @@ input,select{font-family:var(--sans);}
    consistente com o restante da aplicação. */
 #btnMenuArquivo:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.6);}
 #btnMenuArquivo:focus-visible{outline:2px solid var(--gold);outline-offset:1px;}
-.menu-arquivo-painel{position:absolute;top:calc(100% + 6px);right:0;z-index:50;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(16,64,141,.18);min-width:240px;padding:6px;}
-.menu-arquivo-painel button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:9px 10px;border-radius:7px;background:none;border:none;font-size:13px;cursor:pointer;color:var(--ink);}
+.menu-arquivo-painel{position:absolute;top:calc(100% + 6px);right:0;z-index:50;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(16,64,141,.18);min-width:300px;width:max-content;max-width:360px;padding:6px;}
+.menu-arquivo-painel button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:9px 10px;border-radius:7px;background:none;border:none;font-size:13px;cursor:pointer;color:var(--ink);white-space:nowrap;}
 .menu-arquivo-painel button:hover{color:var(--gold);}
 .menu-arquivo-painel hr{border:none;border-top:1px solid var(--line);margin:5px 2px;}
 .ma-painel-titulo{display:none;}
@@ -131,6 +151,11 @@ input,select{font-family:var(--sans);}
    vira um painel dedicado (bottom sheet), com título/fechar e uma descrição curta em cada item — nunca o
    menu comprimido de desktop reaproveitado sem adaptação. */
 @media(max-width:700px){
+  /* O botão ☰ Menu some do cabeçalho mobile — o mesmo painel já é acessível via "Mais → 📁 Arquivo" na
+     navegação inferior (item 4/5.1 do requisito de responsividade); nunca duplicar o mesmo menu duas vezes.
+     O painel (.menu-arquivo-painel) continua no DOM porque é filho de .menu-arquivo — só o botão que abria
+     esse painel pelo cabeçalho é que não faz mais sentido no mobile. */
+  #btnMenuArquivo{display:none;}
   .menu-arquivo-painel{
     position:fixed;top:auto;bottom:0;left:0;right:0;min-width:0;width:100%;max-width:100vw;
     border-radius:var(--radius-lg) var(--radius-lg) 0 0;z-index:220;padding:10px 0 calc(14px + var(--safe-bottom));
@@ -668,12 +693,26 @@ tbody tr:hover{background:var(--navy-50);}
 .icon-btn{background:transparent;border:none;color:#6a7a97;padding:4px;border-radius:5px;}
 .icon-btn:hover{background:var(--navy-100);color:var(--navy-900);}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+/* Configurações — busca e controles superiores (itens 19/20 do requisito de responsividade): grupos
+   próprios para nunca comprimir três botões numa única linha estreita, e um campo de busca que nunca
+   ultrapassa a largura disponível do painel. */
+.cat-toolbar{justify-content:space-between;}
+.cat-toolbar-busca{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.cat-toolbar-acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto;}
+.cat-busca-input{min-width:0;width:280px;max-width:100%;}
+@media(max-width:700px){
+  .cat-toolbar{flex-direction:column;align-items:stretch;}
+  .cat-toolbar-busca{width:100%;}
+  .cat-busca-input{flex:1;width:auto;}
+  .cat-toolbar-acoes{width:100%;margin-left:0;}
+  .cat-toolbar-acoes .btn{flex:1 1 auto;white-space:nowrap;}
+}
 @media(max-width:700px){
   .reg-busca-wrap{width:100%;margin-left:0!important;}
   .reg-busca-wrap input[type="search"]{flex:1;min-width:0;}
-  /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento" (item 8 do requisito) — evita duplicar
-     a ação e a sobreposição do FAB fixo com este botão em telas estreitas. */
-  #btnNovoLancamento{display:none;}
+  /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto" (itens 7 e
+     14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em telas estreitas. */
+  #btnNovoLancamento,#btnNovaProjecao{display:none;}
 }
 .toolbar input[type=text], .toolbar input[type=search]{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;min-width:200px;}
 /* ---- Componente padronizado dos modais "Ver Extrato" e "Lançamentos futuros" (qualquer conta) ----
@@ -791,6 +830,11 @@ tbody tr:hover{background:var(--navy-50);}
 }
 .info-card.warn{background:#fff8e6;border-color:#f0d090;color:#7a5000;}
 .info-card .info-card-icon{font-size:17px;line-height:1.4;}
+/* Previsão Financeira — item 9 do requisito de responsividade: Confiabilidade sempre na última linha,
+   layout empilhado e responsivo, nunca ultrapassando a largura do card. */
+.intel-faixa-previsao-linhas{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+.intel-faixa-previsao-linha{overflow-wrap:break-word;word-break:break-word;}
+.intel-faixa-previsao-confiabilidade{margin-top:2px;padding-top:6px;border-top:1px dashed var(--navy-100);}
 .opcoes-block{
   display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;
   background:var(--navy-50);border:1px solid var(--line);border-radius:10px;padding:12px 16px;
@@ -1221,20 +1265,26 @@ summary::marker{content:'';}
   .tabela-cartoes{min-width:0;width:100%;display:block;}
   .tabela-cartoes thead{display:none;}
   .tabela-cartoes tbody{display:block;}
+  /* Cabeçalho do card (item 13 do requisito): logo/nome do cartão e o botão "Importar arquivo do banco"
+     na MESMA linha, alinhados verticalmente — a <tr> vira um flex-row "quebrado", onde a 1ª e a 2ª coluna
+     (nome do cartão e importar) dividem a primeira linha, e cada campo seguinte ocupa uma linha própria
+     (mesma técnica de card das demais tabelas, sem duplicar o cálculo de nenhuma fatura). */
   .tabela-cartoes tr{
-    display:block;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);
+    display:flex;flex-wrap:wrap;align-items:flex-start;
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-md);
     padding:10px 14px;margin-bottom:10px;
   }
   .tabela-cartoes td{
-    display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;
+    display:flex;flex:1 1 100%;order:3;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;
     border-bottom:1px solid var(--navy-50);text-align:left!important;
   }
+  .tabela-cartoes td:first-child{flex:1 1 auto;min-width:0;order:1;border-bottom:none;padding-bottom:8px;}
+  .tabela-cartoes td.col-importar-cartao{flex:0 0 auto;order:2;border-bottom:none;padding-bottom:8px;justify-content:flex-end;}
   .tabela-cartoes td:last-child{border-bottom:none;}
   .tabela-cartoes td[data-label]:not([data-label=""])::before{
     content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
     color:#8393ac;flex-shrink:0;
   }
-  .tabela-cartoes td.col-importar-cartao{justify-content:flex-end;}
   .tabela-cartoes .data-editavel-linha{justify-content:flex-end;}
   .tabela-cartoes .edit-data-icon{opacity:1!important;transform:none!important;min-width:var(--touch-min);min-height:var(--touch-min);}
   .tabela-cartoes .status-col{align-items:flex-end;}
@@ -1350,6 +1400,10 @@ let oneDriveIndisponivelMsg = null; // guarda o motivo textual da última falha 
    abaixo), mas cada operação de escrita TAMBÉM é protegida pela resposta real da API (403 = sem permissão
    de verdade), nunca só pela interface escondendo botões. */
 let nivelAcessoPasta = null;
+/* Status de conexão exibido na tela inicial (🟢/🟡/🔴 — item 2 do requisito de responsividade):
+   'conectando' | 'conectado' | 'desconectado'. Só controla a apresentação — a segurança/validação real de
+   cada operação continua na resposta de verdade do Graph, nunca só neste indicador visual. */
+let statusConexaoOneDrive = 'desconectado';
 
 function msalConfigurado(){
   return !!(ONEDRIVE_CONFIG.clientId && ONEDRIVE_CONFIG.clientId!=='COLOQUE_AQUI_O_CLIENT_ID_DO_APP_REGISTRATION');
@@ -1376,16 +1430,46 @@ async function initMsal(){
   }
   return msalApp;
 }
+/* Dimensões/posição do popup de autenticação (item 2 do requisito de responsividade): 630×630, centralizado
+   na tela do usuário quando possível — a aplicação principal nunca é substituída/recarregada durante o
+   login, o popup é que navega para login.microsoftonline.com e fecha sozinho ao concluir (comportamento
+   nativo do MSAL.js com loginPopup). */
+function atributosPopupLogin(){
+  const largura = 630, altura = 630;
+  const left = Math.max(0, Math.round((window.screen.width - largura) / 2 + (window.screenLeft||0)));
+  const top = Math.max(0, Math.round((window.screen.height - altura) / 2 + (window.screenTop||0)));
+  return { popupSize: { width: largura, height: altura }, popupPosition: { top, left } };
+}
 async function loginOneDrive(){
   await initMsal();
   if(!msalConfigurado()){
     alert('⚠️ Integração com o OneDrive ainda não configurada.\n\nDefina ONEDRIVE_CONFIG.clientId no início do index.html com o "ID do aplicativo (cliente)" do seu App Registration no Microsoft Entra ID (ver instruções no comentário do código).');
     return false;
   }
+  statusConexaoOneDrive = 'conectando';
+  render();
   try{
-    await msalApp.loginRedirect({ scopes: ONEDRIVE_CONFIG.scopes, prompt: 'select_account' });
-    return true; // a página será recarregada pelo redirect — código após isto não executa nesta sessão
-  }catch(e){ registrarErroOneDrive(e); return false; }
+    const r = await msalApp.loginPopup({ scopes: ONEDRIVE_CONFIG.scopes, prompt: 'select_account', popupWindowAttributes: atributosPopupLogin() });
+    if(r && r.account) msalConta = r.account;
+    render(); // já mostra "Conectado como" assim que a conta é conhecida, mesmo antes dos arquivos carregarem
+    // Sem redirect (popup fecha sozinho, a página nunca recarrega), então o carregamento dos arquivos que
+    // antes acontecia em initPersistence() após o retorno do redirect precisa ser disparado aqui.
+    await carregarArquivosDoOneDrive();
+    statusConexaoOneDrive = (fileStatusCfg==='erro' || fileStatusReg==='erro') ? 'desconectado' : 'conectado';
+    render();
+    return true;
+  }catch(e){
+    registrarErroOneDrive(e);
+    statusConexaoOneDrive = 'desconectado';
+    // Popup bloqueado pelo navegador (ex.: Safari sem gesto direto do usuário) — oferece uma alternativa
+    // clara em vez de só falhar silenciosamente (item 2 do requisito).
+    const bloqueado = e && (e.errorCode==='popup_window_error' || e.errorCode==='empty_window_error' || /popup/i.test(e.errorCode||''));
+    if(bloqueado){
+      alert('⚠️ O navegador bloqueou a janela de login.\n\nPermita pop-ups para este site e tente novamente, ou use "Conectar ao OneDrive" mais uma vez — alguns navegadores liberam o popup na segunda tentativa.');
+    }
+    render();
+    return false;
+  }
 }
 async function logoutOneDrive(){
   if(!msalApp || !msalConta) return;
@@ -1404,9 +1488,16 @@ async function obterTokenGraph(){
     return r.accessToken;
   }catch(e){
     if(e instanceof msal.InteractionRequiredAuthError){
-      // Token expirado/revogado e não renovável silenciosamente — precisa de nova interação de login.
-      await msalApp.acquireTokenRedirect({ scopes: ONEDRIVE_CONFIG.scopes, account: msalConta });
-      throw new ErroOneDrive('token-expirado', 'Sua sessão com a Microsoft expirou. Faça login novamente para continuar.');
+      // Token expirado/revogado e não renovável silenciosamente — precisa de nova interação de login, num
+      // popup (não redirect) para nunca substituir/recarregar a página principal em uso (item 2 do
+      // requisito de responsividade).
+      try{
+        const r = await msalApp.acquireTokenPopup({ scopes: ONEDRIVE_CONFIG.scopes, account: msalConta, popupWindowAttributes: atributosPopupLogin() });
+        return r.accessToken;
+      }catch(e2){
+        registrarErroOneDrive(e2);
+        throw new ErroOneDrive('token-expirado', 'Sua sessão com a Microsoft expirou. Faça login novamente para continuar.');
+      }
     }
     throw new ErroOneDrive('auth', 'Não foi possível confirmar sua autenticação com a Microsoft.');
   }
@@ -3787,7 +3878,7 @@ function agendarSnapshotLocal(){
    atualização dos dados" depois que backup + gravação + validação de AMBOS os arquivos forem confirmados
    com sucesso — nunca antes disso (regra fundamental do item 38). */
 async function salvarArquivos(){
-  if(!fileHandleReg && !fileHandleCfg){ alert('Nenhum arquivo conectado no OneDrive para salvar. Entre com sua conta Microsoft primeiro.'); return false; }
+  if(!fileHandleReg && !fileHandleCfg){ alert('Nenhum arquivo conectado no OneDrive para salvar. Conecte-se ao OneDrive primeiro.'); return false; }
   if(syncEmAndamento) return false; // nunca duas sincronizações simultâneas (itens 9 e 10)
   if(!onlineStatus){ atualizarSyncEstado(); return false; } // offline: a alteração já está protegida pelo snapshot local; tenta de novo quando a conexão voltar
   syncEmAndamento = true;
@@ -3910,17 +4001,33 @@ async function garantirBackupAntesDeGravar(){
 async function initPersistence(){
   // A aplicação SEMPRE inicia zerada: não carrega automaticamente nenhum arquivo de uma sessão anterior.
   // O usuário decide explicitamente o que abrir a cada nova sessão de trabalho (ver renderTelaInicial).
-  await carregarConfigBackup();
-  agendarTimerBackupPeriodico();
-  await carregarUltimaSincronizacaoSalva(); // "Última atualização dos dados" (SyncManager) sobrevive a recarregar a página
-  try{ alteracoesLocaisPendentes = !!(await idbGetHandle('snapshotPendente')); }catch(e){}
+  //
+  // Otimização do primeiro carregamento (item 3 do requisito de responsividade): a tela inicial aparece
+  // IMEDIATAMENTE, com o status "🟡 Conectando", sem esperar nenhuma chamada assíncrona — a verificação de
+  // sessão/token (rápida, local) roda em seguida, e só então (se já houver conta) as chamadas ao Graph
+  // (mais lentas). Configurações secundárias (config de backup, última sincronização salva, snapshot local
+  // pendente) não bloqueiam mais essa primeira tela — carregam depois, atualizando a interface quando
+  // prontas, nunca antes dela aparecer.
+  statusConexaoOneDrive = msalConfigurado() ? 'conectando' : 'desconectado';
+  render();
   await initMsal().catch(e=>registrarErroOneDrive(e));
-  if(!msalConfigurado()){ fileStatusReg = "sem-suporte"; fileStatusCfg = "sem-suporte"; }
-  else if(msalConta){ await carregarArquivosDoOneDrive(); }
-  else { fileStatusReg = "desconectado"; fileStatusCfg = "desconectado"; }
+  if(!msalConfigurado()){
+    fileStatusReg = "sem-suporte"; fileStatusCfg = "sem-suporte"; statusConexaoOneDrive = 'desconectado';
+  } else if(msalConta){
+    render(); // já mostra "Conectado como" assim que a conta é conhecida, mesmo antes dos arquivos carregarem
+    await carregarArquivosDoOneDrive();
+    statusConexaoOneDrive = (fileStatusCfg==='erro' || fileStatusReg==='erro') ? 'desconectado' : 'conectado';
+  } else {
+    fileStatusReg = "desconectado"; fileStatusCfg = "desconectado"; statusConexaoOneDrive = 'desconectado';
+  }
   STATE.ready = true;
   atualizarSyncEstado();
   render();
+  // Operações secundárias — não essenciais para a tela inicial aparecer nem para o usuário conectar/abrir
+  // os arquivos — seguem em segundo plano, cada uma atualizando a interface quando concluir.
+  carregarConfigBackup().then(()=>{ agendarTimerBackupPeriodico(); render(); });
+  carregarUltimaSincronizacaoSalva().then(render); // "Última atualização dos dados" (SyncManager) sobrevive a recarregar a página
+  idbGetHandle('snapshotPendente').then(v=>{ alteracoesLocaisPendentes = !!v; render(); }).catch(()=>{});
 }
 /* Único ponto que localiza a pasta compartilhada, verifica a permissão do usuário autenticado e carrega
    (ou detecta a ausência d)os dois arquivos — chamado tanto na inicialização quanto logo após o login.
@@ -4093,7 +4200,7 @@ function montarConteudoBackup(){ return `===CFG===\n${buildCSVConfig()}\n===REG=
    origem única de dados — nunca um diálogo de escolha de local local. */
 async function criarBackup(){
   ultimoErroBackup = null;
-  if(!msalConta){ alert('Você precisa entrar com sua conta Microsoft para criar backups no OneDrive.'); return false; }
+  if(!msalConta){ alert('Você precisa conectar ao OneDrive para criar backups.'); return false; }
   const nome = nomeArquivoBackup('manual');
   try{
     await oneDriveClient.escreverTexto(`${ONEDRIVE_CONFIG.pastaBackups}/${nome}`, await montarConteudoBackupVersionado('manual'));
@@ -6660,7 +6767,15 @@ function render(){
         ${renderTabbar()}
       </div>
       <main>${renderTab()}</main>
-      ${(nivelAcessoPasta!=='leitura' && ['dashboard','registros','resumo'].includes(UI.tab) && !UI.menuMobileAberto && !UI.menuArquivoAberto && UI.filtrosMobileAberto==null) ? `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>` : ''}
+      ${(()=>{
+        // O FAB é contextual: só existe onde o desktop já tem um botão equivalente "+ Novo lançamento" na
+        // própria tela (item 7 do requisito de responsividade) — nunca globalmente em todos os painéis, e
+        // nunca com uma ação diferente da que o botão de desktop correspondente executaria.
+        if(UI.menuMobileAberto || UI.menuArquivoAberto || UI.filtrosMobileAberto!=null || nivelAcessoPasta==='leitura') return '';
+        if(UI.tab==='registros') return `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
+        if(UI.tab==='resumo') return `<button type="button" class="fab-novo-lancamento" id="fabNovaProjecao" aria-label="Novo lançamento previsto" title="Novo lançamento previsto">＋</button>`;
+        return '';
+      })()}
       <div class="footnote">Controle Financeiro Familiar · Família Gomes Oliveira · dados salvos em configuracoes.cfg e registros.log</div>
     </div>
     ${UI.importStep>0 ? renderImportModal() : ""}
@@ -6701,6 +6816,16 @@ function render(){
 /* Tela inicial: exibida sempre que a sessão está zerada (nenhum arquivo .cfg/.log conectado ainda) — ao
    abrir a aplicação, ou depois de desconectar/fechar a sessão. Modelo semelhante a softwares tradicionais
    de gestão financeira (ex.: Microsoft Money): a aplicação nunca assume dados de uma sessão anterior. */
+/* Ícone oficial do OneDrive (SVG) — ponto único de definição, reutilizado em qualquer lugar da aplicação
+   que precise dele (ex.: card e botão "Conectar ao OneDrive" da tela inicial), para nunca ter dois ícones
+   visualmente diferentes representando o OneDrive. */
+const ONEDRIVE_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 57.6 57.6" width="24" height="24" baseProfile="basic"><path fill="#0d47a1" d="M15.935 14.374C7.133 14.374.552 21.58.058 29.606c.307 1.729 1.314 5.144 2.893 4.969 1.973-.22 6.942 0 11.18-7.673 3.095-5.604 9.463-12.529 1.804-12.529"/><path fill="#1e88e5" d="M13.9 17.37c-2.959 4.685-6.942 11.398-8.286 13.51-1.599 2.511-5.83 1.444-5.48-2.156a16 16 0 0 0-.079.883c-.578 9.364 6.846 17.141 16.085 17.141 10.182 0 34.466-12.686 32.008-25.398-2.591-7.471-9.87-12.832-18.121-12.832s-13.54 4.753-16.127 8.851"/><path fill="#4fc3f7" d="M15.99 46.752s24.312.048 28.436.048c7.484 0 13.174-6.109 13.174-13.24s-5.804-13.202-13.174-13.202-11.614 5.513-14.802 11.532c-3.734 7.051-8.5 14.778-13.634 14.862"/></svg>';
+/* Status de conexão (🟢/🟡/🔴 — item 2 do requisito de responsividade), a partir de statusConexaoOneDrive. */
+function statusConexaoOneDriveInfo(){
+  if(statusConexaoOneDrive==='conectado') return { emoji:'🟢', texto:'Conectado' };
+  if(statusConexaoOneDrive==='conectando') return { emoji:'🟡', texto:'Conectando…' };
+  return { emoji:'🔴', texto:'Desconectado' };
+}
 function renderTelaInicial(){
   const cfgProntoOk = fileStatusCfg==='conectado';
   const regProntoOk = fileStatusReg==='conectado';
@@ -6717,7 +6842,7 @@ function renderTelaInicial(){
             <h1>Controle Financeiro Familiar</h1>
             <p class="subtitulo">Família Gomes Oliveira</p>
           </div>
-          <p class="hint">${msalConta ? `Conectado como <b>${escapeHtml(msalConta.username||msalConta.name||'')}</b>${nivelAcessoPasta==='leitura'?' · <b>👁️ somente leitura</b>':(nivelAcessoPasta==='edicao'?' · <b>✏️ edição</b>':'')}<br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Entre com sua conta Microsoft para acessar seus dados no OneDrive.'}</p>
+          <p class="hint">${msalConta ? `Conectado como <b class="ti-email-conectado">${escapeHtml(msalConta.username||msalConta.name||'')}</b><br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Conecte-se ao OneDrive para acessar seus dados.'}</p>
         </div>
       </div>
       ${!hasFSAccess ? `<div class="banner" style="text-align:left;margin-bottom:20px;">⚠️ Integração com o OneDrive ainda não configurada neste app. Defina <code>ONEDRIVE_CONFIG.clientId</code> no início do index.html com o ID do aplicativo do seu App Registration no Microsoft Entra ID (ver instruções no comentário do código-fonte).</div>` : ''}
@@ -6725,12 +6850,13 @@ function renderTelaInicial(){
       ${(alteracoesLocaisPendentes && arquivosProntos) ? `<div class="banner" style="text-align:left;margin-bottom:20px;">💾 Encontramos <b>alterações não sincronizadas</b> de uma sessão anterior (feitas offline ou antes de uma falha de sincronização) neste dispositivo. <button type="button" class="btn btn-primary btn-sm" id="tiRecuperarSnapshot" style="margin-left:8px;">Recuperar e sincronizar</button> <button type="button" class="btn btn-ghost btn-sm" id="tiDescartarSnapshot">Descartar</button></div>` : ''}
       <div class="ti-opcoes">
         <div class="ti-opcao">
-          <div class="ti-opcao-icone"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 57.6 57.6" width="24" height="24" baseProfile="basic"><path fill="#0d47a1" d="M15.935 14.374C7.133 14.374.552 21.58.058 29.606c.307 1.729 1.314 5.144 2.893 4.969 1.973-.22 6.942 0 11.18-7.673 3.095-5.604 9.463-12.529 1.804-12.529"/><path fill="#1e88e5" d="M13.9 17.37c-2.959 4.685-6.942 11.398-8.286 13.51-1.599 2.511-5.83 1.444-5.48-2.156a16 16 0 0 0-.079.883c-.578 9.364 6.846 17.141 16.085 17.141 10.182 0 34.466-12.686 32.008-25.398-2.591-7.471-9.87-12.832-18.121-12.832s-13.54 4.753-16.127 8.851"/><path fill="#4fc3f7" d="M15.99 46.752s24.312.048 28.436.048c7.484 0 13.174-6.109 13.174-13.24s-5.804-13.202-13.174-13.202-11.614 5.513-14.802 11.532c-3.734 7.051-8.5 14.778-13.634 14.862"/></svg></div>
-          <div class="ti-opcao-titulo">${msalConta ? 'Conta Microsoft' : 'Entrar com a Microsoft'}</div>
-          <div class="ti-opcao-desc">${msalConta ? 'Sua conta já está conectada. Os arquivos são lidos e gravados diretamente no seu OneDrive.' : 'Autentique-se com sua conta Microsoft (OAuth2) para localizar e acessar os arquivos deste app no seu OneDrive.'}</div>
+          <div class="ti-opcao-icone">${ONEDRIVE_ICON_SVG}</div>
+          <div class="ti-opcao-titulo">${msalConta ? 'Conectado ao OneDrive' : 'Conectar ao OneDrive'}</div>
+          <div class="ti-opcao-desc">${msalConta ? 'Sua conta já está conectada. Os arquivos são lidos e gravados diretamente no seu OneDrive.' : 'Conecta com sua conta Microsoft para acessar os arquivos deste app no seu OneDrive.'}</div>
+          <div class="ti-status-conexao ti-status-${statusConexaoOneDrive}">${statusConexaoOneDriveInfo().emoji} ${statusConexaoOneDriveInfo().texto}</div>
           ${msalConta
-            ? `<button class="btn btn-ghost" id="tiSairMicrosoft">🔌 Sair da conta Microsoft</button>`
-            : `<button class="btn btn-gold" id="tiEntrarMicrosoft" ${!hasFSAccess?'disabled':''}>☁️ Entrar com a Microsoft</button>`}
+            ? `<button class="btn btn-ghost" id="tiSairMicrosoft">🔌 Desconectar do OneDrive</button>`
+            : `<button class="btn btn-gold" id="tiEntrarMicrosoft" ${(!hasFSAccess || statusConexaoOneDrive==='conectando')?'disabled':''}>${ONEDRIVE_ICON_SVG} Conectar ao OneDrive</button>`}
         </div>
         ${msalConta && faltamCriar && nivelAcessoPasta!=='leitura' ? `
         <div class="ti-opcao">
@@ -6965,7 +7091,7 @@ function renderFileBanner(){
   }
   if(nivelAcessoPasta==='leitura') partes.push(`👁️ <b>Modo somente leitura</b> — sua conta tem permissão de visualização nesta pasta compartilhada. Você pode consultar dados, lançamentos, histórico e backups, mas alterações, exclusões e novos backups não podem ser salvos.`);
   if(dadosDesatualizadosExternos) partes.push(`🔄 <b>Os dados no OneDrive foram atualizados por outra pessoa</b> desde que esta sessão os carregou. Use <b>☰ Menu → 🔓 Tentar novamente</b> quando quiser atualizar (suas alterações pendentes aqui na tela não são perdidas até você recarregar).`);
-  if(fileStatusReg==='token-expirado' || fileStatusCfg==='token-expirado') partes.push(`Sua sessão com a Microsoft expirou. Use <b>☰ Menu → 🔓 Tentar novamente</b> ou entre com a Microsoft de novo.`);
+  if(fileStatusReg==='token-expirado' || fileStatusCfg==='token-expirado') partes.push(`Sua sessão com a Microsoft expirou. Use <b>☰ Menu → 🔓 Tentar novamente</b> ou conecte-se ao OneDrive de novo.`);
   if(fileStatusReg==='erro') partes.push(`⚠️ <b>Não foi possível acessar registros.log no OneDrive</b> agora${oneDriveIndisponivelMsg?`: ${escapeHtml(oneDriveIndisponivelMsg)}`:''}. Nada foi sobrescrito para proteger seus dados. Use <b>☰ Menu → 🔓 Tentar novamente</b>.`);
   if(fileStatusCfg==='erro') partes.push(`⚠️ <b>Não foi possível acessar configuracoes.cfg no OneDrive</b> agora${oneDriveIndisponivelMsg?`: ${escapeHtml(oneDriveIndisponivelMsg)}`:''}. Nada foi sobrescrito para proteger seus dados. Use <b>☰ Menu → 🔓 Tentar novamente</b>.`);
   if(fileStatusReg==='leitura-suspeita') partes.push(`⚠️ <b>O arquivo de registros não pôde ser lido corretamente</b> — nada foi salvo automaticamente para proteger seus dados.`);
@@ -7205,6 +7331,13 @@ function drawCharts(){
       c2d.restore();
       return larguraBarra >= (larguraTexto + 14);
     };
+    // Ajustes responsivos (item 8 do requisito de responsividade): em telas estreitas, os rótulos do eixo X
+    // (valores em R$) se sobrepunham por terem espaço demais reservado, e os nomes de grupo no eixo Y (às
+    // vezes longos) ficavam desalinhados/comprimidos — fonte menor, menos ticks no eixo X e rótulos do
+    // eixo Y abreviados só quando a largura real do canvas é pequena (recalculado a cada render).
+    const larguraChartGrupos = elG.parentElement ? elG.parentElement.clientWidth : window.innerWidth;
+    const mobileChartGrupos = larguraChartGrupos < 420;
+    const abreviarLabelGrupo = (l)=> (mobileChartGrupos && l.length>18) ? l.slice(0,17)+'…' : l;
     chartInstances.push(new Chart(elG, {
       type:'bar',
       data:{ labels, datasets:[{ data, backgroundColor: gruposComValor.map(g=>GRUPO_COLORS[g]||'#8393ac'), borderRadius:6 }] },
@@ -7223,7 +7356,16 @@ function drawCharts(){
           formatter: v=>labelTextoBarra(v)
         }
       },
-        scales:{ x:{ ticks:{ callback:v=>fmtBRL(v) } }, y:{ grid:{ display:false } } }, maintainAspectRatio:false }
+        scales:{
+          x:{ ticks:{
+            callback:v=>fmtBRL(v), maxRotation:0, minRotation:0,
+            maxTicksLimit: mobileChartGrupos?4:8, font:{size: mobileChartGrupos?9:11}
+          } },
+          y:{ grid:{ display:false }, ticks:{
+            autoSkip:false, font:{size: mobileChartGrupos?10:12},
+            callback:(v,i)=>abreviarLabelGrupo(labels[i])
+          } }
+        }, maintainAspectRatio:false }
     }));
   }
   const elP = document.getElementById('chartPizza');
@@ -8927,12 +9069,10 @@ function renderInteligencia(){
       ${ctx.projecoes.length ? (()=>{ const ult = ctx.projecoes[ctx.projecoes.length-1]; return `
       <div class="info-card intel-faixa-previsao" style="margin-top:0;margin-bottom:10px;">
         <span class="info-card-icon">🔮</span>
-        <div style="flex:1;">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;">
-            <span><b>Projeção (${MESES[ult.mes-1]}/${ult.ano}):</b> ${fmtBRL(ult.saldoProjetado)}</span>
-            <span><b>Confiabilidade:</b> ${ctx.confiabilidade.nivel}</span>
-          </div>
-          <div style="margin-top:4px;"><b>Faixa provável:</b> ${fmtBRL(ult.faixaInferior)} a ${fmtBRL(ult.faixaSuperior)}</div>
+        <div class="intel-faixa-previsao-linhas">
+          <div class="intel-faixa-previsao-linha"><b>Projeção (${MESES[ult.mes-1]}/${ult.ano}):</b> ${fmtBRL(ult.saldoProjetado)}</div>
+          <div class="intel-faixa-previsao-linha"><b>Faixa provável:</b> ${fmtBRL(ult.faixaInferior)} a ${fmtBRL(ult.faixaSuperior)}</div>
+          <div class="intel-faixa-previsao-linha intel-faixa-previsao-confiabilidade"><b>Confiabilidade:</b> ${ctx.confiabilidade.nivel}</div>
         </div>
       </div>`; })() : ''}
       <div class="table-wrap" style="max-height:none;"><table class="tabela-cards-mobile">
@@ -9541,14 +9681,17 @@ function renderCategorias(){
       <div class="cartoes-resumo-item"><span class="ico">📁</span><div><div class="val">${totalCategoriasVisiveis}</div><div class="lbl">categoria${totalCategoriasVisiveis===1?'':'s'}</div></div></div>
       <div class="cartoes-resumo-item"><span class="ico">🏷️</span><div><div class="val">${totalResultados}</div><div class="lbl">subcategoria${totalResultados===1?'':'s'}</div></div></div>
     </div>
-    <div class="toolbar" style="margin-bottom:16px;">
-      <input type="text" id="buscaCategoriasInput" placeholder="Buscar por palavra em grupos/categorias/subcategorias..." value="${escapeHtml(UI.buscaCategorias)}" style="min-width:392px;">
-      <button class="btn btn-primary btn-sm" id="btnBuscarCategorias">🔍 Buscar</button>
-      ${UI.buscaCategorias ? `<button class="btn btn-ghost btn-sm" id="btnLimparBuscaCategorias">✕ Limpar</button><span class="badge-count">${totalResultados} resultado(s)</span>` : ''}
-      <span style="flex:1;"></span>
-      <button class="btn btn-ghost btn-sm" id="btnExpandirTodos">➕ Expandir todos</button>
-      <button class="btn btn-ghost btn-sm" id="btnRecolherTodos">➖ Recolher todos</button>
-      <button class="btn btn-primary btn-sm" id="btnNovaSubcategoria">+ Nova subcategoria</button>
+    <div class="toolbar cat-toolbar" style="margin-bottom:16px;">
+      <div class="cat-toolbar-busca">
+        <input type="text" id="buscaCategoriasInput" class="cat-busca-input" placeholder="Buscar por palavra" value="${escapeHtml(UI.buscaCategorias)}">
+        <button class="btn btn-primary btn-sm" id="btnBuscarCategorias">🔍 Buscar</button>
+        ${UI.buscaCategorias ? `<button class="btn btn-ghost btn-sm" id="btnLimparBuscaCategorias">✕ Limpar</button><span class="badge-count">${totalResultados} resultado(s)</span>` : ''}
+      </div>
+      <div class="cat-toolbar-acoes">
+        <button class="btn btn-ghost btn-sm" id="btnExpandirTodos">➕ Expandir todos</button>
+        <button class="btn btn-ghost btn-sm" id="btnRecolherTodos">➖ Recolher todos</button>
+        <button class="btn btn-primary btn-sm" id="btnNovaSubcategoria">+ Nova subcategoria</button>
+      </div>
     </div>
     ${UI.buscaCategorias && totalResultados===0 ? `<div class="empty-state"><div class="big">🔍</div>Nenhum grupo, categoria ou subcategoria encontrado com "${escapeHtml(UI.buscaCategorias)}".</div>` : ''}
     ${Object.keys(porGrupo).map(grupo=>`
@@ -9978,7 +10121,7 @@ function renderBackupModal(){
           <button type="button" class="btn btn-ghost btn-sm" id="btnAtualizarListaBackup">↻ Atualizar lista</button>
         </div>
         ${m.carregando ? `<div class="empty-state"><div class="big">⏳</div>Lendo backups...</div>` :
-          !msalConta ? `<div class="empty-state"><div class="big">☁️</div>Entre com sua conta Microsoft para ver o histórico de versões no OneDrive.</div>` :
+          !msalConta ? `<div class="empty-state"><div class="big">☁️</div>Conecte-se ao OneDrive para ver o histórico de versões.</div>` :
           !m.backups || m.backups.length===0 ? `<div class="empty-state"><div class="big">🗄️</div>Nenhum backup encontrado nesta pasta ainda.</div>` : `
         <div class="table-wrap" style="max-height:420px;"><table class="tabela-cards-mobile">
           <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Arquivo</th><th style="text-align:right;">Tamanho</th><th style="text-align:right;">Registros</th><th style="text-align:center;">Integridade</th><th></th></tr></thead>
@@ -12018,10 +12161,10 @@ function bindEvents(){
     }
   }
 
-  document.getElementById('btnNovaProjecao')?.addEventListener('click', ()=>{
+  document.querySelectorAll('#btnNovaProjecao, #fabNovaProjecao').forEach(b=> b.addEventListener('click', ()=>{
     UI.novaProjecaoModal = { ano: UI.ano, mes: UI.mes, dia:1, descricao:'', tipo:'Despesa', valor:0, cartao:'', editId:null };
     render();
-  });
+  }));
   document.querySelectorAll('[data-proj-edit]').forEach(b=> b.addEventListener('click', ()=>{
     const item = STATE.projecoes.find(p=>p.id===b.dataset.projEdit);
     if(!item) return;
