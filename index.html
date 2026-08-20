@@ -212,7 +212,7 @@ input,select{font-family:var(--sans);}
   flex-wrap:wrap;gap:10px;border-bottom:3px solid var(--gold);
 }
 .app-title{display:flex;align-items:center;gap:18px;font-family:var(--mono);min-width:0;flex:1 1 auto;}
-.app-title > div{min-width:0;padding-left:18px;border-left:1px solid rgba(255,255,255,.18);}
+.app-title-wrap{min-width:0;padding-left:18px;border-left:1px solid rgba(255,255,255,.18);}
 .app-title .mark{
   height:88px;width:auto;object-fit:contain;display:block;flex-shrink:0;
   filter:drop-shadow(0 2px 6px rgba(0,0,0,.25));
@@ -352,17 +352,44 @@ input,select{font-family:var(--sans);}
   .tabbar{padding:0 10px;}
   .tab-btn{padding:9px 14px 8px;font-size:12px;}
 }
+/* Cabeçalho mobile (item 5.1 do requisito de responsividade): reformulado como grid de 3 linhas —
+   1) logo + nome do app/aba atual à esquerda, indicador de sincronização à direita, na mesma linha;
+   2) período (mês/ano), ocupando a largura toda;
+   3) última atualização dos dados, compacta, abaixo.
+   Nenhum elemento novo é criado: .app-title/.app-title-wrap/.header-right viram display:contents só neste
+   breakpoint, "achatando" a árvore para reordenar os mesmos nós via flex+order — sem duplicar nenhum
+   handler/estado, e sem alterar em nada a estrutura ou o comportamento do cabeçalho no desktop. */
 @media(max-width:600px){
-  .app-header{flex-direction:column;align-items:stretch;padding:10px 14px 8px;}
-  .app-title{gap:10px;}
-  .app-title .mark{height:38px;}
-  .app-title h1{font-size:15px;line-height:1.2;}
+  .app-header{
+    display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;
+    padding:10px 14px 8px;gap:0 10px;row-gap:8px;
+  }
+  .app-title{display:contents;}
+  .app-title-wrap{display:contents;}
+  .header-right{display:contents;}
+
+  .app-title .mark{height:34px;order:1;}
+  .app-title-info{order:2;flex:1 1 auto;min-width:0;}
+  .app-title h1{font-size:14.5px;line-height:1.2;}
   .app-title p{font-size:10.5px;display:none;}
   .app-title p.app-title-tab-atual{display:block;}
-  .header-right{width:100%;align-items:stretch;}
-  .filebar{flex-wrap:wrap;font-size:9.5px;}
-  .period-select{width:100%;justify-content:space-between;font-size:12px;}
+
+  .sync-indicador-wrap{order:3;flex:0 0 auto;margin-left:auto;}
+  .sync-indicador{padding:5px 10px;font-size:11px;}
+
+  .period-select{
+    order:4;flex:1 1 100%;width:100%;justify-content:space-between;font-size:12px;
+    margin:2px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,.14);
+  }
   .period-select input[type="number"]{width:50px;}
+  .period-select > span{display:none;} /* "Período:" — óbvio pelo contexto, some para ganhar espaço */
+
+  .menu-arquivo{order:5;}
+  .filebar-info{
+    order:6;flex:1 1 100%;width:100%;justify-content:flex-start;
+    font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85;
+  }
+
   .tab-btn{padding:8px 12px 7px;font-size:11.5px;}
 }
 
@@ -6957,8 +6984,8 @@ function renderHeader(){
   <header class="app-header">
     <div class="app-title">
       <img class="mark" src="${LOGO_APP}" alt="Logo">
-		<div>
-			<div>
+		<div class="app-title-wrap">
+			<div class="app-title-info">
 				<h1>Controle Financeiro Familiar</h1><p>Família Gomes Oliveira</p><p class="app-title-tab-atual">${(TABS_TODAS.find(([id])=>id===UI.tab)||[])[1]||''}</p>
 			</div>
 			<div class="period-select">
