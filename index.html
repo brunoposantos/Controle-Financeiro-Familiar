@@ -1292,6 +1292,15 @@ summary::marker{content:'';}
 .conta-financeira-grid .val{display:block;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--ink);}
 .conta-financeira-grid .val.pos{color:var(--receita);}
 .conta-financeira-grid .val.neg{color:var(--despesa);}
+@media(max-width:700px){
+  /* Item 22 do requisito de responsividade: ações do card de Contas com tamanho de toque adequado — no
+     desktop o card já é compacto o bastante para não precisar disso, mas no mobile os botões "Ver
+     Extrato"/"Ver lançamentos futuros" (32px de altura), o "Importar" no canto (38px) e o ✏️ de editar
+     saldo inicial (23px) ficavam abaixo do mínimo recomendado de toque. */
+  .conta-financeira-acoes .btn{min-height:var(--touch-min);}
+  .conta-financeira-card .btn-card-topo-direita{padding:10px;}
+  .conta-financeira-grid .icon-btn{min-width:var(--touch-min);min-height:var(--touch-min);}
+}
 .cartoes-resumo-item{
   display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--navy-50);
 }
