@@ -9717,15 +9717,40 @@ function renderAlertasMetas(lista){
     ${alertas.map(m=>`<span class="meta-situacao-tag" style="background:${SITUACAO_META_INFO[m.situacao].cor}1a;color:${SITUACAO_META_INFO[m.situacao].cor};margin-left:6px;">${SITUACAO_META_INFO[m.situacao].emoji} ${escapeHtml(nomeMeta(m))} (${fmtPercentSmart(m.pct)})</span>`).join('')}
   </div>`;
 }
+/* Cada card de indicador (item 16 do requisito de responsividade) mostra 5 informações — o indicador em
+   si (rótulo), o valor principal (nome da meta), uma comparação (rótulo + valor), a variação (percentual)
+   e um contexto (linha auxiliar) — em vez de só nome da meta, que sozinho não dizia muito. */
 function renderIndicadoresMetas(ind){
+  const cardIndicador = (icone, titulo, m, compLabel, compValor, variacao, contexto) => `
+    <div class="kpi" style="border:none;">
+      <div class="bar"></div>
+      <div class="lbl">${icone} ${titulo}</div>
+      <div class="val" style="font-size:15px;">${m ? escapeHtml(nomeMeta(m)) : '—'}</div>
+      ${m ? `<div class="hint" style="margin:4px 0 0;">${compLabel}: <b>${compValor}</b>${variacao?` · ${variacao}`:''}</div>` : ''}
+      ${m && contexto ? `<div class="hint" style="margin:2px 0 0;">${contexto}</div>` : ''}
+    </div>`;
   return `
   <div class="panel">
     <h2>Indicadores adicionais</h2>
-    <div class="grid-cards" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:0;">
-      <div class="kpi" style="border:none;"><div class="lbl">📈 Maior categoria de gasto</div><div class="val" style="font-size:15px;">${ind.maiorGasto ? escapeHtml(nomeMeta(ind.maiorGasto)) : '—'}</div></div>
-      <div class="kpi" style="border:none;"><div class="lbl">🚨 Mais ultrapassou a meta</div><div class="val" style="font-size:15px;">${ind.maisUltrapassada ? escapeHtml(nomeMeta(ind.maisUltrapassada)) : '—'}</div></div>
-      <div class="kpi" style="border:none;"><div class="lbl">💚 Maior economia</div><div class="val" style="font-size:15px;">${ind.maiorEconomia ? escapeHtml(nomeMeta(ind.maiorEconomia)) : '—'}</div></div>
-      <div class="kpi" style="border:none;"><div class="lbl">🏦 Economia acumulada no mês</div><div class="val" style="color:var(--receita);">${fmtBRL(ind.economiaAcumulada)}</div></div>
+    <div class="grid-cards" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:0;">
+      ${cardIndicador('📈','Maior categoria de gasto', ind.maiorGasto,
+        'Gasto', ind.maiorGasto?fmtBRL(ind.maiorGasto.gasto):'',
+        ind.maiorGasto?`${fmtPercentSmart(ind.maiorGasto.pct)} da meta`:'',
+        ind.maiorGasto?`Meta: ${fmtBRL(ind.maiorGasto.valor)}`:'')}
+      ${cardIndicador('🚨','Mais ultrapassou a meta', ind.maisUltrapassada,
+        'Excedente', ind.maisUltrapassada?fmtBRL(-ind.maisUltrapassada.saldo):'',
+        ind.maisUltrapassada?`${fmtPercentSmart(ind.maisUltrapassada.pct)} da meta`:'',
+        ind.maisUltrapassada?`Meta: ${fmtBRL(ind.maisUltrapassada.valor)} · Gasto: ${fmtBRL(ind.maisUltrapassada.gasto)}`:'')}
+      ${cardIndicador('💚','Maior economia', ind.maiorEconomia,
+        'Sobrou', ind.maiorEconomia?fmtBRL(ind.maiorEconomia.saldo):'',
+        ind.maiorEconomia?`${fmtPercentSmart(Math.max(0,100-ind.maiorEconomia.pct))} não utilizado`:'',
+        ind.maiorEconomia?`Meta: ${fmtBRL(ind.maiorEconomia.valor)}`:'')}
+      <div class="kpi" style="border:none;">
+        <div class="bar"></div>
+        <div class="lbl">🏦 Economia acumulada no mês</div>
+        <div class="val" style="color:var(--receita);">${fmtBRL(ind.economiaAcumulada)}</div>
+        <div class="hint" style="margin:4px 0 0;">Soma do saldo não utilizado (positivo) de todas as metas do mês</div>
+      </div>
     </div>
   </div>`;
 }
