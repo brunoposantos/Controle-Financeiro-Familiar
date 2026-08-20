@@ -7192,7 +7192,7 @@ const TABS_PRINCIPAIS = [
   ["dashboard","📊","Painel Financeiro","Painel"],
   ["inteligencia","🧠","Inteligência Financeira","Inteligência"],
   ["resumo","📆","Fluxo de Caixa","Fluxo"],
-  ["metas","🎯","Metas de Gastos","Economias"],
+  ["metas","🎯","Metas de Gastos","Metas"],
   ["registros","📒","Registros","Registros"],
 ];
 const TABS_SECUNDARIAS = [
@@ -7277,7 +7277,7 @@ function renderDashboard(){
     return `
     <div class="panel" id="cardMetasDashboard" style="cursor:pointer;">
       <h2>🎯 Metas de Gastos <span class="hint" style="margin:0;">clique para abrir</span></h2>
-      <div class="grid-cards" style="grid-template-columns:repeat(3,1fr);margin-bottom:0;">
+      <div class="grid-cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:0;">
         <div class="kpi receita" style="border:none;"><div class="bar"></div><div class="lbl">✅ Metas cumpridas</div><div class="val">${rm.cumpridas}</div></div>
         <div class="kpi despesa" style="border:none;"><div class="bar"></div><div class="lbl">🚨 Metas ultrapassadas</div><div class="val">${rm.ultrapassadas}</div></div>
         <div class="kpi" style="border:none;"><div class="bar"></div><div class="lbl">📊 % do orçamento utilizado</div><div class="val">${fmtPercentSmart(rm.pctConsumido)}</div></div>
@@ -7617,6 +7617,13 @@ function drawCharts(){
     const lista = metasDoMes(competenciaMetas);
     const labels = lista.map(m=>nomeMeta(m));
     const cores = lista.map(m=>SITUACAO_META_INFO[m.situacao].cor);
+    // Ajustes responsivos (item 15 do requisito de responsividade): em telas estreitas, o rótulo completo
+    // "R$ gasto / R$ meta (%)" dentro da barra não cabia em metas com pouco gasto (barra curta), ficando
+    // cortado/sobreposto — em telas estreitas o rótulo passa a mostrar só o percentual (bem mais curto), e
+    // os nomes longos no eixo Y são abreviados, mesma técnica já usada no gráfico "Despesas por grupo".
+    const larguraChartMetas = elMetas.parentElement ? elMetas.parentElement.clientWidth : window.innerWidth;
+    const mobileChartMetas = larguraChartMetas < 420;
+    const abreviarLabelMeta = (l)=> (mobileChartMetas && l.length>16) ? l.slice(0,15)+'…' : l;
     chartInstances.push(new Chart(elMetas, {
       type:'bar',
       data:{ labels, datasets:[{ label:'Gasto', data:lista.map(m=>m.gasto), backgroundColor:cores, borderRadius:6, maxBarThickness:30 }] },
@@ -7633,11 +7640,20 @@ function drawCharts(){
           // cai para fora nem muda de cor (clamp garante que não seja cortado mesmo em barras bem curtas).
           datalabels:{
             display:true, anchor:'end', align:'start', clamp:true,
-            color:'#ffffff', font:{family:"'Roboto Mono'",size:11,weight:'700'},
-            formatter:(v,ctx)=>{ const m = lista[ctx.dataIndex]; return `${fmtBRL(v)} / ${fmtBRL(m.valor)} (${fmtPercentSmart(m.pct)})`; }
+            color:'#ffffff', font:{family:"'Roboto Mono'",size: mobileChartMetas?10:11,weight:'700'},
+            formatter:(v,ctx)=>{
+              const m = lista[ctx.dataIndex];
+              return mobileChartMetas ? fmtPercentSmart(m.pct) : `${fmtBRL(v)} / ${fmtBRL(m.valor)} (${fmtPercentSmart(m.pct)})`;
+            }
           }
         },
-        scales:{ x:{ display:false, min:0 }, y:{ grid:{display:false}, ticks:{ font:{family:"'Roboto Mono'",weight:'600'} } } }
+        scales:{
+          x:{ display:false, min:0 },
+          y:{ grid:{display:false}, ticks:{
+            font:{family:"'Roboto Mono'",weight:'600',size: mobileChartMetas?10.5:12},
+            callback:(v,i)=>abreviarLabelMeta(labels[i])
+          } }
+        }
       }
     }));
   }
@@ -9660,24 +9676,25 @@ function renderMetas(){
     </div>
     ${r.lista.length===0 ? `<div class="empty-state"><div class="big">🎯</div>Nenhuma meta cadastrada para este mês. Use "+ Nova meta" para começar.</div>` : `
     <div class="chart-box" style="height:${alturaBarra}px;margin-top:14px;"><canvas id="chartMetas"></canvas></div>
-    <div class="table-wrap" style="margin-top:16px;"><table>
-      <thead><tr><th>Grupo</th><th>Categoria</th><th>Subcategoria</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Saldo</th><th>% Utilizado</th><th>Situação</th><th></th></tr></thead>
+    <div class="table-wrap" style="margin-top:16px;"><table class="tabela-cards-mobile">
+      <thead><tr><th>Grupo</th><th>Categoria</th><th>Subcategoria</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Saldo</th><th>% Utilizado</th><th>Período</th><th>Situação</th><th></th></tr></thead>
       <tbody>
       ${r.lista.map(m=>{
         const info = SITUACAO_META_INFO[m.situacao];
         return `<tr>
-          <td>${iconeGrupo(m.grupo)} ${escapeHtml(m.grupo)}</td>
-          <td>${m.nivel!=='grupo' ? escapeHtml(m.categoria) : '<span class="hint">—</span>'}</td>
-          <td>${m.nivel==='subcategoria' ? escapeHtml(m.subcategoria) : '<span class="hint">—</span>'}</td>
-          <td class="val-cell" style="text-align:right;">${fmtBRL(m.valor)}</td>
-          <td class="val-cell ${m.gasto>m.valor?'neg':''}" style="text-align:right;">${fmtBRL(m.gasto)}</td>
-          <td class="val-cell ${m.saldo<0?'neg':'pos'}" style="text-align:right;">${fmtBRL(m.saldo)}</td>
-          <td style="min-width:110px;">
+          <td data-label="Nome/Grupo">${iconeGrupo(m.grupo)} ${escapeHtml(m.grupo)}</td>
+          <td data-label="Categoria">${m.nivel!=='grupo' ? escapeHtml(m.categoria) : '<span class="hint">—</span>'}</td>
+          <td data-label="Subcategoria">${m.nivel==='subcategoria' ? escapeHtml(m.subcategoria) : '<span class="hint">—</span>'}</td>
+          <td class="val-cell" data-label="Meta (planejado)" style="text-align:right;">${fmtBRL(m.valor)}</td>
+          <td class="val-cell ${m.gasto>m.valor?'neg':''}" data-label="Gasto (realizado)" style="text-align:right;">${fmtBRL(m.gasto)}</td>
+          <td class="val-cell ${m.saldo<0?'neg':'pos'}" data-label="Saldo (diferença)" style="text-align:right;">${fmtBRL(m.saldo)}</td>
+          <td data-label="% Utilizado" style="min-width:110px;">
             <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,m.pct)}%;background:${info.cor};"></div></div>
             <span class="hint" style="margin:2px 0 0;">${fmtPercentSmart(m.pct)}</span>
           </td>
-          <td><span class="meta-situacao-tag" style="background:${info.cor}1a;color:${info.cor};">${info.emoji} ${info.label}</span></td>
-          <td style="white-space:nowrap;">
+          <td data-label="Período">${RECORRENCIA_LABEL[m.recorrencia]||'—'}</td>
+          <td data-label="Situação"><span class="meta-situacao-tag" style="background:${info.cor}1a;color:${info.cor};">${info.emoji} ${info.label}</span></td>
+          <td data-label="" style="white-space:nowrap;">
             <button class="icon-btn" data-editar-meta="${m.id}" title="Editar">✏️</button>
             <button class="icon-btn" data-historico-meta="${m.id}" title="Ver histórico">📈</button>
             <button class="icon-btn" data-excluir-meta="${m.id}" title="Excluir">🗑️</button>
@@ -9704,7 +9721,7 @@ function renderIndicadoresMetas(ind){
   return `
   <div class="panel">
     <h2>Indicadores adicionais</h2>
-    <div class="grid-cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:0;">
+    <div class="grid-cards" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:0;">
       <div class="kpi" style="border:none;"><div class="lbl">📈 Maior categoria de gasto</div><div class="val" style="font-size:15px;">${ind.maiorGasto ? escapeHtml(nomeMeta(ind.maiorGasto)) : '—'}</div></div>
       <div class="kpi" style="border:none;"><div class="lbl">🚨 Mais ultrapassou a meta</div><div class="val" style="font-size:15px;">${ind.maisUltrapassada ? escapeHtml(nomeMeta(ind.maisUltrapassada)) : '—'}</div></div>
       <div class="kpi" style="border:none;"><div class="lbl">💚 Maior economia</div><div class="val" style="font-size:15px;">${ind.maiorEconomia ? escapeHtml(nomeMeta(ind.maiorEconomia)) : '—'}</div></div>
@@ -9725,7 +9742,7 @@ function renderHistoricoMetaPanel(competencia){
       </select>
     </div>
     <div class="chart-box" style="height:260px;margin-top:14px;"><canvas id="chartHistoricoMeta"></canvas></div>
-    <div class="grid-cards" style="grid-template-columns:repeat(4,1fr);margin-top:14px;margin-bottom:0;">
+    <div class="grid-cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:14px;margin-bottom:0;">
       <div class="kpi" style="border:none;"><div class="lbl">Média mensal</div><div class="val" style="font-size:16px;">${fmtBRL(h.media)}</div></div>
       <div class="kpi" style="border:none;"><div class="lbl">Maior gasto</div><div class="val" style="font-size:16px;">${fmtBRL(h.maior)}</div></div>
       <div class="kpi" style="border:none;"><div class="lbl">Menor gasto</div><div class="val" style="font-size:16px;">${fmtBRL(h.menor)}</div></div>
