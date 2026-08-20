@@ -457,6 +457,9 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 .cenario-input-3d{width:64px;text-align:right;padding:4px 6px;flex:none;}
 @media(max-width:480px){
   .cenario-inputs-linha{flex-wrap:wrap;}
+  /* Item 10 do requisito de responsividade: controles fáceis de tocar — os campos de variação percentual
+     ganham altura mínima de toque (--touch-min) só no mobile, sem alterar o desktop. */
+  .cenario-input-3d{min-height:var(--touch-min);font-size:14px;}
 }
 @media(max-width:900px){.grid-cards{grid-template-columns:repeat(2,1fr);}}
 .kpi{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--paper);position:relative;overflow:hidden;}
@@ -9118,7 +9121,7 @@ function renderInteligencia(){
       </table></div>
     </div>
     <div class="panel" style="margin-bottom:0;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px 10px;">
 	  <h2 style="margin-top:0;">Simulação de Cenários</h2>
       <button type="button" class="btn btn-ghost btn-sm" id="btnResetarCenarios">↺ Restaurar percentuais padrão</button>
 	  </div>
