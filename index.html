@@ -427,6 +427,21 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 }
 .mini-card:hover .import-badge{opacity:0;} /* cede o canto para as ações ao passar o mouse */
 .mini-card-empty{color:#8393ac;font-size:12.5px;padding:20px 4px;grid-column:1/-1;text-align:center;}
+@media(max-width:700px){
+  /* Item 22/23/24 do requisito de responsividade (painéis Contas/Meios de Pagamento/Responsáveis de
+     Configurações): .mini-card-actions só ficava visível em :hover/:focus-within — em touch não existe
+     hover, então os botões ✏️/🗑️ ficavam com opacity:0 e efetivamente inacessíveis (não dava para
+     descobri-los nem tocar neles). No mobile, as ações passam a ficar sempre visíveis, em fluxo normal
+     (não mais posição absoluta), com tamanho de toque adequado. */
+  .mini-card .import-badge{position:static;display:inline-block;margin-bottom:4px;}
+  /* Especificidade igual à regra base (.mini-card .mini-card-actions), senão perde por ordem de
+     declaração e as ações continuam com opacity:0 mesmo dentro deste media query. */
+  .mini-card .mini-card-actions{
+    position:static;opacity:1;transform:none;background:transparent;
+    display:flex;justify-content:flex-end;margin-bottom:6px;
+  }
+  .mini-card-actions .icon-btn{min-width:var(--touch-min);min-height:var(--touch-min);}
+}
 .icone-genero-picker{display:flex;gap:12px;}
 .icone-genero-opcao{
   display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 18px;border:2px solid var(--line);
