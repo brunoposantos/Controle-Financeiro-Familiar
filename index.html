@@ -1321,7 +1321,18 @@ summary::marker{content:'';}
     display:flex;flex:1 1 100%;order:3;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;
     border-bottom:1px solid var(--navy-50);text-align:left!important;
   }
-  .tabela-cartoes td:first-child{flex:1 1 auto;min-width:0;order:1;border-bottom:none;padding-bottom:8px;}
+  /* flex-basis:0 (em vez de "auto") é essencial aqui: com "auto" o navegador decide se quebra a linha
+     comparando o tamanho HIPOTÉTICO do item (baseado no conteúdo, ex.: um nome de cartão longo) contra o
+     espaço disponível ANTES de aplicar o encolhimento — ou seja, um nome longo o bastante empurrava o botão
+     "Importar arquivo do banco" para a linha de baixo mesmo podendo caber (item 13 do requisito: sempre na
+     mesma linha). Com flex-basis:0, a distribuição de espaço passa a ser guiada só por flex-grow/min-width,
+     nunca pelo conteúdo, então os dois sempre ficam na mesma linha. */
+  .tabela-cartoes td:first-child{flex:1 1 0;min-width:0;order:1;border-bottom:none;padding-bottom:8px;}
+  /* Sem isto, .cartao-col (flex item de td:first-child, que também é flex por herdar a regra genérica
+     ".tabela-cartoes td{display:flex}") mantém seu min-width:auto padrão e nunca encolhe abaixo do seu
+     conteúdo — em nomes de cartão longos, isso empurra o botão "Importar arquivo do banco" para a linha de
+     baixo em vez de ficar na mesma linha (item 13 do requisito), mesmo com overflow:hidden/ellipsis no nome. */
+  .tabela-cartoes td:first-child .cartao-col{min-width:0;}
   .tabela-cartoes td.col-importar-cartao{flex:0 0 auto;order:2;border-bottom:none;padding-bottom:8px;justify-content:flex-end;}
   .tabela-cartoes td:last-child{border-bottom:none;}
   .tabela-cartoes td[data-label]:not([data-label=""])::before{
