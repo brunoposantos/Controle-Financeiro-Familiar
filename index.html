@@ -653,6 +653,7 @@ tbody tr:hover{background:var(--navy-50);}
 .reg-card-valor.neg{color:var(--despesa);}
 .reg-card-valor.pos{color:var(--receita);}
 .reg-card-linha2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:3px;}
+.reg-card-linha2 .tag{white-space:nowrap;flex-shrink:0;}
 .reg-card-secundario{font-size:12px;color:#6a7a97;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .reg-card-menu{position:relative;flex-shrink:0;}
 .reg-card-menu-btn{min-width:var(--touch-min);min-height:var(--touch-min);font-size:18px;}
@@ -665,6 +666,12 @@ tbody tr:hover{background:var(--navy-50);}
   background:transparent;border:none;font-family:var(--sans);font-size:13.5px;color:var(--ink);cursor:pointer;
 }
 .reg-card-menu-lista button:hover{background:var(--navy-50);}
+/* Item 12 do requisito de responsividade: os modais Ver Extrato/Lançamentos futuros/Ver Fatura/Ver Próximas
+   Faturas reaproveitam .reg-card/.reg-lista-mobile (mesmo padrão visual da lista mobile de Registros) —
+   ver renderCardsLancamentosModal. .reg-card-extra é uma linha secundária opcional (ex.: saldo acumulado);
+   .reg-card-sem-acao remove o menu ⋮ do item técnico "Saldo Anterior" do extrato, que não é editável. */
+.reg-card-extra{font-size:11.5px;color:#8393ac;margin-top:4px;}
+.reg-card-sem-acao{opacity:.72;}
 .val-cell.neg{color:var(--despesa);}
 .val-cell.pos{color:var(--receita);}
 
@@ -974,6 +981,11 @@ tbody tr:hover{background:var(--navy-50);}
   #areaImpressao .modal-head, #areaImpressao .modal-foot, #areaImpressao .no-print{ display:none !important; }
   #areaImpressao .modal-body{ padding:0 !important; max-height:none !important; overflow:visible !important; }
   #areaImpressao .table-wrap{ max-height:none !important; overflow:visible !important; }
+  /* A impressão sempre usa a tabela desktop (nunca os cards mobile), independente da largura de tela em que
+     o modal foi aberto — .reg-tabela-principal/.reg-lista-mobile são ocultados por max-width sem "screen",
+     então sem esta regra uma impressão feita a partir de uma tela estreita poderia sair com os cards. */
+  #areaImpressao .reg-tabela-principal{ display:block !important; }
+  #areaImpressao .reg-lista-mobile{ display:none !important; }
   #areaImpressao table{ width:100% !important; border-collapse:collapse; }
   #areaImpressao thead{ display:table-header-group; }
   #areaImpressao tfoot{ display:table-footer-group; }
@@ -5952,7 +5964,7 @@ function renderExtratoContaModal(){
         </div>
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Extrato', UI.extratoContaModal.selecionados, itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), itensFiltrados.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id))}</div>
-        <div class="table-wrap table-wrap-registros tabela-impressao" style="margin-top:14px;"><table>
+        <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
           <thead><tr>${renderColunaSelecaoLoteHead('Extrato', itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), UI.extratoContaModal.selecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th style="text-align:center;">Tipo</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Saldo</th><th class="no-print">Ações</th></tr></thead>
           <tbody>${itensPagina.map(t=>`<tr>
             ${ehSaldoAnterior(t) ? `<td class="no-print"></td>` : renderColunaSelecaoLoteLinha('Extrato', t.id, UI.extratoContaModal.selecionados)}
@@ -5969,6 +5981,13 @@ function renderExtratoContaModal(){
             </td>
           </tr>`).join('')}</tbody>
         </table></div>
+        ${renderCardsLancamentosModal(itensPagina, {
+          valorTexto: t=>fmtBRL(t.valor), valorClasse: t=> ehSaldoAnterior(t)?'':(t.tipo==='Receita'?'pos':'neg'),
+          secundario: t=>`${fmtData(t.data)} · ${t.grupo||'Sem Grupo'}`,
+          tags: t=> ehSaldoAnterior(t) ? '' : `<span class="tag ${t.tipo}">${t.tipo}</span>`,
+          extra: t=>`<div class="reg-card-extra">Saldo: <b class="val-cell ${t.saldoAcumulado>=0?'pos':'neg'}">${fmtBRL(t.saldoAcumulado)}</b></div>`,
+          semAcao: t=> ehSaldoAnterior(t),
+        })}
         <div class="registros-rodape no-print">${rodapePaginacaoExtrato}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento nesta conta na competência selecionada.</div>`}
       </div>
       <div class="modal-foot no-print" style="justify-content:flex-end;">
@@ -6057,7 +6076,7 @@ function renderFuturosContaModal(){
         </div>
         ${futurosFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Futuros', UI.futurosContaModal.selecionados, futurosPagina.map(t=>t.id), futurosFiltrados.map(t=>t.id))}</div>
-        <div class="table-wrap table-wrap-registros tabela-impressao" style="margin-top:14px;"><table>
+        <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
           <thead><tr>${renderColunaSelecaoLoteHead('Futuros', futurosPagina.map(t=>t.id), UI.futurosContaModal.selecionados)}<th>Data prevista</th><th>Descrição</th><th style="text-align:center;">Tipo</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Saldo projetado</th><th class="no-print">Ações</th></tr></thead>
           <tbody>${futurosPagina.map(t=>`<tr>
             ${renderColunaSelecaoLoteLinha('Futuros', t.id, UI.futurosContaModal.selecionados)}
@@ -6073,6 +6092,12 @@ function renderFuturosContaModal(){
             </td>
           </tr>`).join('')}</tbody>
         </table></div>
+        ${renderCardsLancamentosModal(futurosPagina, {
+          valorTexto: t=>`${t.tipo==='Despesa'?'-':''}${fmtBRL(t.valor)}`, valorClasse: t=> t.tipo==='Receita'?'pos':'neg',
+          secundario: t=>`${fmtData(t.data)} (prevista)`,
+          tags: t=>`<span class="tag ${t.tipo}">${t.tipo}</span>`,
+          extra: t=>`<div class="reg-card-extra">Saldo projetado: <b class="val-cell ${t.saldoProjetado>=0?'pos':'neg'}">${fmtBRL(t.saldoProjetado)}</b></div>`,
+        })}
         <div class="registros-rodape no-print">${rodapePaginacaoFuturos}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento futuro cadastrado para esta conta.</div>`}
       </div>
       <div class="modal-foot no-print" style="justify-content:flex-end;">
@@ -8057,6 +8082,52 @@ function renderListaMobileRegistros(pageList){
     </div>`).join('')}
   </div>`;
 }
+/* ---------- Lista mobile de lançamentos para os modais Ver Extrato/Lançamentos futuros/Ver Fatura/Ver
+   Próximas Faturas (item 12 do requisito de responsividade) — mesmo padrão visual (.reg-card/.reg-lista-
+   mobile) já usado na lista mobile de Registros (ver renderListaMobileRegistros), adaptado aos campos de
+   cada modal via `opts`. A tabela desktop de cada modal continua existindo/funcionando sem alteração
+   nenhuma, só fica oculta neste breakpoint (mesma classe reg-tabela-principal/reg-lista-mobile). Reaproveita
+   o mesmo menu de ações (⋮ Editar/Duplicar/Excluir) e o mesmo estado UI.regCardMenuAberto — os ids de
+   lançamento são únicos em toda a aplicação (cada item aqui é o próprio registro de STATE.transactions),
+   então não há risco de colisão entre os vários modais que usam esta função. */
+function renderCardsLancamentosModal(itens, opts){
+  if(!itens.length) return '';
+  const { valorTexto, valorClasse, secundario, tags, extra, semAcao, tituloGrupo } = opts;
+  let grupoAtual;
+  let corpo = '';
+  itens.forEach(t=>{
+    if(tituloGrupo){
+      const g = tituloGrupo(t);
+      if(g!==grupoAtual){ grupoAtual = g; corpo += `<div class="reg-grupo-data-titulo">${escapeHtml(g)}</div>`; }
+    }
+    const semAcaoItem = semAcao ? semAcao(t) : false;
+    corpo += `
+    <div class="reg-card${semAcaoItem?' reg-card-sem-acao':''}">
+      <div class="reg-card-principal">
+        <div class="reg-card-linha1">
+          <span class="reg-card-descricao">${escapeHtml(t.descricao)}</span>
+          <span class="reg-card-valor ${valorClasse(t)}">${valorTexto(t)}</span>
+        </div>
+        <div class="reg-card-linha2">
+          <span class="reg-card-secundario">${secundario(t)}</span>
+          ${tags ? (tags(t)||'') : ''}
+        </div>
+        ${extra ? (extra(t)||'') : ''}
+      </div>
+      ${semAcaoItem ? '' : `
+      <div class="reg-card-menu">
+        <button type="button" class="icon-btn reg-card-menu-btn" data-reg-card-menu="${t.id}" title="Mais ações" aria-haspopup="true" aria-expanded="${UI.regCardMenuAberto===t.id?'true':'false'}">⋮</button>
+        ${UI.regCardMenuAberto===t.id ? `
+        <div class="reg-card-menu-lista">
+          <button type="button" data-edit="${t.id}">✏️ Editar</button>
+          <button type="button" data-duplicar="${t.id}">📄 Duplicar</button>
+          <button type="button" data-del="${t.id}">🗑️ Excluir</button>
+        </div>` : ''}
+      </div>`}
+    </div>`;
+  });
+  return `<div class="reg-lista-mobile">${corpo}</div>`;
+}
 function renderRegistros(){
   const f = UI.regFiltros;
   // Ordenação: Data (mais recente primeiro) → Tipo (Receita antes de Despesa) → Fatura/competência (crescente).
@@ -8641,10 +8712,16 @@ function renderFaturaAtualModal(){
         </div>
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Fatura', UI.faturaAtualModal.selecionados, itensPagina.map(t=>t.id), itensFiltrados.map(t=>t.id))}</div>
-        <div class="table-wrap table-wrap-registros tabela-impressao" style="margin-top:14px;"><table>
+        <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
           <thead><tr>${renderColunaSelecaoLoteHead('Fatura', itensPagina.map(t=>t.id), UI.faturaAtualModal.selecionados)}<th>Data</th><th>Descrição</th><th style="text-align:center;">Parcela</th><th style="text-align:right;">Valor</th><th class="no-print col-acoes-fatura">Ações</th></tr></thead>
           <tbody>${itensPagina.map(t=>renderLinhaItemFatura(t, false, 'Fatura', UI.faturaAtualModal.selecionados)).join('')}</tbody>
         </table></div>
+        ${renderCardsLancamentosModal(itensPagina, {
+          valorTexto: t=>`${t.tipo==='Receita'?'− ':''}${fmtBRL(t.valor)}`, valorClasse: t=> t.tipo==='Receita'?'pos':'neg',
+          secundario: t=>fmtData(t.data),
+          tags: t=> Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : '',
+          extra: t=> t.tipo==='Receita' ? `<div class="reg-card-extra"><span class="tag Receita">➕ Crédito</span></div>` : '',
+        })}
         <div class="registros-rodape no-print">${rodapePaginacaoFatura}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento nesta fatura ainda.</div>`}
       </div>
       <div class="modal-foot no-print" style="justify-content:flex-end;">
@@ -8751,7 +8828,7 @@ function renderProjecaoFaturaModal(){
         </div>
         ${itens.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Projecao', UI.projecaoFaturaModal.selecionados, itensPagina.map(t=>t.id), itens.map(t=>t.id))}</div>
-        <div class="table-wrap table-wrap-registros tabela-impressao" style="margin-top:12px;"><table>
+        <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:12px;"><table>
           <thead><tr>${renderColunaSelecaoLoteHead('Projecao', itensPagina.map(t=>t.id), UI.projecaoFaturaModal.selecionados)}<th>Data</th><th>Descrição</th><th style="text-align:center;">Parcela</th><th style="text-align:right;">Valor</th><th class="no-print col-acoes-fatura">Ações</th></tr></thead>
           <tbody>${(()=>{
             // Sem seleção de competência, os lançamentos de vários meses ficam misturados na mesma lista —
@@ -8770,6 +8847,13 @@ function renderProjecaoFaturaModal(){
             }).join('');
           })()}</tbody>
         </table></div>
+        ${renderCardsLancamentosModal(itensPagina, {
+          tituloGrupo: selecionada ? null : (t=>competenciaLabel(t.competencia)),
+          valorTexto: t=>`${t.tipo==='Receita'?'− ':''}${fmtBRL(t.valor)}`, valorClasse: t=> t.tipo==='Receita'?'pos':'neg',
+          secundario: t=>fmtData(t.data),
+          tags: t=> Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : '',
+          extra: t=> t.tipo==='Receita' ? `<div class="reg-card-extra"><span class="tag Receita">➕ Crédito</span></div>` : '',
+        })}
         <div class="registros-rodape no-print">${rodapePaginacaoProjecao}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📦</div>Nenhum lançamento previsto${selecionada?' nesta competência':' para os próximos meses'}.</div>`}
         ` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state"><div class="big">✅</div>Nenhuma despesa prevista para os próximos meses neste cartão.</div>`}
       </div>
