@@ -1124,6 +1124,33 @@ summary{list-style:none;}
 summary::-webkit-details-marker{display:none;}
 summary::marker{content:'';}
 .expand-arrow{display:inline-block;width:14px;font-size:11px;}
+/* Grupos/Categorias/Subcategorias (Configurações — item 21 do requisito de responsividade). Antes usava
+   estilo inline com o nome em flex:1 sem min-width:0 ao lado de 3-4 botões de ação — em telas estreitas o
+   texto não tinha espaço nenhum sobrando e cada letra quebrava numa linha própria (nome ilegível). Agora
+   nome e ações são elementos próprios (flex:1 1 0 + min-width:0 no nome, para permitir quebra normal de
+   linha/encolhimento — nunca letra por letra), e no mobile (ver media query abaixo) as ações passam para
+   uma segunda linha, alinhadas à direita, com tamanho de toque adequado. */
+.cat-grupo-details{margin-bottom:10px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;}
+.cat-grupo-summary{cursor:pointer;font-weight:700;color:var(--navy-800);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cat-grupo-nome{flex:1 1 0;min-width:0;overflow-wrap:break-word;}
+.cat-grupo-acoes{display:flex;gap:2px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.cat-categoria-details{margin:8px 0 0 8px;border-left:2px solid var(--line);padding-left:10px;}
+.cat-categoria-summary{cursor:pointer;font-size:12.5px;font-weight:700;color:#3a4a63;display:flex;align-items:center;gap:6px;list-style:none;flex-wrap:wrap;}
+.cat-categoria-nome{flex:1 1 0;min-width:0;overflow-wrap:break-word;}
+.cat-categoria-acoes{display:flex;gap:2px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.cat-sub-lista{margin:6px 0 4px;padding-left:18px;font-size:12px;color:#5b6b85;list-style:none;}
+.cat-sub-item{margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.cat-sub-nome{flex:1 1 0;min-width:0;overflow-wrap:break-word;}
+.cat-sub-tags{display:flex;gap:4px;flex-shrink:0;}
+.cat-sub-acoes{display:flex;gap:2px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;}
+@media(max-width:700px){
+  .cat-grupo-nome,.cat-categoria-nome{flex-basis:100%;}
+  .cat-grupo-acoes,.cat-categoria-acoes{flex:1 1 100%;margin-top:2px;}
+  .cat-sub-nome{flex-basis:100%;}
+  .cat-sub-tags{order:2;}
+  .cat-sub-acoes{order:3;margin-left:0;margin-top:2px;}
+  .cat-grupo-acoes .icon-btn,.cat-categoria-acoes .icon-btn,.cat-sub-acoes .icon-btn{min-width:var(--touch-min);min-height:var(--touch-min);}
+}
 .chip{
   display:inline-flex;align-items:center;gap:2px;background:var(--navy-50);border:1px solid var(--line);
   border-radius:20px;padding:5px 6px 5px 12px;font-size:12.5px;color:var(--navy-800);font-weight:600;
@@ -9951,37 +9978,44 @@ function renderCategorias(){
     </div>
     ${UI.buscaCategorias && totalResultados===0 ? `<div class="empty-state"><div class="big">🔍</div>Nenhum grupo, categoria ou subcategoria encontrado com "${escapeHtml(UI.buscaCategorias)}".</div>` : ''}
     ${Object.keys(porGrupo).map(grupo=>`
-      <details ${(UI.gruposAbertos.has(grupo) || termo)?'open':''} data-grupo-details="${escapeHtml(grupo)}" style="margin-bottom:10px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;">
-        <summary style="cursor:pointer;font-weight:700;color:var(--navy-800);display:flex;align-items:center;gap:8px;">
+      <details ${(UI.gruposAbertos.has(grupo) || termo)?'open':''} data-grupo-details="${escapeHtml(grupo)}" class="cat-grupo-details">
+        <summary class="cat-grupo-summary">
           <span class="expand-arrow" data-arrow-for="grupo-${escapeHtml(grupo)}">${UI.gruposAbertos.has(grupo)?'➖':'➕'}</span>
-          <span style="flex:1;">${iconeGrupo(grupo)} ${escapeHtml(grupo)}</span>
-          <button type="button" class="icon-btn" data-pos-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Reposicionar grupo">↕️</button>
-          <button type="button" class="icon-btn" data-edit-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Editar grupo">✏️</button>
-          <button type="button" class="icon-btn" data-del-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Excluir grupo" style="color:var(--despesa);">🗑️</button>
+          <span class="cat-grupo-nome">${iconeGrupo(grupo)} ${escapeHtml(grupo)}</span>
+          <span class="cat-grupo-acoes">
+            <button type="button" class="icon-btn" data-pos-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Reposicionar grupo">↕️</button>
+            <button type="button" class="icon-btn" data-edit-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Editar grupo">✏️</button>
+            <button type="button" class="icon-btn" data-del-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Excluir grupo" style="color:var(--despesa);">🗑️</button>
+          </span>
         </summary>
         ${Object.keys(porGrupo[grupo]).map(sub=>{
           const itens = porGrupo[grupo][sub];
           const chaveCat = `${grupo}|||${sub}`;
           const catAberta = UI.categoriasAbertas.has(chaveCat) || termo;
-          return `<details ${catAberta?'open':''} data-categoria-details="${escapeHtml(chaveCat)}" style="margin:8px 0 0 8px;border-left:2px solid var(--line);padding-left:10px;">
-            <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#3a4a63;display:flex;align-items:center;gap:6px;list-style:none;">
+          return `<details ${catAberta?'open':''} data-categoria-details="${escapeHtml(chaveCat)}" class="cat-categoria-details">
+            <summary class="cat-categoria-summary">
               <span class="expand-arrow" data-arrow-for="cat-${escapeHtml(chaveCat)}" style="color:var(--gold-dark);">${catAberta?'➖':'➕'}</span>
-              <span style="flex:1;">${escapeHtml(sub)} <span class="hint" style="margin:0;">(${itens.length})</span></span>
-              <button type="button" class="icon-btn" data-pos-categoria-grupo="${escapeHtml(grupo)}" data-pos-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Reposicionar categoria">↕️</button>
-              <button type="button" class="icon-btn" data-edit-categoria-grupo="${escapeHtml(grupo)}" data-edit-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Editar categoria">✏️</button>
-              <button type="button" class="icon-btn" data-mover-categoria-grupo="${escapeHtml(grupo)}" data-mover-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Mover categoria para outro grupo">🔀</button>
-              <button type="button" class="icon-btn" data-del-categoria-grupo="${escapeHtml(grupo)}" data-del-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Excluir categoria" style="color:var(--despesa);">🗑️</button>
+              <span class="cat-categoria-nome">${escapeHtml(sub)} <span class="hint" style="margin:0;">(${itens.length})</span></span>
+              <span class="cat-categoria-acoes">
+                <button type="button" class="icon-btn" data-pos-categoria-grupo="${escapeHtml(grupo)}" data-pos-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Reposicionar categoria">↕️</button>
+                <button type="button" class="icon-btn" data-edit-categoria-grupo="${escapeHtml(grupo)}" data-edit-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Editar categoria">✏️</button>
+                <button type="button" class="icon-btn" data-mover-categoria-grupo="${escapeHtml(grupo)}" data-mover-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Mover categoria para outro grupo">🔀</button>
+                <button type="button" class="icon-btn" data-del-categoria-grupo="${escapeHtml(grupo)}" data-del-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Excluir categoria" style="color:var(--despesa);">🗑️</button>
+              </span>
             </summary>
-            <ul style="margin:6px 0 4px;padding-left:18px;font-size:12px;color:#5b6b85;list-style:none;">
-              ${itens.map(i=>`<li style="margin-bottom:3px;display:flex;align-items:center;gap:6px;">
-                <span>${escapeHtml(i.nome)}</span>
-                <span style="flex:1;"></span>
-                <span class="tag ${i.tipo}">${i.tipo}</span>
-                <span class="tag ${i.natureza==='Fixo'?'Fixo':'Variavel'}">${i.natureza}</span>
-                <button type="button" class="icon-btn" data-pos-sub-grupo="${escapeHtml(grupo)}" data-pos-sub-categoria="${escapeHtml(sub)}" data-pos-sub="${escapeHtml(i.nome)}" title="Reposicionar subcategoria">↕️</button>
-                <button type="button" class="icon-btn" data-edit-sub="${escapeHtml(i.nome)}" data-edit-sub-tipo="${escapeHtml(i.tipo)}" title="Editar subcategoria">✏️</button>
-                <button type="button" class="icon-btn" data-mover-sub="${escapeHtml(i.nome)}" data-mover-sub-tipo="${escapeHtml(i.tipo)}" data-mover-sub-grupo="${escapeHtml(grupo)}" data-mover-sub-categoria="${escapeHtml(sub)}" title="Mover subcategoria para outra categoria ou grupo">🔀</button>
-                <button type="button" class="icon-btn" data-del-sub="${escapeHtml(i.nome)}" data-del-sub-tipo="${escapeHtml(i.tipo)}" title="Excluir subcategoria" style="color:var(--despesa);">🗑️</button>
+            <ul class="cat-sub-lista">
+              ${itens.map(i=>`<li class="cat-sub-item">
+                <span class="cat-sub-nome">${escapeHtml(i.nome)}</span>
+                <span class="cat-sub-tags">
+                  <span class="tag ${i.tipo}">${i.tipo}</span>
+                  <span class="tag ${i.natureza==='Fixo'?'Fixo':'Variavel'}">${i.natureza}</span>
+                </span>
+                <span class="cat-sub-acoes">
+                  <button type="button" class="icon-btn" data-pos-sub-grupo="${escapeHtml(grupo)}" data-pos-sub-categoria="${escapeHtml(sub)}" data-pos-sub="${escapeHtml(i.nome)}" title="Reposicionar subcategoria">↕️</button>
+                  <button type="button" class="icon-btn" data-edit-sub="${escapeHtml(i.nome)}" data-edit-sub-tipo="${escapeHtml(i.tipo)}" title="Editar subcategoria">✏️</button>
+                  <button type="button" class="icon-btn" data-mover-sub="${escapeHtml(i.nome)}" data-mover-sub-tipo="${escapeHtml(i.tipo)}" data-mover-sub-grupo="${escapeHtml(grupo)}" data-mover-sub-categoria="${escapeHtml(sub)}" title="Mover subcategoria para outra categoria ou grupo">🔀</button>
+                  <button type="button" class="icon-btn" data-del-sub="${escapeHtml(i.nome)}" data-del-sub-tipo="${escapeHtml(i.tipo)}" title="Excluir subcategoria" style="color:var(--despesa);">🗑️</button>
+                </span>
               </li>`).join('')}
             </ul>
           </details>`;
