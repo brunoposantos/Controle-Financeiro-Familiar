@@ -84,11 +84,15 @@ input,select{font-family:var(--sans);}
 .tela-inicial-card button:disabled{opacity:.5;cursor:not-allowed;}
 .ti-cabecalho{display:flex;align-items:center;gap:24px;margin-bottom:28px;text-align:center;}
 .ti-cabecalho .mark{height:200px;width:auto;flex-shrink:0;align-self:center;}
+/* .ti-cabecalho-textos é o flex container comum a título+hint (item 1 do requisito): align-items:center faz
+   o .hint ficar centralizado verticalmente em relação a .ti-cabecalho-titulos SEMPRE, em qualquer largura
+   — os dois são flex items lado a lado (sem position:absolute), então o navegador recalcula o
+   centro vertical sozinho a cada mudança de altura/quebra de texto, nunca desalinhando. */
 .ti-cabecalho-textos{display:flex;align-items:center;justify-content:space-between;gap:24px;flex:1;min-width:0;flex-wrap:wrap;}
-.ti-cabecalho-titulos{min-width:0;}
+.ti-cabecalho-titulos{min-width:0;flex:0 1 auto;}
 .ti-cabecalho h1{font-size:42px;margin:0;color:var(--navy-950);}
 .ti-cabecalho .subtitulo{margin:4px 0 0;font-size:30px;font-weight:600;color:var(--gold-dark);}
-.ti-cabecalho .hint{color:#5b6b85;margin:0;width:100%;align-self:center;font-size:18px;font-style:italic;text-align:center;}
+.ti-cabecalho .hint{color:#5b6b85;margin:0;flex:1 1 auto;min-width:0;font-size:18px;font-style:italic;text-align:center;}
 .ti-opcoes{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-bottom:28px;}
 .ti-opcao{flex:1 1 280px;max-width:320px;border:1px solid var(--line);border-radius:14px;padding:18px 16px;background:var(--navy-50,#f4f7fc);text-align:center;display:flex;flex-direction:column;align-items:center;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;}
 .ti-opcao:hover{border-color:var(--navy-300,#a9bbdd);box-shadow:0 8px 22px rgba(16,64,141,.1);transform:translateY(-2px);}
@@ -113,7 +117,7 @@ input,select{font-family:var(--sans);}
 .ti-check-item.ok{color:var(--navy-900);}
 .ti-check-item.ok .marca{background:#39c07a;border-color:#39c07a;color:#fff;}
 .ti-cta{display:flex;flex-direction:column;align-items:center;gap:6px;}
-.ti-cta .btn-iniciar-app{background:var(--gold);color:var(--navy-900);font-weight:700;border:1px solid var(--gold);padding:14px 32px;font-size:15px;white-space:nowrap;}
+.ti-cta .btn-iniciar-app{background:var(--gold);color:#0b2a5e;font-weight:700;border:1px solid var(--gold);padding:14px 32px;font-size:15px;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;}
 .ti-cta .btn-iniciar-app:hover{background:#ffd333;}
 .ti-cta .btn-iniciar-app:disabled{opacity:.45;}
 .ti-cta-hint{font-size:11px;color:#8393ac;text-align:center;}
@@ -190,6 +194,9 @@ input,select{font-family:var(--sans);}
 .sync-painel-secao p{margin:0 0 2px;font-size:13px;word-break:break-word;}
 .sync-painel-secao p.muted{color:#8393ac;font-size:12px;}
 .sync-painel-secao p.sync-erro-texto{color:#c0392b;font-size:12px;}
+.sync-painel-onedrive{display:flex;align-items:center;gap:8px;}
+.sync-painel-onedrive-icone{display:inline-flex;flex-shrink:0;}
+.sync-painel-onedrive-icone svg{width:18px;height:18px;}
 .sync-painel-acoes{border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:flex-end;}
 .sync-painel-acoes .btn{width:100%;}
 /* ---- Acordeão da aba Contas e Cartões: só um dos dois painéis fica expandido por vez ---- */
@@ -323,21 +330,30 @@ input,select{font-family:var(--sans);}
   display:none;position:fixed;inset:0;background:rgba(11,42,94,.35);z-index:215;
 }
 .menu-mobile-backdrop.aberto{display:block;}
-.fab-novo-lancamento{
+.fab-novo-lancamento,.fab-novo-lancamento-modal{
   display:none;position:fixed;right:calc(18px + var(--safe-right));z-index:205;
   bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 18px);
   width:var(--fab-size);height:var(--fab-size);border-radius:50%;border:none;
   background:var(--gold);color:var(--navy-950);font-size:28px;line-height:1;font-weight:700;
   box-shadow:0 8px 20px rgba(11,42,94,.35);cursor:pointer;transition:transform .15s,box-shadow .15s;
 }
-.fab-novo-lancamento:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(11,42,94,.4);}
-.fab-novo-lancamento:active{transform:translateY(0);}
-.fab-novo-lancamento:focus-visible{outline:2px solid var(--navy-900);outline-offset:2px;}
+.fab-novo-lancamento:hover,.fab-novo-lancamento-modal:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(11,42,94,.4);}
+.fab-novo-lancamento:active,.fab-novo-lancamento-modal:active{transform:translateY(0);}
+.fab-novo-lancamento:focus-visible,.fab-novo-lancamento-modal:focus-visible{outline:2px solid var(--navy-900);outline-offset:2px;}
+/* Item 12 do requisito: dentro dos 4 modais de lançamentos, não existe bottom-nav visível (o modal cobre a
+   tela toda no mobile — ver @media(max-width:700px) .modal acima), então o FAB do modal usa só a área
+   segura inferior, sem descontar --bottom-nav-h; z-index baixo pois só precisa vencer .modal-head/.modal-foot
+   dentro do próprio contexto de empilhamento do overlay (já isolado por z-index dinâmico — attrZIndexModal). */
+.fab-novo-lancamento-modal{bottom:calc(var(--safe-bottom) + 18px);z-index:20;}
 @media(max-width:700px){
   .tabbar{display:none;}
   .bottom-nav{display:flex;}
-  .fab-novo-lancamento{display:flex;align-items:center;justify-content:center;}
+  .fab-novo-lancamento,.fab-novo-lancamento-modal{display:flex;align-items:center;justify-content:center;}
   main.app-main,.app>main{padding-bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);}
+  /* Especificidade precisa igualar ".btn{display:inline-flex}" (0,1,0), que vem depois no arquivo (fora de
+     media query) e venceria por ordem de declaração se o seletor abaixo tivesse só uma classe — mesma
+     armadilha de especificidade já corrigida antes nesta sessão (.mini-card-actions). */
+  .acoes-lancamento-modal .btn-novo-lanc-modal{display:none;}
 }
 
 /* ---- Responsividade do cabeçalho e do menu de abas ---- */
@@ -374,9 +390,6 @@ input,select{font-family:var(--sans);}
   .app-title p{font-size:10.5px;display:none;}
   .app-title p.app-title-tab-atual{display:block;}
 
-  .sync-indicador-wrap{order:3;flex:0 0 auto;margin-left:auto;}
-  .sync-indicador{padding:5px 10px;font-size:11px;}
-
   .period-select{
     order:4;flex:1 1 100%;width:100%;justify-content:space-between;font-size:12px;
     margin:2px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,.14);
@@ -385,10 +398,18 @@ input,select{font-family:var(--sans);}
   .period-select > span{display:none;} /* "Período:" — óbvio pelo contexto, some para ganhar espaço */
 
   .menu-arquivo{order:5;}
+  /* Item 6 do requisito: .filebar-info e o botão de sincronização passam a dividir a MESMA linha (antes o
+     botão ficava na 1ª linha, junto do título, e .filebar-info sozinha numa linha cheia própria). Ambos
+     usam flex-basis:0 (não "auto"/"100%") — mesma técnica já usada em Cartões (item 13) — para que a
+     distribuição de espaço seja guiada só por flex-grow/min-width, nunca pelo tamanho do conteúdo: o botão
+     nunca quebra linha nem é empurrado para fora, e .filebar-info sempre cede o espaço que sobrar (com
+     reticências), nunca sobrepondo o botão. */
   .filebar-info{
-    order:6;flex:1 1 100%;width:100%;justify-content:flex-start;
+    order:6;flex:1 1 0;min-width:0;justify-content:flex-start;
     font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85;
   }
+  .sync-indicador-wrap{order:7;flex:0 0 auto;margin-left:0;}
+  .sync-indicador{padding:3px 8px;font-size:10px;gap:4px;}
 
   .tab-btn{padding:8px 12px 7px;font-size:11.5px;}
 }
@@ -639,6 +660,29 @@ tbody tr:hover{background:var(--navy-50);}
   .registros-rodape-intervalo{text-align:center;}
   .registros-paginacao{justify-content:center;}
 }
+/* Item 13 do requisito: nos 4 modais de lançamentos (Ver Extrato/Lançamentos futuros/Ver Fatura/Ver
+   Próximas Faturas), a paginação do rodapé precisa caber numa única linha no mobile — ao contrário da aba
+   Registros acima, aqui NÃO empilha em coluna; em vez disso compacta tudo (fonte/gaps/paddings menores) e,
+   se mesmo assim não couber, ganha rolagem horizontal só dela (nunca da página toda). */
+@media(max-width:700px){
+  .modal-extrato-futuros .registros-rodape,
+  .modal-fatura-cartao .registros-rodape{
+    flex-direction:row;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    gap:8px;padding:7px 10px;font-size:11px;
+  }
+  .modal-extrato-futuros .registros-rodape-exibir,
+  .modal-fatura-cartao .registros-rodape-exibir,
+  .modal-extrato-futuros .registros-rodape-intervalo,
+  .modal-fatura-cartao .registros-rodape-intervalo,
+  .modal-extrato-futuros .registros-paginacao,
+  .modal-fatura-cartao .registros-paginacao{
+    flex-shrink:0;white-space:nowrap;
+  }
+  .modal-extrato-futuros .registros-pagina-btn,
+  .modal-fatura-cartao .registros-pagina-btn{
+    min-width:22px;height:22px;padding:0 4px;font-size:11px;
+  }
+}
 .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
 .reg-descricao-texto{display:block;}
 .reg-descricao-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
@@ -777,11 +821,23 @@ tbody tr:hover{background:var(--navy-50);}
      texto quebrava no meio ("Bus/car") — item 18 do requisito de responsividade: nenhum botão pode quebrar
      texto. O botão nunca encolhe; só o input (com min-width:0 acima) cede espaço. */
   .reg-busca-wrap button{flex-shrink:0;white-space:nowrap;}
-  /* Hierarquia dos botões de ação de Registros (item 18): "Importar arquivo do banco" é a ação primária
-     (cor de destaque, ocupa a linha toda); "Verificar duplicidade" é uma ação secundária/ocasional, então
-     fica menor (btn-sm, já aplicado no HTML) e não precisa ocupar a linha toda sozinha. */
-  .reg-toolbar-acoes{align-items:stretch;}
-  .reg-toolbar-acoes #btnImportar{flex:1 1 100%;}
+  /* Itens 10/11 do requisito: Filtros / Verificar duplicidade / Importar arquivo do banco precisam caber
+     numa única linha no mobile, sem quebra — os 3 dividem a largura igualmente (flex-basis:0, mesma técnica
+     usada em .reg-busca-wrap/.filbar-info nesta sessão); em telas muito estreitas o rótulo de texto encolhe
+     com reticências (ellipsis) mas o ícone nunca some, e o título (atributo title) mantém a ação identificável. */
+  .reg-toolbar-acoes{align-items:stretch;gap:6px;}
+  .reg-toolbar-acoes #btnFiltrosMobileReg,
+  .reg-toolbar-acoes #btnVerificarDuplicidade,
+  .reg-toolbar-acoes #btnImportar{
+    flex:1 1 0;min-width:0;padding-left:6px;padding-right:6px;
+    overflow:hidden;white-space:nowrap;font-size:12px;
+  }
+  .reg-toolbar-acoes #btnFiltrosMobileReg .reg-toolbar-label,
+  .reg-toolbar-acoes #btnVerificarDuplicidade .reg-toolbar-label,
+  .reg-toolbar-acoes #btnImportar .reg-toolbar-label{
+    flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .reg-toolbar-acoes .reg-busca-wrap{order:99;}
   /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto"/"+ Nova meta"
      (itens 7 e 14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em
      telas estreitas. */
@@ -824,6 +880,22 @@ tbody tr:hover{background:var(--navy-50);}
   .toolbar-modal-padrao-busca{ margin-left:0; flex-wrap:wrap; }
   .modal-extrato-futuros .table-wrap-registros{ overflow-x:auto; }
 }
+/* Item 14 do requisito: no mobile (os 4 modais ficam em tela cheia — ver @media(max-width:700px) .modal),
+   o campo de busca + botão "Buscar" + "Verificar duplicidade" (dentro de .acoes-lancamento-modal, já que
+   "+ Novo Lançamento" virou FAB nessa largura — ver .btn-novo-lanc-modal acima) precisam caber numa única
+   linha: mesma técnica de flex-basis:0 usada em Registros (itens 10/11) para os 3 caberem sem quebrar. */
+@media(max-width:700px){
+  .toolbar-modal-padrao{ flex-wrap:wrap; gap:8px; }
+  .toolbar-modal-padrao-filtros{ order:1; flex:1 1 100%; }
+  /* "Verificar duplicidade" (único botão que sobra aqui, já que "+ Novo Lançamento" virou FAB) não pode
+     tomar mais da metade da linha, senão o campo de busca fica espremido a quase 0px — largura travada em
+     ~42% garante espaço mínimo pro input, com ellipsis se o texto não couber. */
+  .acoes-lancamento-modal{ order:2; flex:0 1 42%; max-width:180px; min-width:0; margin:0; }
+  .acoes-lancamento-modal button{ width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-left:8px; padding-right:8px; }
+  .toolbar-modal-padrao-busca{ order:2; flex:1 1 120px; min-width:0; margin-left:0; flex-wrap:nowrap; }
+  .toolbar-modal-padrao-busca input[type="search"]{ flex:1; min-width:50px; }
+  .toolbar-modal-padrao-busca button{ flex-shrink:0; white-space:nowrap; }
+}
 /* ---- Modais "Ver Fatura" e "Ver Próximas Faturas" (painel Cartões, aba Contas e Cartões) ----
    Largura responsiva (aproveita mais tela em monitores grandes, encolhe em telas menores, sempre dentro
    do teto global .modal{max-width:96vw}) e a MESMA tabela paginada sem rolagem própria já usada nos
@@ -853,7 +925,7 @@ tbody tr:hover{background:var(--navy-50);}
 .barra-acoes-lote{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .barra-acoes-lote.vazia{ display:none; }
 .barra-acoes-lote-contagem{ font-weight:600; color:var(--navy-900); margin-right:4px; }
-.barra-acoes-lote:not(.vazia){ background:var(--navy-50,#eef2f9); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-top:10px; }
+.barra-acoes-lote:not(.vazia){ background:var(--navy-50,#eef2f9); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-top:10px; margin-bottom:10px; }
 /* Modal de Edição em Lote */
 .lote-campo{ border-top:1px solid var(--line); padding:10px 0; }
 .lote-campo:first-of-type{ border-top:none; }
@@ -1108,6 +1180,10 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
   .filtros-barra .filtro-data-btn-abrir{width:100%;text-align:left;}
   .filtros-barra-titulo-mobile{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:var(--navy-950);margin-bottom:6px;}
   .filtros-barra-acoes-mobile{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
+  /* Itens 10/11: o botão "Filtros" mudou de lugar (agora dentro de .reg-toolbar-acoes e equivalentes) —
+     .filtros-mobile-toolbar passa a existir só como âncora de posicionamento da folha fixa .filtros-barra;
+     fechada, ela não deve deixar nenhum espaço vazio (margem) no meio do layout. */
+  .filtros-mobile-toolbar{margin-bottom:0;min-height:0;}
 }
 @media(min-width:701px){
   .filtros-barra-titulo-mobile,.filtros-barra-acoes-mobile{display:none;}
@@ -1421,6 +1497,28 @@ summary::marker{content:'';}
      baixo em vez de ficar na mesma linha (item 13 do requisito), mesmo com overflow:hidden/ellipsis no nome. */
   .tabela-cartoes td:first-child .cartao-col{min-width:0;}
   .tabela-cartoes td.col-importar-cartao{flex:0 0 auto;order:2;border-bottom:none;padding-bottom:8px;justify-content:flex-end;}
+  /* Item 16 do requisito: ordem explícita das linhas do card no mobile — identificação (1/2), valor da
+     fatura (3), fechamento+vencimento lado a lado (4), status (5), parcelado em aberto com o resumo de
+     compras/parcelas (6) — nunca depender da ordem "3" genérica/empatada por ordem de documento. */
+  .tabela-cartoes td:nth-child(3){order:3;}
+  .tabela-cartoes td:nth-child(6){order:5;}
+  .tabela-cartoes td:nth-child(7){order:6;}
+  /* Fechamento e Vencimento (colunas 4 e 5) formam duas colunas de largura equilibrada na mesma linha, em
+     vez de duas linhas cheias empilhadas — mesma técnica flex-basis:0 já usada nesta sessão para dividir
+     largura igualmente entre itens sem depender do tamanho do conteúdo. */
+  /* flex-basis:45% (não 0) é proposital aqui: junto com a linha anterior (Valor da fatura, basis:100%), o
+     total acumulado (100%+45%+45%=190%) ultrapassa a largura do container e força a quebra de linha ANTES
+     do par Fechamento/Vencimento — com basis:0 os dois ficavam "encaixados" na mesma linha do Valor da
+     fatura só que com largura zero (o algoritmo de quebra do flexbox só quebra quando o total excede o
+     espaço disponível, e 100%+0+0 nunca excede). min-width:0 continua garantindo que encolham se precisar. */
+  /* Coluna estreita demais para rótulo+valor lado a lado (como nas outras linhas) — rótulo empilha ACIMA
+     do valor em vez de à esquerda, senão o texto "Fechamento"/"Vencimento" espreme a data a ponto de
+     quebrar caractere por caractere (largura efetiva de cada metade gira em torno de 110-170px). */
+  .tabela-cartoes td:nth-child(4),.tabela-cartoes td:nth-child(5){
+    flex:1 1 45%;min-width:0;order:4;flex-direction:column;align-items:flex-start;gap:2px;
+  }
+  .tabela-cartoes td:nth-child(4) .data-editavel-linha,
+  .tabela-cartoes td:nth-child(5) .data-editavel-linha{justify-content:flex-start;width:100%;}
   .tabela-cartoes td:last-child{border-bottom:none;}
   .tabela-cartoes td[data-label]:not([data-label=""])::before{
     content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
@@ -3311,6 +3409,7 @@ let UI = {
   posicaoModal: null, // { nivel:'grupo'|'categoria'|'subcategoria', grupo, categoria, nome } — reposicionar (início/fim/depois de)
   gruposAbertos: new Set(),
   fluxoMesesFechados: new Set(), // chaves "ano-mes" recolhidas manualmente no Fluxo de Caixa (item 14) — vazio por padrão = todos expandidos, igual ao comportamento anterior
+  fluxoMesesInicializados: false, // true depois da 1ª renderização do Fluxo de Caixa — no mobile, a 1ª vez recolhe todos os meses por padrão (item 8 do requisito); depois disso, respeita só a interação do usuário
   ajudaFluxoAberta: false,
   ajudaCartoesAberta: false,
   ajudaDashboardAberta: false,
@@ -4414,28 +4513,52 @@ async function listarArquivosBkpNaPasta(dir){
   return arquivos;
 }
 /* Lê e interpreta cada .bkp da pasta conectada (metadados + validação de integridade + tamanho), para
-   montar a lista da tela "Backup e Restauração" — ver seção 5 do requisito. */
+   montar a lista da tela "Backup e Restauração" — ver seção 5 do requisito.
+   Item 2 do requisito (otimização): a leitura completa (getFile + text() + validarConteudoBackup) de cada
+   arquivo só acontece uma vez por versão do arquivo — o resultado fica em cache na sessão, indexado por
+   nome+tamanho+data de modificação (chave muda automaticamente se o arquivo for sobrescrito, então nunca
+   serve um resultado desatualizado); arquivos já conhecidos (mesma chave) não são relidos em chamadas
+   futuras, só os novos/alterados. As leituras que precisam mesmo acontecer rodam em paralelo (Promise.all)
+   em vez de sequenciais. E como a função é chamada de 3 lugares diferentes (abrirBackupModal,
+   atualizarListaBackupModal, aplicarRetencaoBackups) que podem coincidir no tempo, uma chamada já em
+   andamento é reaproveitada por quem chamar de novo nesse meio-tempo, em vez de disparar uma segunda
+   varredura da pasta em paralelo. Nada disso altera o conteúdo/integridade dos backups — só evita
+   trabalho repetido para montar a listagem. */
+const _cacheDetalheBackup = new Map(); // chave "nome|tamanho|lastModified" -> detalhe já calculado
+let _promiseHistoricoBackupsEmAndamento = null;
 async function carregarHistoricoBackups(){
-  const dir = await obterPastaBackup(true);
-  if(!dir) return [];
-  const arquivos = await listarArquivosBkpNaPasta(dir);
-  const detalhados = [];
-  for(const a of arquivos){
+  if(_promiseHistoricoBackupsEmAndamento) return _promiseHistoricoBackupsEmAndamento;
+  _promiseHistoricoBackupsEmAndamento = (async()=>{
     try{
-      const file = await a.handle.getFile();
-      const texto = await file.text();
-      const validacao = await validarConteudoBackup(texto);
-      const meta = validacao.meta || null;
-      const tipo = meta?.tipo || (a.nome.includes('pre-restore') ? 'pre-restore' : (a.nome.startsWith('Backup_Financeiro') ? 'manual' : 'manual'));
-      const criadoEm = meta?.criadoEm ? new Date(meta.criadoEm) : new Date(file.lastModified);
-      detalhados.push({ nome:a.nome, handle:a.handle, tamanho:file.size, criadoEm, tipo,
-        qtdTransacoes: meta?.qtdTransacoes ?? null, integro: validacao.valido, semMetadados: !!validacao.semMetadados, motivoInvalido: validacao.motivo||null });
-    }catch(e){
-      detalhados.push({ nome:a.nome, handle:a.handle, tamanho:0, criadoEm:new Date(0), tipo:'desconhecido', qtdTransacoes:null, integro:false, motivoInvalido:'Não foi possível ler o arquivo.' });
+      const dir = await obterPastaBackup(true);
+      if(!dir) return [];
+      const arquivos = await listarArquivosBkpNaPasta(dir);
+      const detalhados = await Promise.all(arquivos.map(async a=>{
+        try{
+          const file = await a.handle.getFile();
+          const chave = `${a.nome}|${file.size}|${file.lastModified}`;
+          const cacheado = _cacheDetalheBackup.get(chave);
+          if(cacheado) return { ...cacheado, handle:a.handle };
+          const texto = await file.text();
+          const validacao = await validarConteudoBackup(texto);
+          const meta = validacao.meta || null;
+          const tipo = meta?.tipo || (a.nome.includes('pre-restore') ? 'pre-restore' : (a.nome.startsWith('Backup_Financeiro') ? 'manual' : 'manual'));
+          const criadoEm = meta?.criadoEm ? new Date(meta.criadoEm) : new Date(file.lastModified);
+          const detalhe = { nome:a.nome, handle:a.handle, tamanho:file.size, criadoEm, tipo,
+            qtdTransacoes: meta?.qtdTransacoes ?? null, integro: validacao.valido, semMetadados: !!validacao.semMetadados, motivoInvalido: validacao.motivo||null };
+          _cacheDetalheBackup.set(chave, detalhe);
+          return detalhe;
+        }catch(e){
+          return { nome:a.nome, handle:a.handle, tamanho:0, criadoEm:new Date(0), tipo:'desconhecido', qtdTransacoes:null, integro:false, motivoInvalido:'Não foi possível ler o arquivo.' };
+        }
+      }));
+      detalhados.sort((a,b)=> b.criadoEm - a.criadoEm);
+      return detalhados;
+    } finally {
+      _promiseHistoricoBackupsEmAndamento = null;
     }
-  }
-  detalhados.sort((a,b)=> b.criadoEm - a.criadoEm);
-  return detalhados;
+  })();
+  return _promiseHistoricoBackupsEmAndamento;
 }
 /* Retenção (seção 10): nunca elimina backups manuais nem de pré-restauração, e nunca elimina o mais
    recente entre os automáticos (regra "nunca excluir o último backup válido disponível"). */
@@ -6927,6 +7050,9 @@ function render(){
         // própria tela (item 7 do requisito de responsividade) — nunca globalmente em todos os painéis, e
         // nunca com uma ação diferente da que o botão de desktop correspondente executaria.
         if(UI.menuMobileAberto || UI.menuArquivoAberto || UI.filtrosMobileAberto!=null || nivelAcessoPasta==='leitura') return '';
+        // Item 12 do requisito: com um dos 4 modais de lançamentos aberto por cima, cada um já tem seu
+        // próprio FAB (ver renderBotoesAcoesLancamentoModal) — evita dois FABs sobrepostos na tela.
+        if(UI.extratoContaModal || UI.futurosContaModal || UI.faturaAtualModal || UI.projecaoFaturaModal) return '';
         if(UI.tab==='registros') return `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
         if(UI.tab==='resumo') return `<button type="button" class="fab-novo-lancamento" id="fabNovaProjecao" aria-label="Novo lançamento previsto" title="Novo lançamento previsto">＋</button>`;
         if(UI.tab==='metas') return `<button type="button" class="fab-novo-lancamento" id="fabNovaMeta" aria-label="Nova meta" title="Nova meta">＋</button>`;
@@ -6997,8 +7123,8 @@ function renderTelaInicial(){
           <div class="ti-cabecalho-titulos">
             <h1>Controle Financeiro Familiar</h1>
             <p class="subtitulo">Família Gomes Oliveira</p>
-          </div>
-          <p class="hint">${msalConta ? `Conectado como <b class="ti-email-conectado">${escapeHtml(msalConta.username||msalConta.name||'')}</b><br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Conecte-se ao OneDrive para acessar seus dados.'}</p>
+          	<p class="hint">${msalConta ? `Conectado como <b class="ti-email-conectado">${escapeHtml(msalConta.username||msalConta.name||'')}</b><br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Conecte-se ao OneDrive para acessar seus dados.'}</p>
+		  </div>
         </div>
       </div>
       ${!hasFSAccess ? `<div class="banner" style="text-align:left;margin-bottom:20px;">⚠️ Integração com o OneDrive ainda não configurada neste app. Defina <code>ONEDRIVE_CONFIG.clientId</code> no início do index.html com o ID do aplicativo do seu App Registration no Microsoft Entra ID (ver instruções no comentário do código-fonte).</div>` : ''}
@@ -7050,7 +7176,7 @@ function renderTelaInicial(){
           <div class="ti-check-item ${regProntoOk?'ok':''}">${regProntoOk?'✓':''}📒 <b>Registros (.log):</b> ${fileLabel('reg')}</div>
         </div>
         <div class="ti-cta">
-          <button class="btn btn-primary btn-iniciar-app" id="tiIniciarApp" ${!arquivosProntos?'disabled':''}><svg width="13" height="13" viewBox="-0.016 0 0.39 0.39" xmlns="http://www.w3.org/2000/svg"><path d="M.36.21v.001a.2.2 0 0 1-.015.07V.28C.317.345.253.39.179.39S.042.345.015.281V.28A.2.2 0 0 1 0 .211V.21C0 .152.028.1.072.067A.03.03 0 0 1 .095.061a.03.03 0 0 1 .019.012.03.03 0 0 1 .006.022.03.03 0 0 1-.012.02.12.12 0 0 0-.048.096.12.12 0 1 0 .192-.096.03.03 0 0 1-.012-.02.03.03 0 0 1 .006-.022.03.03 0 0 1 .02-.012.03.03 0 0 1 .022.006A.18.18 0 0 1 .36.21M.21.03v.151a.03.03 0 0 1-.06 0V.03q0-.013.009-.021T.18 0c.013-.001.016.003.021.009A.03.03 0 0 1 .21.03"/></svg>️ Iniciar App</button>
+          <button class="btn btn-primary btn-iniciar-app" id="tiIniciarApp" ${!arquivosProntos?'disabled':''}><svg width="13" height="13" viewBox="0 0 0.39 0.39" fill="none" xmlns="http://www.w3.org/2000/svg"><path stroke="#0b2a5e" stroke-width=".024" d="M.374.195a.18.18 0 0 1-.179.179.18.18 0 0 1-.179-.179.179.179 0 0 1 .358 0z"/><path d="M.146.276V.114l.13.081z" stroke="#0b2a5e" stroke-width=".024" stroke-linecap="round" stroke-linejoin="round"/></svg> Iniciar App</button>
           <span class="ti-cta-hint">${arquivosProntos ? 'Tudo pronto — clique para carregar os dados.' : 'Disponível quando os arquivos estiverem prontos no OneDrive.'}</span>
         </div>
       </div>
@@ -7174,15 +7300,19 @@ function renderHeader(){
    sincronização, e ações contextuais (Sincronizar agora / Tentar novamente / Conectar novamente). */
 function renderPainelSync(){
   const info = syncIndicadorInfo();
+  // Item 5 do requisito: sem texto de nível/pasta aqui (já removido da tela inicial na Fase 4); e-mail sem
+  // sublinhado (reaproveita .ti-email-conectado, mesma classe da tela inicial) e ícone do OneDrive
+  // reaproveitado de ONEDRIVE_ICON_SVG/statusConexaoOneDriveInfo() — mesma fonte de estado da tela inicial,
+  // então os dois lugares nunca divergem.
   return `
   <div class="sync-painel">
     <div class="sync-painel-secao">
       <h4>Conta Microsoft</h4>
-      ${msalConta ? `<p>${escapeHtml(msalConta.username||msalConta.name||'')}</p><p class="muted">${nivelAcessoPasta==='leitura'?'👁️ Somente leitura':nivelAcessoPasta==='edicao'?'✏️ Edição':'Verificando permissão…'}</p>` : `<p class="muted">Não autenticado</p>`}
+      ${msalConta ? `<p><b class="ti-email-conectado">${escapeHtml(msalConta.username||msalConta.name||'')}</b></p>` : `<p class="muted">Não autenticado</p>`}
     </div>
     <div class="sync-painel-secao">
       <h4>OneDrive</h4>
-      <p>${onlineStatus ? (msalConta ? '✓ Conectado' : '⚠ Aguardando login') : '✕ Sem conexão com a Internet'}</p>
+      <p class="sync-painel-onedrive"><span class="sync-painel-onedrive-icone">${ONEDRIVE_ICON_SVG}</span><span class="ti-status-conexao ti-status-${statusConexaoOneDrive}" style="margin:0;">${statusConexaoOneDriveInfo().emoji} ${statusConexaoOneDriveInfo().texto}</span></p>
     </div>
     <div class="sync-painel-secao">
       <h4>Sincronização</h4>
@@ -7259,6 +7389,15 @@ function renderFileBanner(){
   return `<div class="banner">${partes.join(' ')} Use o menu <b>☰ Menu</b> no topo para salvar, fazer backup ou trocar de conta.</div>`;
 }
 
+/* Descrições curtas usadas só no painel mobile "Painéis" (ver TABS_PAINEIS_MOBILE) — os próprios dados de
+   TABS_PRINCIPAIS não têm um campo de descrição (só um rótulo curto), diferente de TABS_SECUNDARIAS. */
+const TABS_PRINCIPAIS_DESC = {
+  dashboard: 'Resumo do mês, saldo atual e indicadores',
+  inteligencia: 'Análises, tendências e projeções financeiras',
+  resumo: 'Projeção de entradas e saídas mês a mês',
+  metas: 'Acompanhamento das metas de gastos',
+  registros: 'Lançamentos de receitas e despesas',
+};
 const TABS_PRINCIPAIS = [
   ["dashboard","📊","Painel Financeiro","Painel"],
   ["inteligencia","🧠","Inteligência Financeira","Inteligência"],
@@ -7271,25 +7410,32 @@ const TABS_SECUNDARIAS = [
   ["categorias","⚙️","Configurações","Categorias, backups, conta Microsoft e preferências"],
 ];
 const TABS_TODAS = [["dashboard","📊 Painel Financeiro"],["inteligencia","🧠 Inteligência Financeira"],["cartoes","💳 Contas e Cartões"],["resumo","📆 Fluxo de Caixa"],["metas","🎯 Metas de Gastos"],["registros","📒 Registros"],["categorias","⚙️ Configurações"]];
+/* Item 7 do requisito: o painel "Painéis" do mobile precisa listar TODAS as abas na MESMA ordem do
+   desktop (TABS_TODAS) — em vez de "principais primeiro, secundárias depois" (ordem antiga do "Mais"),
+   monta-se aqui um único array combinando TABS_PRINCIPAIS + TABS_SECUNDARIAS e reordenando pelos ids de
+   TABS_TODAS. Não duplica dados: só reaproveita e reordena os dois arrays já existentes. */
+const TABS_PAINEIS_MOBILE = TABS_TODAS.map(([id])=>{
+  const principal = TABS_PRINCIPAIS.find(t=>t[0]===id);
+  if(principal) return [id, principal[1], principal[2], TABS_PRINCIPAIS_DESC[id]||''];
+  return TABS_SECUNDARIAS.find(t=>t[0]===id);
+});
 function renderTabbar(){
   const maisAberto = UI.menuMobileAberto;
-  const tabSecundariaAtiva = TABS_SECUNDARIAS.some(([id])=>id===UI.tab);
   return `
   <nav class="tabbar">${TABS_TODAS.map(([id,label])=>`<button class="tab-btn ${UI.tab===id?'active':''}" data-tab="${id}">${label}</button>`).join('')}</nav>
   <nav class="bottom-nav">
-    ${TABS_PRINCIPAIS.map(([id,icone,,rotulo])=>`<button type="button" class="bn-item ${UI.tab===id?'active':''}" data-tab="${id}"><span class="bn-icone">${icone}</span><span class="bn-rotulo">${rotulo}</span></button>`).join('')}
-    <button type="button" class="bn-item ${maisAberto||tabSecundariaAtiva?'active':''}" id="btnMenuMobile" aria-label="${maisAberto?'Fechar mais opções':'Abrir mais opções'}" aria-expanded="${maisAberto?'true':'false'}">
-      <span class="bn-icone">${maisAberto?'✖️':'⋯'}</span><span class="bn-rotulo">Mais</span>
+    <button type="button" class="bn-item bn-item-paineis ${maisAberto?'active':''}" id="btnMenuMobile" aria-label="${maisAberto?'Fechar painéis':'Abrir painéis'}" aria-expanded="${maisAberto?'true':'false'}">
+      <span class="bn-icone">${maisAberto?'✖️':'☰'}</span><span class="bn-rotulo">Painéis</span>
     </button>
   </nav>
-  <div class="mais-sheet ${maisAberto?'aberto':''}" role="dialog" aria-modal="true" aria-label="Mais opções">
+  <div class="mais-sheet ${maisAberto?'aberto':''}" role="dialog" aria-modal="true" aria-label="Painéis">
     <div class="mais-sheet-alca"></div>
-    <div class="mais-sheet-titulo">Mais opções <button type="button" class="close-x-claro mais-sheet-fechar" id="btnFecharMaisSheet" title="Fechar">✕</button></div>
+    <div class="mais-sheet-titulo">Painéis <button type="button" class="close-x-claro mais-sheet-fechar" id="btnFecharMaisSheet" title="Fechar">✕</button></div>
     <button type="button" class="mais-sheet-item" id="btnMenuArquivoMobile">
       <span class="mais-sheet-icone">📁</span>
-      <span class="mais-sheet-textos"><span class="mais-sheet-nome">Arquivo</span><span class="mais-sheet-desc">Salvar, sincronizar, backups e conta Microsoft</span></span>
+      <span class="mais-sheet-textos"><span class="mais-sheet-nome">Menu</span><span class="mais-sheet-desc">Salvar, sincronizar, backups e conta Microsoft</span></span>
     </button>
-    ${TABS_SECUNDARIAS.map(([id,icone,nome,desc])=>`
+    ${TABS_PAINEIS_MOBILE.map(([id,icone,nome,desc])=>`
     <button type="button" class="mais-sheet-item ${UI.tab===id?'active':''}" data-tab="${id}">
       <span class="mais-sheet-icone">${icone}</span>
       <span class="mais-sheet-textos"><span class="mais-sheet-nome">${nome}</span><span class="mais-sheet-desc">${desc}</span></span>
@@ -8305,6 +8451,19 @@ function renderRegistros(){
   const fimIdx = porPagina==='TODOS' ? totalFiltrado : Math.min(inicioIdx+porPagina, totalFiltrado);
   const pageList = list.slice(inicioIdx, fimIdx);
   const rodapePaginacao = renderRodapePaginacaoRegistros(totalFiltrado, porPagina, UI.regPagina, totalPaginas, inicioIdx, fimIdx);
+  // Itens 10/11 do requisito: Filtros/Verificar duplicidade/Importar arquivo do banco precisam caber numa
+  // única linha no mobile — camposFiltroReg/qtdAtivos são calculados aqui (fora da barra de filtros em si)
+  // porque o botão "Filtros" agora mora fisicamente dentro de .reg-toolbar-acoes (junto dos outros dois),
+  // não mais dentro de .filtros-mobile-toolbar; a barra de filtros (.filtros-barra) continua exatamente
+  // onde estava, só sem o botão que a abre no mobile.
+  const camposFiltroReg = [
+    {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:`${iconeGrupo(g)} ${g}`}))]},
+    {campo:'natureza', label:'Natureza', options:[{value:'Fixo',label:'Fixo'},{value:'Variável',label:'Variável'}]},
+    {campo:'tipo', label:'Tipo', options:[{value:'Despesa',label:'Despesa'},{value:'Receita',label:'Receita'}]},
+    {campo:'conta', label:'Conta', options:contasUsadas.map(c=>({value:c,label:c}))},
+    {campo:'fatura', label:'Fatura', options:faturasUsadas.map(c=>({value:c,label:competenciaLabel(c)}))},
+  ];
+  const qtdAtivos = contarFiltrosPadraoAtivos(f, camposFiltroReg);
   return `
   <div class="panel">
     <h2><span>Registros de lançamentos</span></h2>
@@ -8326,18 +8485,7 @@ function renderRegistros(){
         <p style="margin-bottom:0;"><b>Ações de cada linha</b>: <b>✏️ Editar</b> abre o lançamento no formulário para alterar qualquer campo; <b>📄 Duplicar</b> cria uma cópia idêntica (mesma data, valor, categoria etc.) para agilizar lançamentos repetidos, sem afetar o original; <b>🗑️ Excluir</b> remove o lançamento — se ele fizer parte de uma transferência entre contas, o lado espelhado na outra conta é removido junto, e pede confirmação antes.</p>
       </div>
     </details>
-    ${(()=>{
-      const camposFiltroReg = [
-        {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:`${iconeGrupo(g)} ${g}`}))]},
-        {campo:'natureza', label:'Natureza', options:[{value:'Fixo',label:'Fixo'},{value:'Variável',label:'Variável'}]},
-        {campo:'tipo', label:'Tipo', options:[{value:'Despesa',label:'Despesa'},{value:'Receita',label:'Receita'}]},
-        {campo:'conta', label:'Conta', options:contasUsadas.map(c=>({value:c,label:c}))},
-        {campo:'fatura', label:'Fatura', options:faturasUsadas.map(c=>({value:c,label:competenciaLabel(c)}))},
-      ];
-      const qtdAtivos = contarFiltrosPadraoAtivos(f, camposFiltroReg);
-      return `
     <div class="toolbar filtros-mobile-toolbar" style="justify-content:flex-start;">
-      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg">🔍 Filtros${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
       <div class="filtros-barra ${UI.filtrosMobileAberto==='Reg'?'aberto-mobile':''}">
         <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileReg" title="Fechar">✕</button></div>
         ${renderBarraFiltrosPadrao(f, 'Reg', camposFiltroReg)}
@@ -8348,18 +8496,17 @@ function renderRegistros(){
       </div>
     </div>
     ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
-      `;
-    })()}
-    <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
     <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
-      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade">🔍 Verificar duplicidade</button>` : ''}
-      <button class="btn btn-gold" id="btnImportar">📥 Importar arquivo do banco</button>
+      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg" title="Filtros">🔍 <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
+      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">🔍 <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
+      <button class="btn btn-gold" id="btnImportar" title="Importar arquivo do banco">📥 <span class="reg-toolbar-label">Importar arquivo do banco</span></button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
       <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
         <input type="search" id="regBusca" placeholder="Buscar na descrição..." value="${escapeHtml(UI.regFiltro)}">
         <button class="btn btn-primary btn-sm" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
       </div>
     </div>
+    <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
     ${list.length===0 ? `<div class="empty-state"><div class="big">🗒️</div>Nenhum lançamento encontrado com esses filtros.</div>
     <div class="registros-rodape registros-rodape-vazio">${rodapePaginacao}</div>` : `
     <div class="table-wrap table-wrap-registros reg-tabela-principal"><table class="tabela-registros">
@@ -8453,11 +8600,15 @@ function renderRodapePaginacaoRegistros(totalFiltrado, porPagina, paginaAtual, t
    aparece — quando a tabela abaixo tem pelo menos um lançamento; "+ Novo Lançamento" continua sempre
    visível, já que cadastrar o primeiro lançamento é justamente o caminho para sair do estado vazio. */
 function renderBotoesAcoesLancamentoModal(conta, temLancamentos){
+  // Item 12 do requisito: no mobile, o botão textual "+ Novo Lançamento" vira um FAB (mesmo data-modal-novo-lanc,
+  // mesmo handler já existente em bindEvents — nenhuma lógica de criação de lançamento duplicada) — o botão
+  // textual continua existindo no HTML (some só via CSS em telas ≤700px) para não duplicar o data-attribute.
   return `
   <div class="acoes-lancamento-modal no-print">
     ${temLancamentos ? `<button class="btn btn-ghost btn-sm" data-modal-verificar-dup="${escapeHtml(conta)}">🔍 Verificar duplicidade</button>` : ''}
-    <button class="btn btn-primary btn-sm" data-modal-novo-lanc="${escapeHtml(conta)}">+ Novo Lançamento</button>
-  </div>`;
+    <button class="btn btn-primary btn-sm btn-novo-lanc-modal" data-modal-novo-lanc="${escapeHtml(conta)}">+ Novo Lançamento</button>
+  </div>
+  <button type="button" class="fab-novo-lancamento-modal no-print" data-modal-novo-lanc="${escapeHtml(conta)}" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
 }
 function renderModalDuplicidade(){
   const pares = UI.modalDuplicidade.pares;
@@ -9498,6 +9649,13 @@ function drawChartsInteligencia(){
 }
 function renderResumo(){
   const meses = calcProjecoesMultiMes(UI.ano, UI.mes, 4);
+  // Item 8 do requisito: no mobile, todos os meses iniciam recolhidos (nenhum abre automaticamente) — só
+  // na 1ª renderização desta aba na sessão, para não recolher de novo um mês que o usuário já reabriu
+  // manualmente. Desktop mantém o comportamento padrão de sempre (todos abertos).
+  if(!UI.fluxoMesesInicializados){
+    if(window.innerWidth<=700){ meses.forEach(m=> UI.fluxoMesesFechados.add(`${m.ano}-${m.mes}`)); }
+    UI.fluxoMesesInicializados = true;
+  }
   return `
   <div class="panel">
     <h2><span>Fluxo de Caixa</span></h2>
@@ -9844,7 +10002,7 @@ function renderHistoricoMetaPanel(competencia){
   const metaSelecionada = STATE.metas.find(m=>m.id===UI.metaHistoricoId) || STATE.metas[0];
   const h = historicoMeta(metaSelecionada, UI.ano, UI.mes);
   return `
-  <div class="panel">
+  <div class="panel" id="painelHistoricoMeta">
     <h2>Comparativo histórico (últimos 12 meses)</h2>
     <div class="field" style="max-width:360px;"><label>Meta</label>
       <select id="selHistoricoMeta">
@@ -11796,7 +11954,17 @@ function bindEvents(){
   document.getElementById('tiTentarNovamente')?.addEventListener('click', async ()=>{ await carregarArquivosDoOneDrive(); render(); });
   document.getElementById('tiRestaurarBackup')?.addEventListener('click', ()=>restaurarBackup());
   document.getElementById('tiVerHistoricoBackups')?.addEventListener('click', ()=>abrirBackupModal());
-  document.getElementById('tiIniciarApp')?.addEventListener('click', ()=>{ UI.appIniciado = true; backupAutomaticoSeAplicavel('ao-iniciar'); render(); });
+  document.getElementById('tiIniciarApp')?.addEventListener('click', ()=>{
+    UI.appIniciado = true;
+    backupAutomaticoSeAplicavel('ao-iniciar');
+    // Item 4 do requisito: dispara a sincronização imediatamente ao iniciar, sem exigir um clique extra em
+    // "Sincronizar agora". Reaproveita EXATAMENTE a mesma função usada por aquele botão (salvarArquivos) —
+    // ela já tem proteção contra chamadas simultâneas (syncEmAndamento, ver salvarArquivos) e só atualiza a
+    // "última sincronização" quando a gravação é realmente confirmada, então nunca duplica sincronização
+    // nem marca sucesso sem uma sincronização de verdade.
+    if(nivelAcessoPasta!=='leitura') salvarArquivos();
+    render();
+  });
   document.getElementById('tiRecuperarSnapshot')?.addEventListener('click', ()=>aplicarSnapshotLocalPendente());
   document.getElementById('tiDescartarSnapshot')?.addEventListener('click', async ()=>{
     if(!confirm('Descartar permanentemente as alterações não sincronizadas salvas neste dispositivo?\n\nEsta ação não pode ser desfeita.')) return;
@@ -12379,8 +12547,13 @@ function bindEvents(){
     STATE.metas = STATE.metas.filter(x=>x.id!==b.dataset.excluirMeta);
     scheduleSave(); render();
   }));
+  // Item 9 do requisito: o listener já existia e já identificava a meta certa (UI.metaHistoricoId) — o que
+  // faltava era rolar até o painel "Comparativo histórico" depois de trocar de meta, já que ele fica
+  // estático abaixo da tabela/indicadores e, numa lista longa (principalmente no mobile), o clique não
+  // tinha nenhum efeito visível na tela até o usuário rolar manualmente até lá.
   document.querySelectorAll('[data-historico-meta]').forEach(b=> b.addEventListener('click', ()=>{
     UI.metaHistoricoId = b.dataset.historicoMeta; render();
+    document.getElementById('painelHistoricoMeta')?.scrollIntoView({ behavior:'smooth', block:'start' });
   }));
   document.getElementById('selHistoricoMeta')?.addEventListener('change', e=>{ UI.metaHistoricoId = e.target.value; render(); });
   document.getElementById('cardMetasDashboard')?.addEventListener('click', ()=>{ UI.tab='metas'; render(); });
