@@ -4513,28 +4513,52 @@ async function listarArquivosBkpNaPasta(dir){
   return arquivos;
 }
 /* Lê e interpreta cada .bkp da pasta conectada (metadados + validação de integridade + tamanho), para
-   montar a lista da tela "Backup e Restauração" — ver seção 5 do requisito. */
+   montar a lista da tela "Backup e Restauração" — ver seção 5 do requisito.
+   Item 2 do requisito (otimização): a leitura completa (getFile + text() + validarConteudoBackup) de cada
+   arquivo só acontece uma vez por versão do arquivo — o resultado fica em cache na sessão, indexado por
+   nome+tamanho+data de modificação (chave muda automaticamente se o arquivo for sobrescrito, então nunca
+   serve um resultado desatualizado); arquivos já conhecidos (mesma chave) não são relidos em chamadas
+   futuras, só os novos/alterados. As leituras que precisam mesmo acontecer rodam em paralelo (Promise.all)
+   em vez de sequenciais. E como a função é chamada de 3 lugares diferentes (abrirBackupModal,
+   atualizarListaBackupModal, aplicarRetencaoBackups) que podem coincidir no tempo, uma chamada já em
+   andamento é reaproveitada por quem chamar de novo nesse meio-tempo, em vez de disparar uma segunda
+   varredura da pasta em paralelo. Nada disso altera o conteúdo/integridade dos backups — só evita
+   trabalho repetido para montar a listagem. */
+const _cacheDetalheBackup = new Map(); // chave "nome|tamanho|lastModified" -> detalhe já calculado
+let _promiseHistoricoBackupsEmAndamento = null;
 async function carregarHistoricoBackups(){
-  const dir = await obterPastaBackup(true);
-  if(!dir) return [];
-  const arquivos = await listarArquivosBkpNaPasta(dir);
-  const detalhados = [];
-  for(const a of arquivos){
+  if(_promiseHistoricoBackupsEmAndamento) return _promiseHistoricoBackupsEmAndamento;
+  _promiseHistoricoBackupsEmAndamento = (async()=>{
     try{
-      const file = await a.handle.getFile();
-      const texto = await file.text();
-      const validacao = await validarConteudoBackup(texto);
-      const meta = validacao.meta || null;
-      const tipo = meta?.tipo || (a.nome.includes('pre-restore') ? 'pre-restore' : (a.nome.startsWith('Backup_Financeiro') ? 'manual' : 'manual'));
-      const criadoEm = meta?.criadoEm ? new Date(meta.criadoEm) : new Date(file.lastModified);
-      detalhados.push({ nome:a.nome, handle:a.handle, tamanho:file.size, criadoEm, tipo,
-        qtdTransacoes: meta?.qtdTransacoes ?? null, integro: validacao.valido, semMetadados: !!validacao.semMetadados, motivoInvalido: validacao.motivo||null });
-    }catch(e){
-      detalhados.push({ nome:a.nome, handle:a.handle, tamanho:0, criadoEm:new Date(0), tipo:'desconhecido', qtdTransacoes:null, integro:false, motivoInvalido:'Não foi possível ler o arquivo.' });
+      const dir = await obterPastaBackup(true);
+      if(!dir) return [];
+      const arquivos = await listarArquivosBkpNaPasta(dir);
+      const detalhados = await Promise.all(arquivos.map(async a=>{
+        try{
+          const file = await a.handle.getFile();
+          const chave = `${a.nome}|${file.size}|${file.lastModified}`;
+          const cacheado = _cacheDetalheBackup.get(chave);
+          if(cacheado) return { ...cacheado, handle:a.handle };
+          const texto = await file.text();
+          const validacao = await validarConteudoBackup(texto);
+          const meta = validacao.meta || null;
+          const tipo = meta?.tipo || (a.nome.includes('pre-restore') ? 'pre-restore' : (a.nome.startsWith('Backup_Financeiro') ? 'manual' : 'manual'));
+          const criadoEm = meta?.criadoEm ? new Date(meta.criadoEm) : new Date(file.lastModified);
+          const detalhe = { nome:a.nome, handle:a.handle, tamanho:file.size, criadoEm, tipo,
+            qtdTransacoes: meta?.qtdTransacoes ?? null, integro: validacao.valido, semMetadados: !!validacao.semMetadados, motivoInvalido: validacao.motivo||null };
+          _cacheDetalheBackup.set(chave, detalhe);
+          return detalhe;
+        }catch(e){
+          return { nome:a.nome, handle:a.handle, tamanho:0, criadoEm:new Date(0), tipo:'desconhecido', qtdTransacoes:null, integro:false, motivoInvalido:'Não foi possível ler o arquivo.' };
+        }
+      }));
+      detalhados.sort((a,b)=> b.criadoEm - a.criadoEm);
+      return detalhados;
+    } finally {
+      _promiseHistoricoBackupsEmAndamento = null;
     }
-  }
-  detalhados.sort((a,b)=> b.criadoEm - a.criadoEm);
-  return detalhados;
+  })();
+  return _promiseHistoricoBackupsEmAndamento;
 }
 /* Retenção (seção 10): nunca elimina backups manuais nem de pré-restauração, e nunca elimina o mais
    recente entre os automáticos (regra "nunca excluir o último backup válido disponível"). */
