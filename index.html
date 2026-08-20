@@ -84,11 +84,15 @@ input,select{font-family:var(--sans);}
 .tela-inicial-card button:disabled{opacity:.5;cursor:not-allowed;}
 .ti-cabecalho{display:flex;align-items:center;gap:24px;margin-bottom:28px;text-align:center;}
 .ti-cabecalho .mark{height:200px;width:auto;flex-shrink:0;align-self:center;}
+/* .ti-cabecalho-textos é o flex container comum a título+hint (item 1 do requisito): align-items:center faz
+   o .hint ficar centralizado verticalmente em relação a .ti-cabecalho-titulos SEMPRE, em qualquer largura
+   — os dois são flex items lado a lado (sem position:absolute), então o navegador recalcula o
+   centro vertical sozinho a cada mudança de altura/quebra de texto, nunca desalinhando. */
 .ti-cabecalho-textos{display:flex;align-items:center;justify-content:space-between;gap:24px;flex:1;min-width:0;flex-wrap:wrap;}
-.ti-cabecalho-titulos{min-width:0;}
+.ti-cabecalho-titulos{min-width:0;flex:0 1 auto;}
 .ti-cabecalho h1{font-size:42px;margin:0;color:var(--navy-950);}
 .ti-cabecalho .subtitulo{margin:4px 0 0;font-size:30px;font-weight:600;color:var(--gold-dark);}
-.ti-cabecalho .hint{color:#5b6b85;margin:0;width:100%;align-self:center;font-size:18px;font-style:italic;text-align:center;}
+.ti-cabecalho .hint{color:#5b6b85;margin:0;flex:1 1 auto;min-width:0;font-size:18px;font-style:italic;text-align:center;}
 .ti-opcoes{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-bottom:28px;}
 .ti-opcao{flex:1 1 280px;max-width:320px;border:1px solid var(--line);border-radius:14px;padding:18px 16px;background:var(--navy-50,#f4f7fc);text-align:center;display:flex;flex-direction:column;align-items:center;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;}
 .ti-opcao:hover{border-color:var(--navy-300,#a9bbdd);box-shadow:0 8px 22px rgba(16,64,141,.1);transform:translateY(-2px);}
@@ -113,7 +117,7 @@ input,select{font-family:var(--sans);}
 .ti-check-item.ok{color:var(--navy-900);}
 .ti-check-item.ok .marca{background:#39c07a;border-color:#39c07a;color:#fff;}
 .ti-cta{display:flex;flex-direction:column;align-items:center;gap:6px;}
-.ti-cta .btn-iniciar-app{background:var(--gold);color:var(--navy-900);font-weight:700;border:1px solid var(--gold);padding:14px 32px;font-size:15px;white-space:nowrap;}
+.ti-cta .btn-iniciar-app{background:var(--gold);color:#0b2a5e;font-weight:700;border:1px solid var(--gold);padding:14px 32px;font-size:15px;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;}
 .ti-cta .btn-iniciar-app:hover{background:#ffd333;}
 .ti-cta .btn-iniciar-app:disabled{opacity:.45;}
 .ti-cta-hint{font-size:11px;color:#8393ac;text-align:center;}
@@ -190,6 +194,9 @@ input,select{font-family:var(--sans);}
 .sync-painel-secao p{margin:0 0 2px;font-size:13px;word-break:break-word;}
 .sync-painel-secao p.muted{color:#8393ac;font-size:12px;}
 .sync-painel-secao p.sync-erro-texto{color:#c0392b;font-size:12px;}
+.sync-painel-onedrive{display:flex;align-items:center;gap:8px;}
+.sync-painel-onedrive-icone{display:inline-flex;flex-shrink:0;}
+.sync-painel-onedrive-icone svg{width:18px;height:18px;}
 .sync-painel-acoes{border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:flex-end;}
 .sync-painel-acoes .btn{width:100%;}
 /* ---- Acordeão da aba Contas e Cartões: só um dos dois painéis fica expandido por vez ---- */
@@ -374,9 +381,6 @@ input,select{font-family:var(--sans);}
   .app-title p{font-size:10.5px;display:none;}
   .app-title p.app-title-tab-atual{display:block;}
 
-  .sync-indicador-wrap{order:3;flex:0 0 auto;margin-left:auto;}
-  .sync-indicador{padding:5px 10px;font-size:11px;}
-
   .period-select{
     order:4;flex:1 1 100%;width:100%;justify-content:space-between;font-size:12px;
     margin:2px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,.14);
@@ -385,10 +389,18 @@ input,select{font-family:var(--sans);}
   .period-select > span{display:none;} /* "Período:" — óbvio pelo contexto, some para ganhar espaço */
 
   .menu-arquivo{order:5;}
+  /* Item 6 do requisito: .filebar-info e o botão de sincronização passam a dividir a MESMA linha (antes o
+     botão ficava na 1ª linha, junto do título, e .filebar-info sozinha numa linha cheia própria). Ambos
+     usam flex-basis:0 (não "auto"/"100%") — mesma técnica já usada em Cartões (item 13) — para que a
+     distribuição de espaço seja guiada só por flex-grow/min-width, nunca pelo tamanho do conteúdo: o botão
+     nunca quebra linha nem é empurrado para fora, e .filebar-info sempre cede o espaço que sobrar (com
+     reticências), nunca sobrepondo o botão. */
   .filebar-info{
-    order:6;flex:1 1 100%;width:100%;justify-content:flex-start;
+    order:6;flex:1 1 0;min-width:0;justify-content:flex-start;
     font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85;
   }
+  .sync-indicador-wrap{order:7;flex:0 0 auto;margin-left:0;}
+  .sync-indicador{padding:3px 8px;font-size:10px;gap:4px;}
 
   .tab-btn{padding:8px 12px 7px;font-size:11.5px;}
 }
@@ -777,11 +789,23 @@ tbody tr:hover{background:var(--navy-50);}
      texto quebrava no meio ("Bus/car") — item 18 do requisito de responsividade: nenhum botão pode quebrar
      texto. O botão nunca encolhe; só o input (com min-width:0 acima) cede espaço. */
   .reg-busca-wrap button{flex-shrink:0;white-space:nowrap;}
-  /* Hierarquia dos botões de ação de Registros (item 18): "Importar arquivo do banco" é a ação primária
-     (cor de destaque, ocupa a linha toda); "Verificar duplicidade" é uma ação secundária/ocasional, então
-     fica menor (btn-sm, já aplicado no HTML) e não precisa ocupar a linha toda sozinha. */
-  .reg-toolbar-acoes{align-items:stretch;}
-  .reg-toolbar-acoes #btnImportar{flex:1 1 100%;}
+  /* Itens 10/11 do requisito: Filtros / Verificar duplicidade / Importar arquivo do banco precisam caber
+     numa única linha no mobile, sem quebra — os 3 dividem a largura igualmente (flex-basis:0, mesma técnica
+     usada em .reg-busca-wrap/.filbar-info nesta sessão); em telas muito estreitas o rótulo de texto encolhe
+     com reticências (ellipsis) mas o ícone nunca some, e o título (atributo title) mantém a ação identificável. */
+  .reg-toolbar-acoes{align-items:stretch;gap:6px;}
+  .reg-toolbar-acoes #btnFiltrosMobileReg,
+  .reg-toolbar-acoes #btnVerificarDuplicidade,
+  .reg-toolbar-acoes #btnImportar{
+    flex:1 1 0;min-width:0;padding-left:6px;padding-right:6px;
+    overflow:hidden;white-space:nowrap;font-size:12px;
+  }
+  .reg-toolbar-acoes #btnFiltrosMobileReg .reg-toolbar-label,
+  .reg-toolbar-acoes #btnVerificarDuplicidade .reg-toolbar-label,
+  .reg-toolbar-acoes #btnImportar .reg-toolbar-label{
+    flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .reg-toolbar-acoes .reg-busca-wrap{order:99;}
   /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto"/"+ Nova meta"
      (itens 7 e 14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em
      telas estreitas. */
@@ -853,7 +877,7 @@ tbody tr:hover{background:var(--navy-50);}
 .barra-acoes-lote{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .barra-acoes-lote.vazia{ display:none; }
 .barra-acoes-lote-contagem{ font-weight:600; color:var(--navy-900); margin-right:4px; }
-.barra-acoes-lote:not(.vazia){ background:var(--navy-50,#eef2f9); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-top:10px; }
+.barra-acoes-lote:not(.vazia){ background:var(--navy-50,#eef2f9); border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-top:10px; margin-bottom:10px; }
 /* Modal de Edição em Lote */
 .lote-campo{ border-top:1px solid var(--line); padding:10px 0; }
 .lote-campo:first-of-type{ border-top:none; }
@@ -1108,6 +1132,10 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
   .filtros-barra .filtro-data-btn-abrir{width:100%;text-align:left;}
   .filtros-barra-titulo-mobile{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:var(--navy-950);margin-bottom:6px;}
   .filtros-barra-acoes-mobile{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
+  /* Itens 10/11: o botão "Filtros" mudou de lugar (agora dentro de .reg-toolbar-acoes e equivalentes) —
+     .filtros-mobile-toolbar passa a existir só como âncora de posicionamento da folha fixa .filtros-barra;
+     fechada, ela não deve deixar nenhum espaço vazio (margem) no meio do layout. */
+  .filtros-mobile-toolbar{margin-bottom:0;min-height:0;}
 }
 @media(min-width:701px){
   .filtros-barra-titulo-mobile,.filtros-barra-acoes-mobile{display:none;}
@@ -3311,6 +3339,7 @@ let UI = {
   posicaoModal: null, // { nivel:'grupo'|'categoria'|'subcategoria', grupo, categoria, nome } — reposicionar (início/fim/depois de)
   gruposAbertos: new Set(),
   fluxoMesesFechados: new Set(), // chaves "ano-mes" recolhidas manualmente no Fluxo de Caixa (item 14) — vazio por padrão = todos expandidos, igual ao comportamento anterior
+  fluxoMesesInicializados: false, // true depois da 1ª renderização do Fluxo de Caixa — no mobile, a 1ª vez recolhe todos os meses por padrão (item 8 do requisito); depois disso, respeita só a interação do usuário
   ajudaFluxoAberta: false,
   ajudaCartoesAberta: false,
   ajudaDashboardAberta: false,
@@ -7050,7 +7079,7 @@ function renderTelaInicial(){
           <div class="ti-check-item ${regProntoOk?'ok':''}">${regProntoOk?'✓':''}📒 <b>Registros (.log):</b> ${fileLabel('reg')}</div>
         </div>
         <div class="ti-cta">
-          <button class="btn btn-primary btn-iniciar-app" id="tiIniciarApp" ${!arquivosProntos?'disabled':''}><svg width="13" height="13" viewBox="-0.016 0 0.39 0.39" xmlns="http://www.w3.org/2000/svg"><path d="M.36.21v.001a.2.2 0 0 1-.015.07V.28C.317.345.253.39.179.39S.042.345.015.281V.28A.2.2 0 0 1 0 .211V.21C0 .152.028.1.072.067A.03.03 0 0 1 .095.061a.03.03 0 0 1 .019.012.03.03 0 0 1 .006.022.03.03 0 0 1-.012.02.12.12 0 0 0-.048.096.12.12 0 1 0 .192-.096.03.03 0 0 1-.012-.02.03.03 0 0 1 .006-.022.03.03 0 0 1 .02-.012.03.03 0 0 1 .022.006A.18.18 0 0 1 .36.21M.21.03v.151a.03.03 0 0 1-.06 0V.03q0-.013.009-.021T.18 0c.013-.001.016.003.021.009A.03.03 0 0 1 .21.03"/></svg>️ Iniciar App</button>
+          <button class="btn btn-primary btn-iniciar-app" id="tiIniciarApp" ${!arquivosProntos?'disabled':''}><svg width="13" height="13" viewBox="0 0 0.39 0.39" fill="none" xmlns="http://www.w3.org/2000/svg"><path stroke="#0b2a5e" stroke-width=".024" d="M.374.195a.18.18 0 0 1-.179.179.18.18 0 0 1-.179-.179.179.179 0 0 1 .358 0z"/><path d="M.146.276V.114l.13.081z" stroke="#0b2a5e" stroke-width=".024" stroke-linecap="round" stroke-linejoin="round"/></svg> Iniciar App</button>
           <span class="ti-cta-hint">${arquivosProntos ? 'Tudo pronto — clique para carregar os dados.' : 'Disponível quando os arquivos estiverem prontos no OneDrive.'}</span>
         </div>
       </div>
@@ -7174,15 +7203,19 @@ function renderHeader(){
    sincronização, e ações contextuais (Sincronizar agora / Tentar novamente / Conectar novamente). */
 function renderPainelSync(){
   const info = syncIndicadorInfo();
+  // Item 5 do requisito: sem texto de nível/pasta aqui (já removido da tela inicial na Fase 4); e-mail sem
+  // sublinhado (reaproveita .ti-email-conectado, mesma classe da tela inicial) e ícone do OneDrive
+  // reaproveitado de ONEDRIVE_ICON_SVG/statusConexaoOneDriveInfo() — mesma fonte de estado da tela inicial,
+  // então os dois lugares nunca divergem.
   return `
   <div class="sync-painel">
     <div class="sync-painel-secao">
       <h4>Conta Microsoft</h4>
-      ${msalConta ? `<p>${escapeHtml(msalConta.username||msalConta.name||'')}</p><p class="muted">${nivelAcessoPasta==='leitura'?'👁️ Somente leitura':nivelAcessoPasta==='edicao'?'✏️ Edição':'Verificando permissão…'}</p>` : `<p class="muted">Não autenticado</p>`}
+      ${msalConta ? `<p><b class="ti-email-conectado">${escapeHtml(msalConta.username||msalConta.name||'')}</b></p>` : `<p class="muted">Não autenticado</p>`}
     </div>
     <div class="sync-painel-secao">
       <h4>OneDrive</h4>
-      <p>${onlineStatus ? (msalConta ? '✓ Conectado' : '⚠ Aguardando login') : '✕ Sem conexão com a Internet'}</p>
+      <p class="sync-painel-onedrive"><span class="sync-painel-onedrive-icone">${ONEDRIVE_ICON_SVG}</span><span class="ti-status-conexao ti-status-${statusConexaoOneDrive}" style="margin:0;">${statusConexaoOneDriveInfo().emoji} ${statusConexaoOneDriveInfo().texto}</span></p>
     </div>
     <div class="sync-painel-secao">
       <h4>Sincronização</h4>
@@ -7259,6 +7292,15 @@ function renderFileBanner(){
   return `<div class="banner">${partes.join(' ')} Use o menu <b>☰ Menu</b> no topo para salvar, fazer backup ou trocar de conta.</div>`;
 }
 
+/* Descrições curtas usadas só no painel mobile "Painéis" (ver TABS_PAINEIS_MOBILE) — os próprios dados de
+   TABS_PRINCIPAIS não têm um campo de descrição (só um rótulo curto), diferente de TABS_SECUNDARIAS. */
+const TABS_PRINCIPAIS_DESC = {
+  dashboard: 'Resumo do mês, saldo atual e indicadores',
+  inteligencia: 'Análises, tendências e projeções financeiras',
+  resumo: 'Projeção de entradas e saídas mês a mês',
+  metas: 'Acompanhamento das metas de gastos',
+  registros: 'Lançamentos de receitas e despesas',
+};
 const TABS_PRINCIPAIS = [
   ["dashboard","📊","Painel Financeiro","Painel"],
   ["inteligencia","🧠","Inteligência Financeira","Inteligência"],
@@ -7271,25 +7313,32 @@ const TABS_SECUNDARIAS = [
   ["categorias","⚙️","Configurações","Categorias, backups, conta Microsoft e preferências"],
 ];
 const TABS_TODAS = [["dashboard","📊 Painel Financeiro"],["inteligencia","🧠 Inteligência Financeira"],["cartoes","💳 Contas e Cartões"],["resumo","📆 Fluxo de Caixa"],["metas","🎯 Metas de Gastos"],["registros","📒 Registros"],["categorias","⚙️ Configurações"]];
+/* Item 7 do requisito: o painel "Painéis" do mobile precisa listar TODAS as abas na MESMA ordem do
+   desktop (TABS_TODAS) — em vez de "principais primeiro, secundárias depois" (ordem antiga do "Mais"),
+   monta-se aqui um único array combinando TABS_PRINCIPAIS + TABS_SECUNDARIAS e reordenando pelos ids de
+   TABS_TODAS. Não duplica dados: só reaproveita e reordena os dois arrays já existentes. */
+const TABS_PAINEIS_MOBILE = TABS_TODAS.map(([id])=>{
+  const principal = TABS_PRINCIPAIS.find(t=>t[0]===id);
+  if(principal) return [id, principal[1], principal[2], TABS_PRINCIPAIS_DESC[id]||''];
+  return TABS_SECUNDARIAS.find(t=>t[0]===id);
+});
 function renderTabbar(){
   const maisAberto = UI.menuMobileAberto;
-  const tabSecundariaAtiva = TABS_SECUNDARIAS.some(([id])=>id===UI.tab);
   return `
   <nav class="tabbar">${TABS_TODAS.map(([id,label])=>`<button class="tab-btn ${UI.tab===id?'active':''}" data-tab="${id}">${label}</button>`).join('')}</nav>
   <nav class="bottom-nav">
-    ${TABS_PRINCIPAIS.map(([id,icone,,rotulo])=>`<button type="button" class="bn-item ${UI.tab===id?'active':''}" data-tab="${id}"><span class="bn-icone">${icone}</span><span class="bn-rotulo">${rotulo}</span></button>`).join('')}
-    <button type="button" class="bn-item ${maisAberto||tabSecundariaAtiva?'active':''}" id="btnMenuMobile" aria-label="${maisAberto?'Fechar mais opções':'Abrir mais opções'}" aria-expanded="${maisAberto?'true':'false'}">
-      <span class="bn-icone">${maisAberto?'✖️':'⋯'}</span><span class="bn-rotulo">Mais</span>
+    <button type="button" class="bn-item bn-item-paineis ${maisAberto?'active':''}" id="btnMenuMobile" aria-label="${maisAberto?'Fechar painéis':'Abrir painéis'}" aria-expanded="${maisAberto?'true':'false'}">
+      <span class="bn-icone">${maisAberto?'✖️':'☰'}</span><span class="bn-rotulo">Painéis</span>
     </button>
   </nav>
-  <div class="mais-sheet ${maisAberto?'aberto':''}" role="dialog" aria-modal="true" aria-label="Mais opções">
+  <div class="mais-sheet ${maisAberto?'aberto':''}" role="dialog" aria-modal="true" aria-label="Painéis">
     <div class="mais-sheet-alca"></div>
-    <div class="mais-sheet-titulo">Mais opções <button type="button" class="close-x-claro mais-sheet-fechar" id="btnFecharMaisSheet" title="Fechar">✕</button></div>
+    <div class="mais-sheet-titulo">Painéis <button type="button" class="close-x-claro mais-sheet-fechar" id="btnFecharMaisSheet" title="Fechar">✕</button></div>
     <button type="button" class="mais-sheet-item" id="btnMenuArquivoMobile">
       <span class="mais-sheet-icone">📁</span>
-      <span class="mais-sheet-textos"><span class="mais-sheet-nome">Arquivo</span><span class="mais-sheet-desc">Salvar, sincronizar, backups e conta Microsoft</span></span>
+      <span class="mais-sheet-textos"><span class="mais-sheet-nome">Menu</span><span class="mais-sheet-desc">Salvar, sincronizar, backups e conta Microsoft</span></span>
     </button>
-    ${TABS_SECUNDARIAS.map(([id,icone,nome,desc])=>`
+    ${TABS_PAINEIS_MOBILE.map(([id,icone,nome,desc])=>`
     <button type="button" class="mais-sheet-item ${UI.tab===id?'active':''}" data-tab="${id}">
       <span class="mais-sheet-icone">${icone}</span>
       <span class="mais-sheet-textos"><span class="mais-sheet-nome">${nome}</span><span class="mais-sheet-desc">${desc}</span></span>
@@ -8305,6 +8354,19 @@ function renderRegistros(){
   const fimIdx = porPagina==='TODOS' ? totalFiltrado : Math.min(inicioIdx+porPagina, totalFiltrado);
   const pageList = list.slice(inicioIdx, fimIdx);
   const rodapePaginacao = renderRodapePaginacaoRegistros(totalFiltrado, porPagina, UI.regPagina, totalPaginas, inicioIdx, fimIdx);
+  // Itens 10/11 do requisito: Filtros/Verificar duplicidade/Importar arquivo do banco precisam caber numa
+  // única linha no mobile — camposFiltroReg/qtdAtivos são calculados aqui (fora da barra de filtros em si)
+  // porque o botão "Filtros" agora mora fisicamente dentro de .reg-toolbar-acoes (junto dos outros dois),
+  // não mais dentro de .filtros-mobile-toolbar; a barra de filtros (.filtros-barra) continua exatamente
+  // onde estava, só sem o botão que a abre no mobile.
+  const camposFiltroReg = [
+    {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:`${iconeGrupo(g)} ${g}`}))]},
+    {campo:'natureza', label:'Natureza', options:[{value:'Fixo',label:'Fixo'},{value:'Variável',label:'Variável'}]},
+    {campo:'tipo', label:'Tipo', options:[{value:'Despesa',label:'Despesa'},{value:'Receita',label:'Receita'}]},
+    {campo:'conta', label:'Conta', options:contasUsadas.map(c=>({value:c,label:c}))},
+    {campo:'fatura', label:'Fatura', options:faturasUsadas.map(c=>({value:c,label:competenciaLabel(c)}))},
+  ];
+  const qtdAtivos = contarFiltrosPadraoAtivos(f, camposFiltroReg);
   return `
   <div class="panel">
     <h2><span>Registros de lançamentos</span></h2>
@@ -8326,18 +8388,7 @@ function renderRegistros(){
         <p style="margin-bottom:0;"><b>Ações de cada linha</b>: <b>✏️ Editar</b> abre o lançamento no formulário para alterar qualquer campo; <b>📄 Duplicar</b> cria uma cópia idêntica (mesma data, valor, categoria etc.) para agilizar lançamentos repetidos, sem afetar o original; <b>🗑️ Excluir</b> remove o lançamento — se ele fizer parte de uma transferência entre contas, o lado espelhado na outra conta é removido junto, e pede confirmação antes.</p>
       </div>
     </details>
-    ${(()=>{
-      const camposFiltroReg = [
-        {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:`${iconeGrupo(g)} ${g}`}))]},
-        {campo:'natureza', label:'Natureza', options:[{value:'Fixo',label:'Fixo'},{value:'Variável',label:'Variável'}]},
-        {campo:'tipo', label:'Tipo', options:[{value:'Despesa',label:'Despesa'},{value:'Receita',label:'Receita'}]},
-        {campo:'conta', label:'Conta', options:contasUsadas.map(c=>({value:c,label:c}))},
-        {campo:'fatura', label:'Fatura', options:faturasUsadas.map(c=>({value:c,label:competenciaLabel(c)}))},
-      ];
-      const qtdAtivos = contarFiltrosPadraoAtivos(f, camposFiltroReg);
-      return `
     <div class="toolbar filtros-mobile-toolbar" style="justify-content:flex-start;">
-      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg">🔍 Filtros${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
       <div class="filtros-barra ${UI.filtrosMobileAberto==='Reg'?'aberto-mobile':''}">
         <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileReg" title="Fechar">✕</button></div>
         ${renderBarraFiltrosPadrao(f, 'Reg', camposFiltroReg)}
@@ -8348,18 +8399,17 @@ function renderRegistros(){
       </div>
     </div>
     ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
-      `;
-    })()}
-    <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
     <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
-      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade">🔍 Verificar duplicidade</button>` : ''}
-      <button class="btn btn-gold" id="btnImportar">📥 Importar arquivo do banco</button>
+      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg" title="Filtros">🔍 <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
+      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">🔍 <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
+      <button class="btn btn-gold" id="btnImportar" title="Importar arquivo do banco">📥 <span class="reg-toolbar-label">Importar arquivo do banco</span></button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
       <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
         <input type="search" id="regBusca" placeholder="Buscar na descrição..." value="${escapeHtml(UI.regFiltro)}">
         <button class="btn btn-primary btn-sm" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
       </div>
     </div>
+    <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
     ${list.length===0 ? `<div class="empty-state"><div class="big">🗒️</div>Nenhum lançamento encontrado com esses filtros.</div>
     <div class="registros-rodape registros-rodape-vazio">${rodapePaginacao}</div>` : `
     <div class="table-wrap table-wrap-registros reg-tabela-principal"><table class="tabela-registros">
@@ -9498,6 +9548,13 @@ function drawChartsInteligencia(){
 }
 function renderResumo(){
   const meses = calcProjecoesMultiMes(UI.ano, UI.mes, 4);
+  // Item 8 do requisito: no mobile, todos os meses iniciam recolhidos (nenhum abre automaticamente) — só
+  // na 1ª renderização desta aba na sessão, para não recolher de novo um mês que o usuário já reabriu
+  // manualmente. Desktop mantém o comportamento padrão de sempre (todos abertos).
+  if(!UI.fluxoMesesInicializados){
+    if(window.innerWidth<=700){ meses.forEach(m=> UI.fluxoMesesFechados.add(`${m.ano}-${m.mes}`)); }
+    UI.fluxoMesesInicializados = true;
+  }
   return `
   <div class="panel">
     <h2><span>Fluxo de Caixa</span></h2>
@@ -9844,7 +9901,7 @@ function renderHistoricoMetaPanel(competencia){
   const metaSelecionada = STATE.metas.find(m=>m.id===UI.metaHistoricoId) || STATE.metas[0];
   const h = historicoMeta(metaSelecionada, UI.ano, UI.mes);
   return `
-  <div class="panel">
+  <div class="panel" id="painelHistoricoMeta">
     <h2>Comparativo histórico (últimos 12 meses)</h2>
     <div class="field" style="max-width:360px;"><label>Meta</label>
       <select id="selHistoricoMeta">
@@ -11796,7 +11853,17 @@ function bindEvents(){
   document.getElementById('tiTentarNovamente')?.addEventListener('click', async ()=>{ await carregarArquivosDoOneDrive(); render(); });
   document.getElementById('tiRestaurarBackup')?.addEventListener('click', ()=>restaurarBackup());
   document.getElementById('tiVerHistoricoBackups')?.addEventListener('click', ()=>abrirBackupModal());
-  document.getElementById('tiIniciarApp')?.addEventListener('click', ()=>{ UI.appIniciado = true; backupAutomaticoSeAplicavel('ao-iniciar'); render(); });
+  document.getElementById('tiIniciarApp')?.addEventListener('click', ()=>{
+    UI.appIniciado = true;
+    backupAutomaticoSeAplicavel('ao-iniciar');
+    // Item 4 do requisito: dispara a sincronização imediatamente ao iniciar, sem exigir um clique extra em
+    // "Sincronizar agora". Reaproveita EXATAMENTE a mesma função usada por aquele botão (salvarArquivos) —
+    // ela já tem proteção contra chamadas simultâneas (syncEmAndamento, ver salvarArquivos) e só atualiza a
+    // "última sincronização" quando a gravação é realmente confirmada, então nunca duplica sincronização
+    // nem marca sucesso sem uma sincronização de verdade.
+    if(nivelAcessoPasta!=='leitura') salvarArquivos();
+    render();
+  });
   document.getElementById('tiRecuperarSnapshot')?.addEventListener('click', ()=>aplicarSnapshotLocalPendente());
   document.getElementById('tiDescartarSnapshot')?.addEventListener('click', async ()=>{
     if(!confirm('Descartar permanentemente as alterações não sincronizadas salvas neste dispositivo?\n\nEsta ação não pode ser desfeita.')) return;
@@ -12379,8 +12446,13 @@ function bindEvents(){
     STATE.metas = STATE.metas.filter(x=>x.id!==b.dataset.excluirMeta);
     scheduleSave(); render();
   }));
+  // Item 9 do requisito: o listener já existia e já identificava a meta certa (UI.metaHistoricoId) — o que
+  // faltava era rolar até o painel "Comparativo histórico" depois de trocar de meta, já que ele fica
+  // estático abaixo da tabela/indicadores e, numa lista longa (principalmente no mobile), o clique não
+  // tinha nenhum efeito visível na tela até o usuário rolar manualmente até lá.
   document.querySelectorAll('[data-historico-meta]').forEach(b=> b.addEventListener('click', ()=>{
     UI.metaHistoricoId = b.dataset.historicoMeta; render();
+    document.getElementById('painelHistoricoMeta')?.scrollIntoView({ behavior:'smooth', block:'start' });
   }));
   document.getElementById('selHistoricoMeta')?.addEventListener('change', e=>{ UI.metaHistoricoId = e.target.value; render(); });
   document.getElementById('cardMetasDashboard')?.addEventListener('click', ()=>{ UI.tab='metas'; render(); });
