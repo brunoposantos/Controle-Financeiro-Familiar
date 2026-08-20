@@ -7123,8 +7123,8 @@ function renderTelaInicial(){
           <div class="ti-cabecalho-titulos">
             <h1>Controle Financeiro Familiar</h1>
             <p class="subtitulo">Família Gomes Oliveira</p>
-          </div>
-          <p class="hint">${msalConta ? `Conectado como <b class="ti-email-conectado">${escapeHtml(msalConta.username||msalConta.name||'')}</b><br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Conecte-se ao OneDrive para acessar seus dados.'}</p>
+          	<p class="hint">${msalConta ? `Conectado como <b class="ti-email-conectado">${escapeHtml(msalConta.username||msalConta.name||'')}</b><br>dados em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b>.` : 'Conecte-se ao OneDrive para acessar seus dados.'}</p>
+		  </div>
         </div>
       </div>
       ${!hasFSAccess ? `<div class="banner" style="text-align:left;margin-bottom:20px;">⚠️ Integração com o OneDrive ainda não configurada neste app. Defina <code>ONEDRIVE_CONFIG.clientId</code> no início do index.html com o ID do aplicativo do seu App Registration no Microsoft Entra ID (ver instruções no comentário do código-fonte).</div>` : ''}
