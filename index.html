@@ -737,9 +737,10 @@ tbody tr:hover{background:var(--navy-50);}
 @media(max-width:700px){
   .reg-busca-wrap{width:100%;margin-left:0!important;}
   .reg-busca-wrap input[type="search"]{flex:1;min-width:0;}
-  /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto" (itens 7 e
-     14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em telas estreitas. */
-  #btnNovoLancamento,#btnNovaProjecao{display:none;}
+  /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto"/"+ Nova meta"
+     (itens 7 e 14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em
+     telas estreitas. */
+  #btnNovoLancamento,#btnNovaProjecao,#btnNovaMeta{display:none;}
 }
 .toolbar input[type=text], .toolbar input[type=search]{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;min-width:200px;}
 /* ---- Componente padronizado dos modais "Ver Extrato" e "Lançamentos futuros" (qualquer conta) ----
@@ -6801,6 +6802,7 @@ function render(){
         if(UI.menuMobileAberto || UI.menuArquivoAberto || UI.filtrosMobileAberto!=null || nivelAcessoPasta==='leitura') return '';
         if(UI.tab==='registros') return `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
         if(UI.tab==='resumo') return `<button type="button" class="fab-novo-lancamento" id="fabNovaProjecao" aria-label="Novo lançamento previsto" title="Novo lançamento previsto">＋</button>`;
+        if(UI.tab==='metas') return `<button type="button" class="fab-novo-lancamento" id="fabNovaMeta" aria-label="Nova meta" title="Nova meta">＋</button>`;
         return '';
       })()}
       <div class="footnote">Controle Financeiro Familiar · Família Gomes Oliveira · dados salvos em configuracoes.cfg e registros.log</div>
@@ -12070,10 +12072,10 @@ function bindEvents(){
   });
 
   /* ---- Metas de Gastos ---- */
-  document.getElementById('btnNovaMeta')?.addEventListener('click', ()=>{
+  document.querySelectorAll('#btnNovaMeta, #fabNovaMeta').forEach(b=> b.addEventListener('click', ()=>{
     UI.metaModal = { editId:null, nome:'', nivel:'grupo', grupo:gruposComTipo('Despesa')[0], categoria:'', subcategoria:'', valor:0, mes:UI.mes, ano:UI.ano, recorrencia:'mensal', observacoes:'' };
     render();
-  });
+  }));
   document.querySelectorAll('[data-editar-meta]').forEach(b=> b.addEventListener('click', ()=>{
     const meta = STATE.metas.find(x=>x.id===b.dataset.editarMeta);
     if(!meta) return;
