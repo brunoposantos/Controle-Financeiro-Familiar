@@ -457,6 +457,9 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 .cenario-input-3d{width:64px;text-align:right;padding:4px 6px;flex:none;}
 @media(max-width:480px){
   .cenario-inputs-linha{flex-wrap:wrap;}
+  /* Item 10 do requisito de responsividade: controles fáceis de tocar — os campos de variação percentual
+     ganham altura mínima de toque (--touch-min) só no mobile, sem alterar o desktop. */
+  .cenario-input-3d{min-height:var(--touch-min);font-size:14px;}
 }
 @media(max-width:900px){.grid-cards{grid-template-columns:repeat(2,1fr);}}
 .kpi{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--paper);position:relative;overflow:hidden;}
@@ -643,6 +646,14 @@ tbody tr:hover{background:var(--navy-50);}
   display:flex;align-items:flex-start;gap:8px;background:var(--paper);border:1px solid var(--line);
   border-radius:var(--radius-md);padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-2);position:relative;
 }
+/* Seleção em lote na lista mobile (item 18 do requisito de responsividade) — caixa de seleção do card,
+   mesma altura mínima de toque das demais ações da lista. */
+.reg-card-check{display:flex;align-items:center;justify-content:center;flex-shrink:0;min-width:var(--touch-min);min-height:var(--touch-min);margin:calc(-1*var(--sp-3)) 0;}
+.reg-card-check input{width:18px;height:18px;}
+.reg-select-all-mobile{
+  display:flex;align-items:center;gap:8px;font-size:12.5px;color:#5b6b85;font-weight:600;
+  padding:6px 2px 10px;user-select:none;
+}
 .reg-card-principal{flex:1;min-width:0;}
 .reg-card-linha1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
 .reg-card-descricao{font-size:14px;font-weight:600;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -650,6 +661,7 @@ tbody tr:hover{background:var(--navy-50);}
 .reg-card-valor.neg{color:var(--despesa);}
 .reg-card-valor.pos{color:var(--receita);}
 .reg-card-linha2{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:3px;}
+.reg-card-linha2 .tag{white-space:nowrap;flex-shrink:0;}
 .reg-card-secundario{font-size:12px;color:#6a7a97;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .reg-card-menu{position:relative;flex-shrink:0;}
 .reg-card-menu-btn{min-width:var(--touch-min);min-height:var(--touch-min);font-size:18px;}
@@ -662,6 +674,12 @@ tbody tr:hover{background:var(--navy-50);}
   background:transparent;border:none;font-family:var(--sans);font-size:13.5px;color:var(--ink);cursor:pointer;
 }
 .reg-card-menu-lista button:hover{background:var(--navy-50);}
+/* Item 12 do requisito de responsividade: os modais Ver Extrato/Lançamentos futuros/Ver Fatura/Ver Próximas
+   Faturas reaproveitam .reg-card/.reg-lista-mobile (mesmo padrão visual da lista mobile de Registros) —
+   ver renderCardsLancamentosModal. .reg-card-extra é uma linha secundária opcional (ex.: saldo acumulado);
+   .reg-card-sem-acao remove o menu ⋮ do item técnico "Saldo Anterior" do extrato, que não é editável. */
+.reg-card-extra{font-size:11.5px;color:#8393ac;margin-top:4px;}
+.reg-card-sem-acao{opacity:.72;}
 .val-cell.neg{color:var(--despesa);}
 .val-cell.pos{color:var(--receita);}
 
@@ -736,10 +754,23 @@ tbody tr:hover{background:var(--navy-50);}
 }
 @media(max-width:700px){
   .reg-busca-wrap{width:100%;margin-left:0!important;}
-  .reg-busca-wrap input[type="search"]{flex:1;min-width:0;}
-  /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto" (itens 7 e
-     14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em telas estreitas. */
-  #btnNovoLancamento,#btnNovaProjecao{display:none;}
+  /* !important necessário: ".toolbar input[type=search]{min-width:200px}" (regra global mais abaixo no
+     arquivo) tem a mesma especificidade e vence por ordem de declaração, o que impedia o campo de encolher
+     e empurrava o botão "Buscar" para fora da tela (overflow horizontal). */
+  .reg-busca-wrap input[type="search"]{flex:1;min-width:0!important;}
+  /* Sem isto, o botão "🔍 Buscar" encolhia junto com o input (ambos flex items do mesmo wrapper) e seu
+     texto quebrava no meio ("Bus/car") — item 18 do requisito de responsividade: nenhum botão pode quebrar
+     texto. O botão nunca encolhe; só o input (com min-width:0 acima) cede espaço. */
+  .reg-busca-wrap button{flex-shrink:0;white-space:nowrap;}
+  /* Hierarquia dos botões de ação de Registros (item 18): "Importar arquivo do banco" é a ação primária
+     (cor de destaque, ocupa a linha toda); "Verificar duplicidade" é uma ação secundária/ocasional, então
+     fica menor (btn-sm, já aplicado no HTML) e não precisa ocupar a linha toda sozinha. */
+  .reg-toolbar-acoes{align-items:stretch;}
+  .reg-toolbar-acoes #btnImportar{flex:1 1 100%;}
+  /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto"/"+ Nova meta"
+     (itens 7 e 14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em
+     telas estreitas. */
+  #btnNovoLancamento,#btnNovaProjecao,#btnNovaMeta{display:none;}
 }
 .toolbar input[type=text], .toolbar input[type=search]{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:13px;min-width:200px;}
 /* ---- Componente padronizado dos modais "Ver Extrato" e "Lançamentos futuros" (qualquer conta) ----
@@ -970,6 +1001,11 @@ tbody tr:hover{background:var(--navy-50);}
   #areaImpressao .modal-head, #areaImpressao .modal-foot, #areaImpressao .no-print{ display:none !important; }
   #areaImpressao .modal-body{ padding:0 !important; max-height:none !important; overflow:visible !important; }
   #areaImpressao .table-wrap{ max-height:none !important; overflow:visible !important; }
+  /* A impressão sempre usa a tabela desktop (nunca os cards mobile), independente da largura de tela em que
+     o modal foi aberto — .reg-tabela-principal/.reg-lista-mobile são ocultados por max-width sem "screen",
+     então sem esta regra uma impressão feita a partir de uma tela estreita poderia sair com os cards. */
+  #areaImpressao .reg-tabela-principal{ display:block !important; }
+  #areaImpressao .reg-lista-mobile{ display:none !important; }
   #areaImpressao table{ width:100% !important; border-collapse:collapse; }
   #areaImpressao thead{ display:table-header-group; }
   #areaImpressao tfoot{ display:table-footer-group; }
@@ -1088,6 +1124,33 @@ summary{list-style:none;}
 summary::-webkit-details-marker{display:none;}
 summary::marker{content:'';}
 .expand-arrow{display:inline-block;width:14px;font-size:11px;}
+/* Grupos/Categorias/Subcategorias (Configurações — item 21 do requisito de responsividade). Antes usava
+   estilo inline com o nome em flex:1 sem min-width:0 ao lado de 3-4 botões de ação — em telas estreitas o
+   texto não tinha espaço nenhum sobrando e cada letra quebrava numa linha própria (nome ilegível). Agora
+   nome e ações são elementos próprios (flex:1 1 0 + min-width:0 no nome, para permitir quebra normal de
+   linha/encolhimento — nunca letra por letra), e no mobile (ver media query abaixo) as ações passam para
+   uma segunda linha, alinhadas à direita, com tamanho de toque adequado. */
+.cat-grupo-details{margin-bottom:10px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;}
+.cat-grupo-summary{cursor:pointer;font-weight:700;color:var(--navy-800);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cat-grupo-nome{flex:1 1 0;min-width:0;overflow-wrap:break-word;}
+.cat-grupo-acoes{display:flex;gap:2px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.cat-categoria-details{margin:8px 0 0 8px;border-left:2px solid var(--line);padding-left:10px;}
+.cat-categoria-summary{cursor:pointer;font-size:12.5px;font-weight:700;color:#3a4a63;display:flex;align-items:center;gap:6px;list-style:none;flex-wrap:wrap;}
+.cat-categoria-nome{flex:1 1 0;min-width:0;overflow-wrap:break-word;}
+.cat-categoria-acoes{display:flex;gap:2px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.cat-sub-lista{margin:6px 0 4px;padding-left:18px;font-size:12px;color:#5b6b85;list-style:none;}
+.cat-sub-item{margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.cat-sub-nome{flex:1 1 0;min-width:0;overflow-wrap:break-word;}
+.cat-sub-tags{display:flex;gap:4px;flex-shrink:0;}
+.cat-sub-acoes{display:flex;gap:2px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;}
+@media(max-width:700px){
+  .cat-grupo-nome,.cat-categoria-nome{flex-basis:100%;}
+  .cat-grupo-acoes,.cat-categoria-acoes{flex:1 1 100%;margin-top:2px;}
+  .cat-sub-nome{flex-basis:100%;}
+  .cat-sub-tags{order:2;}
+  .cat-sub-acoes{order:3;margin-left:0;margin-top:2px;}
+  .cat-grupo-acoes .icon-btn,.cat-categoria-acoes .icon-btn,.cat-sub-acoes .icon-btn{min-width:var(--touch-min);min-height:var(--touch-min);}
+}
 .chip{
   display:inline-flex;align-items:center;gap:2px;background:var(--navy-50);border:1px solid var(--line);
   border-radius:20px;padding:5px 6px 5px 12px;font-size:12.5px;color:var(--navy-800);font-weight:600;
@@ -1103,6 +1166,22 @@ summary::marker{content:'';}
 .saldo-final-projetado.pos .val{color:var(--receita);}
 .saldo-final-projetado.neg{background:#fbe9e7;}
 .saldo-final-projetado.neg .val{color:var(--despesa);}
+/* Card colapsável de cada mês do Fluxo de Caixa (item 14 do requisito): cabeçalho clicável (título + resumo
+   do mês) sempre visível; a tabela de lançamentos e o saldo final só aparecem quando expandido — ver
+   .fluxo-mes-corpo, filho de <details>. */
+.fluxo-mes-summary{
+  cursor:pointer;display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;user-select:none;
+  margin:0 0 4px;
+}
+.fluxo-mes-titulo{
+  font-size:14px;letter-spacing:.4px;text-transform:uppercase;color:var(--navy-800);font-family:var(--mono);
+  font-weight:700;
+}
+.fluxo-mes-resumo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto;font-size:12.5px;}
+.fluxo-mes-resumo b{font-family:var(--mono);}
+.fluxo-mes-resumo b.pos{color:var(--receita);}
+.fluxo-mes-resumo b.neg{color:var(--despesa);}
+.fluxo-mes-details[open] .fluxo-mes-corpo{margin-top:6px;}
 .ajuda-fluxo{margin:18px 0;border:1px solid var(--line);border-radius:9px;background:#fff;}
 .ajuda-fluxo summary{
   cursor:pointer;padding:10px 14px;font-size:13px;font-weight:700;color:var(--navy-800);
@@ -1305,7 +1384,18 @@ summary::marker{content:'';}
     display:flex;flex:1 1 100%;order:3;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;
     border-bottom:1px solid var(--navy-50);text-align:left!important;
   }
-  .tabela-cartoes td:first-child{flex:1 1 auto;min-width:0;order:1;border-bottom:none;padding-bottom:8px;}
+  /* flex-basis:0 (em vez de "auto") é essencial aqui: com "auto" o navegador decide se quebra a linha
+     comparando o tamanho HIPOTÉTICO do item (baseado no conteúdo, ex.: um nome de cartão longo) contra o
+     espaço disponível ANTES de aplicar o encolhimento — ou seja, um nome longo o bastante empurrava o botão
+     "Importar arquivo do banco" para a linha de baixo mesmo podendo caber (item 13 do requisito: sempre na
+     mesma linha). Com flex-basis:0, a distribuição de espaço passa a ser guiada só por flex-grow/min-width,
+     nunca pelo conteúdo, então os dois sempre ficam na mesma linha. */
+  .tabela-cartoes td:first-child{flex:1 1 0;min-width:0;order:1;border-bottom:none;padding-bottom:8px;}
+  /* Sem isto, .cartao-col (flex item de td:first-child, que também é flex por herdar a regra genérica
+     ".tabela-cartoes td{display:flex}") mantém seu min-width:auto padrão e nunca encolhe abaixo do seu
+     conteúdo — em nomes de cartão longos, isso empurra o botão "Importar arquivo do banco" para a linha de
+     baixo em vez de ficar na mesma linha (item 13 do requisito), mesmo com overflow:hidden/ellipsis no nome. */
+  .tabela-cartoes td:first-child .cartao-col{min-width:0;}
   .tabela-cartoes td.col-importar-cartao{flex:0 0 auto;order:2;border-bottom:none;padding-bottom:8px;justify-content:flex-end;}
   .tabela-cartoes td:last-child{border-bottom:none;}
   .tabela-cartoes td[data-label]:not([data-label=""])::before{
@@ -3196,6 +3286,7 @@ let UI = {
   moverSubcategoriaModal: null, // { nome, tipo, grupo, categoria, grupoDestino, categoriaDestino } — mover uma subcategoria para outra categoria/grupo
   posicaoModal: null, // { nivel:'grupo'|'categoria'|'subcategoria', grupo, categoria, nome } — reposicionar (início/fim/depois de)
   gruposAbertos: new Set(),
+  fluxoMesesFechados: new Set(), // chaves "ano-mes" recolhidas manualmente no Fluxo de Caixa (item 14) — vazio por padrão = todos expandidos, igual ao comportamento anterior
   ajudaFluxoAberta: false,
   ajudaCartoesAberta: false,
   ajudaDashboardAberta: false,
@@ -5948,7 +6039,7 @@ function renderExtratoContaModal(){
         </div>
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Extrato', UI.extratoContaModal.selecionados, itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), itensFiltrados.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id))}</div>
-        <div class="table-wrap table-wrap-registros tabela-impressao" style="margin-top:14px;"><table>
+        <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
           <thead><tr>${renderColunaSelecaoLoteHead('Extrato', itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), UI.extratoContaModal.selecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th style="text-align:center;">Tipo</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Saldo</th><th class="no-print">Ações</th></tr></thead>
           <tbody>${itensPagina.map(t=>`<tr>
             ${ehSaldoAnterior(t) ? `<td class="no-print"></td>` : renderColunaSelecaoLoteLinha('Extrato', t.id, UI.extratoContaModal.selecionados)}
@@ -5965,6 +6056,13 @@ function renderExtratoContaModal(){
             </td>
           </tr>`).join('')}</tbody>
         </table></div>
+        ${renderCardsLancamentosModal(itensPagina, {
+          valorTexto: t=>fmtBRL(t.valor), valorClasse: t=> ehSaldoAnterior(t)?'':(t.tipo==='Receita'?'pos':'neg'),
+          secundario: t=>`${fmtData(t.data)} · ${t.grupo||'Sem Grupo'}`,
+          tags: t=> ehSaldoAnterior(t) ? '' : `<span class="tag ${t.tipo}">${t.tipo}</span>`,
+          extra: t=>`<div class="reg-card-extra">Saldo: <b class="val-cell ${t.saldoAcumulado>=0?'pos':'neg'}">${fmtBRL(t.saldoAcumulado)}</b></div>`,
+          semAcao: t=> ehSaldoAnterior(t),
+        })}
         <div class="registros-rodape no-print">${rodapePaginacaoExtrato}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento nesta conta na competência selecionada.</div>`}
       </div>
       <div class="modal-foot no-print" style="justify-content:flex-end;">
@@ -6053,7 +6151,7 @@ function renderFuturosContaModal(){
         </div>
         ${futurosFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Futuros', UI.futurosContaModal.selecionados, futurosPagina.map(t=>t.id), futurosFiltrados.map(t=>t.id))}</div>
-        <div class="table-wrap table-wrap-registros tabela-impressao" style="margin-top:14px;"><table>
+        <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
           <thead><tr>${renderColunaSelecaoLoteHead('Futuros', futurosPagina.map(t=>t.id), UI.futurosContaModal.selecionados)}<th>Data prevista</th><th>Descrição</th><th style="text-align:center;">Tipo</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Saldo projetado</th><th class="no-print">Ações</th></tr></thead>
           <tbody>${futurosPagina.map(t=>`<tr>
             ${renderColunaSelecaoLoteLinha('Futuros', t.id, UI.futurosContaModal.selecionados)}
@@ -6069,6 +6167,12 @@ function renderFuturosContaModal(){
             </td>
           </tr>`).join('')}</tbody>
         </table></div>
+        ${renderCardsLancamentosModal(futurosPagina, {
+          valorTexto: t=>`${t.tipo==='Despesa'?'-':''}${fmtBRL(t.valor)}`, valorClasse: t=> t.tipo==='Receita'?'pos':'neg',
+          secundario: t=>`${fmtData(t.data)} (prevista)`,
+          tags: t=>`<span class="tag ${t.tipo}">${t.tipo}</span>`,
+          extra: t=>`<div class="reg-card-extra">Saldo projetado: <b class="val-cell ${t.saldoProjetado>=0?'pos':'neg'}">${fmtBRL(t.saldoProjetado)}</b></div>`,
+        })}
         <div class="registros-rodape no-print">${rodapePaginacaoFuturos}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento futuro cadastrado para esta conta.</div>`}
       </div>
       <div class="modal-foot no-print" style="justify-content:flex-end;">
@@ -6801,6 +6905,7 @@ function render(){
         if(UI.menuMobileAberto || UI.menuArquivoAberto || UI.filtrosMobileAberto!=null || nivelAcessoPasta==='leitura') return '';
         if(UI.tab==='registros') return `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
         if(UI.tab==='resumo') return `<button type="button" class="fab-novo-lancamento" id="fabNovaProjecao" aria-label="Novo lançamento previsto" title="Novo lançamento previsto">＋</button>`;
+        if(UI.tab==='metas') return `<button type="button" class="fab-novo-lancamento" id="fabNovaMeta" aria-label="Nova meta" title="Nova meta">＋</button>`;
         return '';
       })()}
       <div class="footnote">Controle Financeiro Familiar · Família Gomes Oliveira · dados salvos em configuracoes.cfg e registros.log</div>
@@ -7132,10 +7237,10 @@ function renderFileBanner(){
 
 const TABS_PRINCIPAIS = [
   ["dashboard","📊","Painel Financeiro","Painel"],
-  ["registros","📒","Registros","Registros"],
-  ["resumo","📆","Fluxo de Caixa","Fluxo"],
-  ["metas","🎯","Metas de Gastos","Economias"],
   ["inteligencia","🧠","Inteligência Financeira","Inteligência"],
+  ["resumo","📆","Fluxo de Caixa","Fluxo"],
+  ["metas","🎯","Metas de Gastos","Metas"],
+  ["registros","📒","Registros","Registros"],
 ];
 const TABS_SECUNDARIAS = [
   ["cartoes","💳","Contas e Cartões","Saldos, limites e faturas das suas contas e cartões"],
@@ -7219,7 +7324,7 @@ function renderDashboard(){
     return `
     <div class="panel" id="cardMetasDashboard" style="cursor:pointer;">
       <h2>🎯 Metas de Gastos <span class="hint" style="margin:0;">clique para abrir</span></h2>
-      <div class="grid-cards" style="grid-template-columns:repeat(3,1fr);margin-bottom:0;">
+      <div class="grid-cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:0;">
         <div class="kpi receita" style="border:none;"><div class="bar"></div><div class="lbl">✅ Metas cumpridas</div><div class="val">${rm.cumpridas}</div></div>
         <div class="kpi despesa" style="border:none;"><div class="bar"></div><div class="lbl">🚨 Metas ultrapassadas</div><div class="val">${rm.ultrapassadas}</div></div>
         <div class="kpi" style="border:none;"><div class="bar"></div><div class="lbl">📊 % do orçamento utilizado</div><div class="val">${fmtPercentSmart(rm.pctConsumido)}</div></div>
@@ -7559,6 +7664,13 @@ function drawCharts(){
     const lista = metasDoMes(competenciaMetas);
     const labels = lista.map(m=>nomeMeta(m));
     const cores = lista.map(m=>SITUACAO_META_INFO[m.situacao].cor);
+    // Ajustes responsivos (item 15 do requisito de responsividade): em telas estreitas, o rótulo completo
+    // "R$ gasto / R$ meta (%)" dentro da barra não cabia em metas com pouco gasto (barra curta), ficando
+    // cortado/sobreposto — em telas estreitas o rótulo passa a mostrar só o percentual (bem mais curto), e
+    // os nomes longos no eixo Y são abreviados, mesma técnica já usada no gráfico "Despesas por grupo".
+    const larguraChartMetas = elMetas.parentElement ? elMetas.parentElement.clientWidth : window.innerWidth;
+    const mobileChartMetas = larguraChartMetas < 420;
+    const abreviarLabelMeta = (l)=> (mobileChartMetas && l.length>16) ? l.slice(0,15)+'…' : l;
     chartInstances.push(new Chart(elMetas, {
       type:'bar',
       data:{ labels, datasets:[{ label:'Gasto', data:lista.map(m=>m.gasto), backgroundColor:cores, borderRadius:6, maxBarThickness:30 }] },
@@ -7575,11 +7687,20 @@ function drawCharts(){
           // cai para fora nem muda de cor (clamp garante que não seja cortado mesmo em barras bem curtas).
           datalabels:{
             display:true, anchor:'end', align:'start', clamp:true,
-            color:'#ffffff', font:{family:"'Roboto Mono'",size:11,weight:'700'},
-            formatter:(v,ctx)=>{ const m = lista[ctx.dataIndex]; return `${fmtBRL(v)} / ${fmtBRL(m.valor)} (${fmtPercentSmart(m.pct)})`; }
+            color:'#ffffff', font:{family:"'Roboto Mono'",size: mobileChartMetas?10:11,weight:'700'},
+            formatter:(v,ctx)=>{
+              const m = lista[ctx.dataIndex];
+              return mobileChartMetas ? fmtPercentSmart(m.pct) : `${fmtBRL(v)} / ${fmtBRL(m.valor)} (${fmtPercentSmart(m.pct)})`;
+            }
           }
         },
-        scales:{ x:{ display:false, min:0 }, y:{ grid:{display:false}, ticks:{ font:{family:"'Roboto Mono'",weight:'600'} } } }
+        scales:{
+          x:{ display:false, min:0 },
+          y:{ grid:{display:false}, ticks:{
+            font:{family:"'Roboto Mono'",weight:'600',size: mobileChartMetas?10.5:12},
+            callback:(v,i)=>abreviarLabelMeta(labels[i])
+          } }
+        }
       }
     }));
   }
@@ -8021,13 +8142,27 @@ function renderListaMobileRegistros(pageList){
     if(!grupoAtual || grupoAtual.rotulo!==rotulo){ grupoAtual = { rotulo, itens: [] }; grupos.push(grupoAtual); }
     grupoAtual.itens.push(t);
   });
+  // Seleção em lote no mobile (item 18 do requisito de responsividade): cada card ganha uma caixa de
+  // seleção própria (classe chkLoteReg — mesma classe da coluna da tabela desktop, então bindSelecaoLote
+  // já liga o evento de ambas automaticamente, sem duplicar lógica) e este topo ganha um "Selecionar
+  // todos nesta página", espelhando o checkbox do cabeçalho da tabela desktop (ver
+  // renderColunaSelecaoLoteHead) — completa o fluxo selecionar um/vários/todos + agir/cancelar (a barra
+  // de ações contextual já existe e é a mesma para desktop e mobile, ver renderBarraAcoesLote).
+  const idsPagina = pageList.map(t=>t.id);
+  const todosMarcadosMobile = idsPagina.every(id=>UI.regSelecionados.has(id));
+  const algunsMarcadosMobile = !todosMarcadosMobile && idsPagina.some(id=>UI.regSelecionados.has(id));
   return `
   <div class="reg-lista-mobile">
+    <label class="reg-select-all-mobile no-print">
+      <input type="checkbox" id="chkTodosLoteRegMobile" ${todosMarcadosMobile?'checked':''} data-indet-lote="${algunsMarcadosMobile}">
+      Selecionar todos nesta página (${idsPagina.length})
+    </label>
     ${grupos.map(g=>`
     <div class="reg-grupo-data">
       <div class="reg-grupo-data-titulo">${escapeHtml(g.rotulo)}</div>
       ${g.itens.map(t=>`
       <div class="reg-card">
+        <label class="reg-card-check"><input type="checkbox" class="chkLoteReg" value="${escapeHtml(t.id)}" ${UI.regSelecionados.has(t.id)?'checked':''} aria-label="Selecionar lançamento"></label>
         <div class="reg-card-principal">
           <div class="reg-card-linha1">
             <span class="reg-card-descricao">${escapeHtml(t.descricao)}</span>
@@ -8051,6 +8186,52 @@ function renderListaMobileRegistros(pageList){
       </div>`).join('')}
     </div>`).join('')}
   </div>`;
+}
+/* ---------- Lista mobile de lançamentos para os modais Ver Extrato/Lançamentos futuros/Ver Fatura/Ver
+   Próximas Faturas (item 12 do requisito de responsividade) — mesmo padrão visual (.reg-card/.reg-lista-
+   mobile) já usado na lista mobile de Registros (ver renderListaMobileRegistros), adaptado aos campos de
+   cada modal via `opts`. A tabela desktop de cada modal continua existindo/funcionando sem alteração
+   nenhuma, só fica oculta neste breakpoint (mesma classe reg-tabela-principal/reg-lista-mobile). Reaproveita
+   o mesmo menu de ações (⋮ Editar/Duplicar/Excluir) e o mesmo estado UI.regCardMenuAberto — os ids de
+   lançamento são únicos em toda a aplicação (cada item aqui é o próprio registro de STATE.transactions),
+   então não há risco de colisão entre os vários modais que usam esta função. */
+function renderCardsLancamentosModal(itens, opts){
+  if(!itens.length) return '';
+  const { valorTexto, valorClasse, secundario, tags, extra, semAcao, tituloGrupo } = opts;
+  let grupoAtual;
+  let corpo = '';
+  itens.forEach(t=>{
+    if(tituloGrupo){
+      const g = tituloGrupo(t);
+      if(g!==grupoAtual){ grupoAtual = g; corpo += `<div class="reg-grupo-data-titulo">${escapeHtml(g)}</div>`; }
+    }
+    const semAcaoItem = semAcao ? semAcao(t) : false;
+    corpo += `
+    <div class="reg-card${semAcaoItem?' reg-card-sem-acao':''}">
+      <div class="reg-card-principal">
+        <div class="reg-card-linha1">
+          <span class="reg-card-descricao">${escapeHtml(t.descricao)}</span>
+          <span class="reg-card-valor ${valorClasse(t)}">${valorTexto(t)}</span>
+        </div>
+        <div class="reg-card-linha2">
+          <span class="reg-card-secundario">${secundario(t)}</span>
+          ${tags ? (tags(t)||'') : ''}
+        </div>
+        ${extra ? (extra(t)||'') : ''}
+      </div>
+      ${semAcaoItem ? '' : `
+      <div class="reg-card-menu">
+        <button type="button" class="icon-btn reg-card-menu-btn" data-reg-card-menu="${t.id}" title="Mais ações" aria-haspopup="true" aria-expanded="${UI.regCardMenuAberto===t.id?'true':'false'}">⋮</button>
+        ${UI.regCardMenuAberto===t.id ? `
+        <div class="reg-card-menu-lista">
+          <button type="button" data-edit="${t.id}">✏️ Editar</button>
+          <button type="button" data-duplicar="${t.id}">📄 Duplicar</button>
+          <button type="button" data-del="${t.id}">🗑️ Excluir</button>
+        </div>` : ''}
+      </div>`}
+    </div>`;
+  });
+  return `<div class="reg-lista-mobile">${corpo}</div>`;
 }
 function renderRegistros(){
   const f = UI.regFiltros;
@@ -8146,8 +8327,8 @@ function renderRegistros(){
       `;
     })()}
     <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
-    <div class="toolbar" style="margin-top:0;">
-      ${list.length ? `<button class="btn btn-ghost" id="btnVerificarDuplicidade">🔍 Verificar duplicidade</button>` : ''}
+    <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
+      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade">🔍 Verificar duplicidade</button>` : ''}
       <button class="btn btn-gold" id="btnImportar">📥 Importar arquivo do banco</button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
       <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
@@ -8636,10 +8817,16 @@ function renderFaturaAtualModal(){
         </div>
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Fatura', UI.faturaAtualModal.selecionados, itensPagina.map(t=>t.id), itensFiltrados.map(t=>t.id))}</div>
-        <div class="table-wrap table-wrap-registros tabela-impressao" style="margin-top:14px;"><table>
+        <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
           <thead><tr>${renderColunaSelecaoLoteHead('Fatura', itensPagina.map(t=>t.id), UI.faturaAtualModal.selecionados)}<th>Data</th><th>Descrição</th><th style="text-align:center;">Parcela</th><th style="text-align:right;">Valor</th><th class="no-print col-acoes-fatura">Ações</th></tr></thead>
           <tbody>${itensPagina.map(t=>renderLinhaItemFatura(t, false, 'Fatura', UI.faturaAtualModal.selecionados)).join('')}</tbody>
         </table></div>
+        ${renderCardsLancamentosModal(itensPagina, {
+          valorTexto: t=>`${t.tipo==='Receita'?'− ':''}${fmtBRL(t.valor)}`, valorClasse: t=> t.tipo==='Receita'?'pos':'neg',
+          secundario: t=>fmtData(t.data),
+          tags: t=> Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : '',
+          extra: t=> t.tipo==='Receita' ? `<div class="reg-card-extra"><span class="tag Receita">➕ Crédito</span></div>` : '',
+        })}
         <div class="registros-rodape no-print">${rodapePaginacaoFatura}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento nesta fatura ainda.</div>`}
       </div>
       <div class="modal-foot no-print" style="justify-content:flex-end;">
@@ -8746,7 +8933,7 @@ function renderProjecaoFaturaModal(){
         </div>
         ${itens.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Projecao', UI.projecaoFaturaModal.selecionados, itensPagina.map(t=>t.id), itens.map(t=>t.id))}</div>
-        <div class="table-wrap table-wrap-registros tabela-impressao" style="margin-top:12px;"><table>
+        <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:12px;"><table>
           <thead><tr>${renderColunaSelecaoLoteHead('Projecao', itensPagina.map(t=>t.id), UI.projecaoFaturaModal.selecionados)}<th>Data</th><th>Descrição</th><th style="text-align:center;">Parcela</th><th style="text-align:right;">Valor</th><th class="no-print col-acoes-fatura">Ações</th></tr></thead>
           <tbody>${(()=>{
             // Sem seleção de competência, os lançamentos de vários meses ficam misturados na mesma lista —
@@ -8765,6 +8952,13 @@ function renderProjecaoFaturaModal(){
             }).join('');
           })()}</tbody>
         </table></div>
+        ${renderCardsLancamentosModal(itensPagina, {
+          tituloGrupo: selecionada ? null : (t=>competenciaLabel(t.competencia)),
+          valorTexto: t=>`${t.tipo==='Receita'?'− ':''}${fmtBRL(t.valor)}`, valorClasse: t=> t.tipo==='Receita'?'pos':'neg',
+          secundario: t=>fmtData(t.data),
+          tags: t=> Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : '',
+          extra: t=> t.tipo==='Receita' ? `<div class="reg-card-extra"><span class="tag Receita">➕ Crédito</span></div>` : '',
+        })}
         <div class="registros-rodape no-print">${rodapePaginacaoProjecao}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📦</div>Nenhum lançamento previsto${selecionada?' nesta competência':' para os próximos meses'}.</div>`}
         ` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state"><div class="big">✅</div>Nenhuma despesa prevista para os próximos meses neste cartão.</div>`}
       </div>
@@ -8880,24 +9074,39 @@ function renderPainelProjecao(m, idx){
   const chDescricao = Math.max(20, (chDia+chTipo+chValor+chSaldo+chAcoes)*0.30);
   const chTotal = chDia + chDescricao + chTipo + chValor + chSaldo + chAcoes;
   const pct = ch => (ch/chTotal*100).toFixed(2);
+  // Item 14 do requisito de responsividade: cada mês vira um card colapsável — cabeçalho clicável (título +
+  // resumo do mês, sempre visíveis) e o detalhe (tabela de lançamentos + saldo final projetado) só aparece
+  // quando expandido. Usa <details>/<summary> nativos (mesmo padrão já usado nos Grupos de Configurações —
+  // ver data-grupo-details), com UI.fluxoMesesFechados guardando só as chaves recolhidas manualmente —
+  // vazio por padrão, então todos os meses continuam abertos como antes até o usuário recolher algum.
+  const chaveMesFluxo = `${m.ano}-${m.mes}`;
+  const abertoFluxo = !UI.fluxoMesesFechados.has(chaveMesFluxo);
   return `
   <div class="panel" style="margin-bottom:0;">
-    <h2><span>📅 ${MESES[m.mes-1]}/${m.ano}</span></h2>
-    ${idx===0
-      ? ``
-      : `<p class="hint" style="margin-top:0;">Saldo inicial <b>${fmtBRL(m.saldoInicial)}</b> (saldo final projetado do mês anterior)</p>`}
-    <div class="table-wrap" style="max-height:1335px;overflow-x:auto;"><table class="tabela-fluxo" style="table-layout:fixed;width:100%;">
-      <thead><tr>
-        <th style="text-align:center;width:${pct(chDia)}%;">Dia</th>
-        <th style="text-align:left;width:${pct(chDescricao)}%;">Descrição</th>
-        <th style="text-align:center;width:${pct(chTipo)}%;">Tipo</th>
-        <th style="text-align:right;width:${pct(chValor)}%;">Valor</th>
-        <th style="text-align:right;width:${pct(chSaldo)}%;">Saldo</th>
-        <th style="width:${pct(chAcoes)}%;"></th>
-      </tr></thead>
-      <tbody>${linhasHtml}</tbody>
-    </table></div>
-    <div class="saldo-final-projetado ${m.saldoFinal>=0?'pos':'neg'}"><span>Saldo final projetado</span><span class="val">${fmtBRL(m.saldoFinal)}</span></div>
+    <details class="fluxo-mes-details" ${abertoFluxo?'open':''} data-fluxo-mes-details="${chaveMesFluxo}">
+      <summary class="fluxo-mes-summary">
+        <span class="fluxo-mes-titulo">📅 ${MESES[m.mes-1]}/${m.ano}</span>
+        <span class="fluxo-mes-resumo">
+          ${idx===0 ? '' : `<span class="hint" style="margin:0;">Saldo inicial ${fmtBRL(m.saldoInicial)}</span>`}
+          <b class="${m.saldoFinal>=0?'pos':'neg'}">Saldo final ${fmtBRL(m.saldoFinal)}</b>
+        </span>
+        <span class="expand-arrow" data-arrow-for="fluxo-mes-${chaveMesFluxo}">${abertoFluxo?'➖':'➕'}</span>
+      </summary>
+      <div class="fluxo-mes-corpo">
+        <div class="table-wrap" style="max-height:1335px;overflow-x:auto;"><table class="tabela-fluxo" style="table-layout:fixed;width:100%;">
+          <thead><tr>
+            <th style="text-align:center;width:${pct(chDia)}%;">Dia</th>
+            <th style="text-align:left;width:${pct(chDescricao)}%;">Descrição</th>
+            <th style="text-align:center;width:${pct(chTipo)}%;">Tipo</th>
+            <th style="text-align:right;width:${pct(chValor)}%;">Valor</th>
+            <th style="text-align:right;width:${pct(chSaldo)}%;">Saldo</th>
+            <th style="width:${pct(chAcoes)}%;"></th>
+          </tr></thead>
+          <tbody>${linhasHtml}</tbody>
+        </table></div>
+        <div class="saldo-final-projetado ${m.saldoFinal>=0?'pos':'neg'}"><span>Saldo final projetado</span><span class="val">${fmtBRL(m.saldoFinal)}</span></div>
+      </div>
+    </details>
   </div>`;
 }
 /* ---------- Modal: editar os saldos iniciais das contas que compõem o Saldo Inicial do Fluxo de Caixa
@@ -9116,7 +9325,7 @@ function renderInteligencia(){
       </table></div>
     </div>
     <div class="panel" style="margin-bottom:0;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px 10px;">
 	  <h2 style="margin-top:0;">Simulação de Cenários</h2>
       <button type="button" class="btn btn-ghost btn-sm" id="btnResetarCenarios">↺ Restaurar percentuais padrão</button>
 	  </div>
@@ -9528,24 +9737,25 @@ function renderMetas(){
     </div>
     ${r.lista.length===0 ? `<div class="empty-state"><div class="big">🎯</div>Nenhuma meta cadastrada para este mês. Use "+ Nova meta" para começar.</div>` : `
     <div class="chart-box" style="height:${alturaBarra}px;margin-top:14px;"><canvas id="chartMetas"></canvas></div>
-    <div class="table-wrap" style="margin-top:16px;"><table>
-      <thead><tr><th>Grupo</th><th>Categoria</th><th>Subcategoria</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Saldo</th><th>% Utilizado</th><th>Situação</th><th></th></tr></thead>
+    <div class="table-wrap" style="margin-top:16px;"><table class="tabela-cards-mobile">
+      <thead><tr><th>Grupo</th><th>Categoria</th><th>Subcategoria</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Saldo</th><th>% Utilizado</th><th>Período</th><th>Situação</th><th></th></tr></thead>
       <tbody>
       ${r.lista.map(m=>{
         const info = SITUACAO_META_INFO[m.situacao];
         return `<tr>
-          <td>${iconeGrupo(m.grupo)} ${escapeHtml(m.grupo)}</td>
-          <td>${m.nivel!=='grupo' ? escapeHtml(m.categoria) : '<span class="hint">—</span>'}</td>
-          <td>${m.nivel==='subcategoria' ? escapeHtml(m.subcategoria) : '<span class="hint">—</span>'}</td>
-          <td class="val-cell" style="text-align:right;">${fmtBRL(m.valor)}</td>
-          <td class="val-cell ${m.gasto>m.valor?'neg':''}" style="text-align:right;">${fmtBRL(m.gasto)}</td>
-          <td class="val-cell ${m.saldo<0?'neg':'pos'}" style="text-align:right;">${fmtBRL(m.saldo)}</td>
-          <td style="min-width:110px;">
+          <td data-label="Nome/Grupo">${iconeGrupo(m.grupo)} ${escapeHtml(m.grupo)}</td>
+          <td data-label="Categoria">${m.nivel!=='grupo' ? escapeHtml(m.categoria) : '<span class="hint">—</span>'}</td>
+          <td data-label="Subcategoria">${m.nivel==='subcategoria' ? escapeHtml(m.subcategoria) : '<span class="hint">—</span>'}</td>
+          <td class="val-cell" data-label="Meta (planejado)" style="text-align:right;">${fmtBRL(m.valor)}</td>
+          <td class="val-cell ${m.gasto>m.valor?'neg':''}" data-label="Gasto (realizado)" style="text-align:right;">${fmtBRL(m.gasto)}</td>
+          <td class="val-cell ${m.saldo<0?'neg':'pos'}" data-label="Saldo (diferença)" style="text-align:right;">${fmtBRL(m.saldo)}</td>
+          <td data-label="% Utilizado" style="min-width:110px;">
             <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,m.pct)}%;background:${info.cor};"></div></div>
             <span class="hint" style="margin:2px 0 0;">${fmtPercentSmart(m.pct)}</span>
           </td>
-          <td><span class="meta-situacao-tag" style="background:${info.cor}1a;color:${info.cor};">${info.emoji} ${info.label}</span></td>
-          <td style="white-space:nowrap;">
+          <td data-label="Período">${RECORRENCIA_LABEL[m.recorrencia]||'—'}</td>
+          <td data-label="Situação"><span class="meta-situacao-tag" style="background:${info.cor}1a;color:${info.cor};">${info.emoji} ${info.label}</span></td>
+          <td data-label="" style="white-space:nowrap;">
             <button class="icon-btn" data-editar-meta="${m.id}" title="Editar">✏️</button>
             <button class="icon-btn" data-historico-meta="${m.id}" title="Ver histórico">📈</button>
             <button class="icon-btn" data-excluir-meta="${m.id}" title="Excluir">🗑️</button>
@@ -9568,15 +9778,40 @@ function renderAlertasMetas(lista){
     ${alertas.map(m=>`<span class="meta-situacao-tag" style="background:${SITUACAO_META_INFO[m.situacao].cor}1a;color:${SITUACAO_META_INFO[m.situacao].cor};margin-left:6px;">${SITUACAO_META_INFO[m.situacao].emoji} ${escapeHtml(nomeMeta(m))} (${fmtPercentSmart(m.pct)})</span>`).join('')}
   </div>`;
 }
+/* Cada card de indicador (item 16 do requisito de responsividade) mostra 5 informações — o indicador em
+   si (rótulo), o valor principal (nome da meta), uma comparação (rótulo + valor), a variação (percentual)
+   e um contexto (linha auxiliar) — em vez de só nome da meta, que sozinho não dizia muito. */
 function renderIndicadoresMetas(ind){
+  const cardIndicador = (icone, titulo, m, compLabel, compValor, variacao, contexto) => `
+    <div class="kpi" style="border:none;">
+      <div class="bar"></div>
+      <div class="lbl">${icone} ${titulo}</div>
+      <div class="val" style="font-size:15px;">${m ? escapeHtml(nomeMeta(m)) : '—'}</div>
+      ${m ? `<div class="hint" style="margin:4px 0 0;">${compLabel}: <b>${compValor}</b>${variacao?` · ${variacao}`:''}</div>` : ''}
+      ${m && contexto ? `<div class="hint" style="margin:2px 0 0;">${contexto}</div>` : ''}
+    </div>`;
   return `
   <div class="panel">
     <h2>Indicadores adicionais</h2>
-    <div class="grid-cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:0;">
-      <div class="kpi" style="border:none;"><div class="lbl">📈 Maior categoria de gasto</div><div class="val" style="font-size:15px;">${ind.maiorGasto ? escapeHtml(nomeMeta(ind.maiorGasto)) : '—'}</div></div>
-      <div class="kpi" style="border:none;"><div class="lbl">🚨 Mais ultrapassou a meta</div><div class="val" style="font-size:15px;">${ind.maisUltrapassada ? escapeHtml(nomeMeta(ind.maisUltrapassada)) : '—'}</div></div>
-      <div class="kpi" style="border:none;"><div class="lbl">💚 Maior economia</div><div class="val" style="font-size:15px;">${ind.maiorEconomia ? escapeHtml(nomeMeta(ind.maiorEconomia)) : '—'}</div></div>
-      <div class="kpi" style="border:none;"><div class="lbl">🏦 Economia acumulada no mês</div><div class="val" style="color:var(--receita);">${fmtBRL(ind.economiaAcumulada)}</div></div>
+    <div class="grid-cards" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:0;">
+      ${cardIndicador('📈','Maior categoria de gasto', ind.maiorGasto,
+        'Gasto', ind.maiorGasto?fmtBRL(ind.maiorGasto.gasto):'',
+        ind.maiorGasto?`${fmtPercentSmart(ind.maiorGasto.pct)} da meta`:'',
+        ind.maiorGasto?`Meta: ${fmtBRL(ind.maiorGasto.valor)}`:'')}
+      ${cardIndicador('🚨','Mais ultrapassou a meta', ind.maisUltrapassada,
+        'Excedente', ind.maisUltrapassada?fmtBRL(-ind.maisUltrapassada.saldo):'',
+        ind.maisUltrapassada?`${fmtPercentSmart(ind.maisUltrapassada.pct)} da meta`:'',
+        ind.maisUltrapassada?`Meta: ${fmtBRL(ind.maisUltrapassada.valor)} · Gasto: ${fmtBRL(ind.maisUltrapassada.gasto)}`:'')}
+      ${cardIndicador('💚','Maior economia', ind.maiorEconomia,
+        'Sobrou', ind.maiorEconomia?fmtBRL(ind.maiorEconomia.saldo):'',
+        ind.maiorEconomia?`${fmtPercentSmart(Math.max(0,100-ind.maiorEconomia.pct))} não utilizado`:'',
+        ind.maiorEconomia?`Meta: ${fmtBRL(ind.maiorEconomia.valor)}`:'')}
+      <div class="kpi" style="border:none;">
+        <div class="bar"></div>
+        <div class="lbl">🏦 Economia acumulada no mês</div>
+        <div class="val" style="color:var(--receita);">${fmtBRL(ind.economiaAcumulada)}</div>
+        <div class="hint" style="margin:4px 0 0;">Soma do saldo não utilizado (positivo) de todas as metas do mês</div>
+      </div>
     </div>
   </div>`;
 }
@@ -9593,12 +9828,33 @@ function renderHistoricoMetaPanel(competencia){
       </select>
     </div>
     <div class="chart-box" style="height:260px;margin-top:14px;"><canvas id="chartHistoricoMeta"></canvas></div>
-    <div class="grid-cards" style="grid-template-columns:repeat(4,1fr);margin-top:14px;margin-bottom:0;">
+    <div class="grid-cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-top:14px;margin-bottom:0;">
       <div class="kpi" style="border:none;"><div class="lbl">Média mensal</div><div class="val" style="font-size:16px;">${fmtBRL(h.media)}</div></div>
       <div class="kpi" style="border:none;"><div class="lbl">Maior gasto</div><div class="val" style="font-size:16px;">${fmtBRL(h.maior)}</div></div>
       <div class="kpi" style="border:none;"><div class="lbl">Menor gasto</div><div class="val" style="font-size:16px;">${fmtBRL(h.menor)}</div></div>
       <div class="kpi" style="border:none;"><div class="lbl">% médio de utilização</div><div class="val" style="font-size:16px;">${fmtPercentSmart(h.pctMedio)}</div></div>
     </div>
+    <!-- Detalhamento mês a mês (item 17 do requisito de responsividade): apresentação hierárquica e
+         comparável (Meta x Gasto x Diferença x Situação) de cada um dos 12 meses do gráfico acima — antes
+         só existia o gráfico, sem o dado mês a mês; usa tabela-cards-mobile (mesmo padrão genérico já
+         usado em Cartões/Metas), então no mobile vira uma lista de cards, mantendo a tabela no desktop. -->
+    <div class="table-wrap" style="margin-top:16px;"><table class="tabela-cards-mobile">
+      <thead><tr><th>Mês</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Diferença</th><th>Situação</th></tr></thead>
+      <tbody>
+      ${[...h.historico].reverse().map(x=>{
+        const diferenca = x.meta - x.gasto;
+        const situ = situacaoMeta(x.gasto, x.meta);
+        const info = SITUACAO_META_INFO[situ];
+        return `<tr>
+          <td data-label="Mês">${competenciaLabel(x.competencia)}</td>
+          <td class="val-cell" data-label="Meta" style="text-align:right;">${fmtBRL(x.meta)}</td>
+          <td class="val-cell" data-label="Gasto" style="text-align:right;">${fmtBRL(x.gasto)}</td>
+          <td class="val-cell ${diferenca<0?'neg':'pos'}" data-label="Diferença" style="text-align:right;">${fmtBRL(diferenca)}</td>
+          <td data-label="Situação"><span class="meta-situacao-tag" style="background:${info.cor}1a;color:${info.cor};">${info.emoji} ${info.label}</span></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>
   </div>`;
 }
 
@@ -9722,37 +9978,44 @@ function renderCategorias(){
     </div>
     ${UI.buscaCategorias && totalResultados===0 ? `<div class="empty-state"><div class="big">🔍</div>Nenhum grupo, categoria ou subcategoria encontrado com "${escapeHtml(UI.buscaCategorias)}".</div>` : ''}
     ${Object.keys(porGrupo).map(grupo=>`
-      <details ${(UI.gruposAbertos.has(grupo) || termo)?'open':''} data-grupo-details="${escapeHtml(grupo)}" style="margin-bottom:10px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;">
-        <summary style="cursor:pointer;font-weight:700;color:var(--navy-800);display:flex;align-items:center;gap:8px;">
+      <details ${(UI.gruposAbertos.has(grupo) || termo)?'open':''} data-grupo-details="${escapeHtml(grupo)}" class="cat-grupo-details">
+        <summary class="cat-grupo-summary">
           <span class="expand-arrow" data-arrow-for="grupo-${escapeHtml(grupo)}">${UI.gruposAbertos.has(grupo)?'➖':'➕'}</span>
-          <span style="flex:1;">${iconeGrupo(grupo)} ${escapeHtml(grupo)}</span>
-          <button type="button" class="icon-btn" data-pos-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Reposicionar grupo">↕️</button>
-          <button type="button" class="icon-btn" data-edit-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Editar grupo">✏️</button>
-          <button type="button" class="icon-btn" data-del-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Excluir grupo" style="color:var(--despesa);">🗑️</button>
+          <span class="cat-grupo-nome">${iconeGrupo(grupo)} ${escapeHtml(grupo)}</span>
+          <span class="cat-grupo-acoes">
+            <button type="button" class="icon-btn" data-pos-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Reposicionar grupo">↕️</button>
+            <button type="button" class="icon-btn" data-edit-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Editar grupo">✏️</button>
+            <button type="button" class="icon-btn" data-del-grupo="${escapeHtml(grupo)}" onclick="event.stopPropagation()" title="Excluir grupo" style="color:var(--despesa);">🗑️</button>
+          </span>
         </summary>
         ${Object.keys(porGrupo[grupo]).map(sub=>{
           const itens = porGrupo[grupo][sub];
           const chaveCat = `${grupo}|||${sub}`;
           const catAberta = UI.categoriasAbertas.has(chaveCat) || termo;
-          return `<details ${catAberta?'open':''} data-categoria-details="${escapeHtml(chaveCat)}" style="margin:8px 0 0 8px;border-left:2px solid var(--line);padding-left:10px;">
-            <summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#3a4a63;display:flex;align-items:center;gap:6px;list-style:none;">
+          return `<details ${catAberta?'open':''} data-categoria-details="${escapeHtml(chaveCat)}" class="cat-categoria-details">
+            <summary class="cat-categoria-summary">
               <span class="expand-arrow" data-arrow-for="cat-${escapeHtml(chaveCat)}" style="color:var(--gold-dark);">${catAberta?'➖':'➕'}</span>
-              <span style="flex:1;">${escapeHtml(sub)} <span class="hint" style="margin:0;">(${itens.length})</span></span>
-              <button type="button" class="icon-btn" data-pos-categoria-grupo="${escapeHtml(grupo)}" data-pos-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Reposicionar categoria">↕️</button>
-              <button type="button" class="icon-btn" data-edit-categoria-grupo="${escapeHtml(grupo)}" data-edit-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Editar categoria">✏️</button>
-              <button type="button" class="icon-btn" data-mover-categoria-grupo="${escapeHtml(grupo)}" data-mover-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Mover categoria para outro grupo">🔀</button>
-              <button type="button" class="icon-btn" data-del-categoria-grupo="${escapeHtml(grupo)}" data-del-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Excluir categoria" style="color:var(--despesa);">🗑️</button>
+              <span class="cat-categoria-nome">${escapeHtml(sub)} <span class="hint" style="margin:0;">(${itens.length})</span></span>
+              <span class="cat-categoria-acoes">
+                <button type="button" class="icon-btn" data-pos-categoria-grupo="${escapeHtml(grupo)}" data-pos-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Reposicionar categoria">↕️</button>
+                <button type="button" class="icon-btn" data-edit-categoria-grupo="${escapeHtml(grupo)}" data-edit-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Editar categoria">✏️</button>
+                <button type="button" class="icon-btn" data-mover-categoria-grupo="${escapeHtml(grupo)}" data-mover-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Mover categoria para outro grupo">🔀</button>
+                <button type="button" class="icon-btn" data-del-categoria-grupo="${escapeHtml(grupo)}" data-del-categoria-nome="${escapeHtml(sub)}" onclick="event.stopPropagation()" title="Excluir categoria" style="color:var(--despesa);">🗑️</button>
+              </span>
             </summary>
-            <ul style="margin:6px 0 4px;padding-left:18px;font-size:12px;color:#5b6b85;list-style:none;">
-              ${itens.map(i=>`<li style="margin-bottom:3px;display:flex;align-items:center;gap:6px;">
-                <span>${escapeHtml(i.nome)}</span>
-                <span style="flex:1;"></span>
-                <span class="tag ${i.tipo}">${i.tipo}</span>
-                <span class="tag ${i.natureza==='Fixo'?'Fixo':'Variavel'}">${i.natureza}</span>
-                <button type="button" class="icon-btn" data-pos-sub-grupo="${escapeHtml(grupo)}" data-pos-sub-categoria="${escapeHtml(sub)}" data-pos-sub="${escapeHtml(i.nome)}" title="Reposicionar subcategoria">↕️</button>
-                <button type="button" class="icon-btn" data-edit-sub="${escapeHtml(i.nome)}" data-edit-sub-tipo="${escapeHtml(i.tipo)}" title="Editar subcategoria">✏️</button>
-                <button type="button" class="icon-btn" data-mover-sub="${escapeHtml(i.nome)}" data-mover-sub-tipo="${escapeHtml(i.tipo)}" data-mover-sub-grupo="${escapeHtml(grupo)}" data-mover-sub-categoria="${escapeHtml(sub)}" title="Mover subcategoria para outra categoria ou grupo">🔀</button>
-                <button type="button" class="icon-btn" data-del-sub="${escapeHtml(i.nome)}" data-del-sub-tipo="${escapeHtml(i.tipo)}" title="Excluir subcategoria" style="color:var(--despesa);">🗑️</button>
+            <ul class="cat-sub-lista">
+              ${itens.map(i=>`<li class="cat-sub-item">
+                <span class="cat-sub-nome">${escapeHtml(i.nome)}</span>
+                <span class="cat-sub-tags">
+                  <span class="tag ${i.tipo}">${i.tipo}</span>
+                  <span class="tag ${i.natureza==='Fixo'?'Fixo':'Variavel'}">${i.natureza}</span>
+                </span>
+                <span class="cat-sub-acoes">
+                  <button type="button" class="icon-btn" data-pos-sub-grupo="${escapeHtml(grupo)}" data-pos-sub-categoria="${escapeHtml(sub)}" data-pos-sub="${escapeHtml(i.nome)}" title="Reposicionar subcategoria">↕️</button>
+                  <button type="button" class="icon-btn" data-edit-sub="${escapeHtml(i.nome)}" data-edit-sub-tipo="${escapeHtml(i.tipo)}" title="Editar subcategoria">✏️</button>
+                  <button type="button" class="icon-btn" data-mover-sub="${escapeHtml(i.nome)}" data-mover-sub-tipo="${escapeHtml(i.tipo)}" data-mover-sub-grupo="${escapeHtml(grupo)}" data-mover-sub-categoria="${escapeHtml(sub)}" title="Mover subcategoria para outra categoria ou grupo">🔀</button>
+                  <button type="button" class="icon-btn" data-del-sub="${escapeHtml(i.nome)}" data-del-sub-tipo="${escapeHtml(i.tipo)}" title="Excluir subcategoria" style="color:var(--despesa);">🗑️</button>
+                </span>
               </li>`).join('')}
             </ul>
           </details>`;
@@ -11444,6 +11707,12 @@ function bindEvents(){
     const arrow = document.querySelector(`[data-arrow-for="grupo-${CSS.escape(g)}"]`);
     if(arrow) arrow.textContent = d.open ? '➖' : '➕';
   }));
+  document.querySelectorAll('[data-fluxo-mes-details]').forEach(d=> d.addEventListener('toggle', ()=>{
+    const chave = d.dataset.fluxoMesDetails;
+    if(d.open) UI.fluxoMesesFechados.delete(chave); else UI.fluxoMesesFechados.add(chave);
+    const arrow = document.querySelector(`[data-arrow-for="fluxo-mes-${CSS.escape(chave)}"]`);
+    if(arrow) arrow.textContent = d.open ? '➖' : '➕';
+  }));
   document.querySelector('[data-ajuda-fluxo]')?.addEventListener('toggle', e=>{ UI.ajudaFluxoAberta = e.target.open; });
   document.querySelector('[data-ajuda-cartoes]')?.addEventListener('toggle', e=>{ UI.ajudaCartoesAberta = e.target.open; });
   document.querySelectorAll('[data-cc-secao]').forEach(btn=> btn.addEventListener('click', ()=>{
@@ -12070,10 +12339,10 @@ function bindEvents(){
   });
 
   /* ---- Metas de Gastos ---- */
-  document.getElementById('btnNovaMeta')?.addEventListener('click', ()=>{
+  document.querySelectorAll('#btnNovaMeta, #fabNovaMeta').forEach(b=> b.addEventListener('click', ()=>{
     UI.metaModal = { editId:null, nome:'', nivel:'grupo', grupo:gruposComTipo('Despesa')[0], categoria:'', subcategoria:'', valor:0, mes:UI.mes, ano:UI.ano, recorrencia:'mensal', observacoes:'' };
     render();
-  });
+  }));
   document.querySelectorAll('[data-editar-meta]').forEach(b=> b.addEventListener('click', ()=>{
     const meta = STATE.metas.find(x=>x.id===b.dataset.editarMeta);
     if(!meta) return;
@@ -12161,6 +12430,17 @@ function bindEvents(){
   // padrões diferentes de seleção/edição/exclusão em lote na aplicação.
   if(UI.tab==='registros'){
     bindSelecaoLote('Reg', UI.regSelecionados, ()=>render());
+    // "Selecionar todos nesta página" da lista mobile (item 18 do requisito de responsividade) — espelha
+    // exatamente a lógica do checkbox equivalente da tabela desktop (ver bindSelecaoLote), mas com id
+    // próprio porque cada checkbox "selecionar todos" precisa de um id único no HTML. Lê os ids da própria
+    // página a partir dos checkboxes .chkLoteReg já renderizados (mesma técnica usada em bindSelecaoLote,
+    // nunca recalcula a lista/filtro em JS).
+    document.getElementById('chkTodosLoteRegMobile')?.addEventListener('change', e=>{
+      const idsPagina = [...new Set([...document.querySelectorAll('.chkLoteReg')].map(el=>el.value))];
+      if(e.target.checked) idsPagina.forEach(id=>UI.regSelecionados.add(id));
+      else idsPagina.forEach(id=>UI.regSelecionados.delete(id));
+      render();
+    });
     // Botão "Filtros" com badge de contagem (item 12 do requisito de responsividade): no mobile, abre a
     // mesma barra de filtros (sem alterar seu funcionamento) como um painel/bottom sheet; no desktop, a
     // barra já fica sempre visível e este botão fica oculto por CSS.
