@@ -646,6 +646,14 @@ tbody tr:hover{background:var(--navy-50);}
   display:flex;align-items:flex-start;gap:8px;background:var(--paper);border:1px solid var(--line);
   border-radius:var(--radius-md);padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-2);position:relative;
 }
+/* Seleção em lote na lista mobile (item 18 do requisito de responsividade) — caixa de seleção do card,
+   mesma altura mínima de toque das demais ações da lista. */
+.reg-card-check{display:flex;align-items:center;justify-content:center;flex-shrink:0;min-width:var(--touch-min);min-height:var(--touch-min);margin:calc(-1*var(--sp-3)) 0;}
+.reg-card-check input{width:18px;height:18px;}
+.reg-select-all-mobile{
+  display:flex;align-items:center;gap:8px;font-size:12.5px;color:#5b6b85;font-weight:600;
+  padding:6px 2px 10px;user-select:none;
+}
 .reg-card-principal{flex:1;min-width:0;}
 .reg-card-linha1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
 .reg-card-descricao{font-size:14px;font-weight:600;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -746,7 +754,19 @@ tbody tr:hover{background:var(--navy-50);}
 }
 @media(max-width:700px){
   .reg-busca-wrap{width:100%;margin-left:0!important;}
-  .reg-busca-wrap input[type="search"]{flex:1;min-width:0;}
+  /* !important necessário: ".toolbar input[type=search]{min-width:200px}" (regra global mais abaixo no
+     arquivo) tem a mesma especificidade e vence por ordem de declaração, o que impedia o campo de encolher
+     e empurrava o botão "Buscar" para fora da tela (overflow horizontal). */
+  .reg-busca-wrap input[type="search"]{flex:1;min-width:0!important;}
+  /* Sem isto, o botão "🔍 Buscar" encolhia junto com o input (ambos flex items do mesmo wrapper) e seu
+     texto quebrava no meio ("Bus/car") — item 18 do requisito de responsividade: nenhum botão pode quebrar
+     texto. O botão nunca encolhe; só o input (com min-width:0 acima) cede espaço. */
+  .reg-busca-wrap button{flex-shrink:0;white-space:nowrap;}
+  /* Hierarquia dos botões de ação de Registros (item 18): "Importar arquivo do banco" é a ação primária
+     (cor de destaque, ocupa a linha toda); "Verificar duplicidade" é uma ação secundária/ocasional, então
+     fica menor (btn-sm, já aplicado no HTML) e não precisa ocupar a linha toda sozinha. */
+  .reg-toolbar-acoes{align-items:stretch;}
+  .reg-toolbar-acoes #btnImportar{flex:1 1 100%;}
   /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto"/"+ Nova meta"
      (itens 7 e 14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em
      telas estreitas. */
@@ -8095,13 +8115,27 @@ function renderListaMobileRegistros(pageList){
     if(!grupoAtual || grupoAtual.rotulo!==rotulo){ grupoAtual = { rotulo, itens: [] }; grupos.push(grupoAtual); }
     grupoAtual.itens.push(t);
   });
+  // Seleção em lote no mobile (item 18 do requisito de responsividade): cada card ganha uma caixa de
+  // seleção própria (classe chkLoteReg — mesma classe da coluna da tabela desktop, então bindSelecaoLote
+  // já liga o evento de ambas automaticamente, sem duplicar lógica) e este topo ganha um "Selecionar
+  // todos nesta página", espelhando o checkbox do cabeçalho da tabela desktop (ver
+  // renderColunaSelecaoLoteHead) — completa o fluxo selecionar um/vários/todos + agir/cancelar (a barra
+  // de ações contextual já existe e é a mesma para desktop e mobile, ver renderBarraAcoesLote).
+  const idsPagina = pageList.map(t=>t.id);
+  const todosMarcadosMobile = idsPagina.every(id=>UI.regSelecionados.has(id));
+  const algunsMarcadosMobile = !todosMarcadosMobile && idsPagina.some(id=>UI.regSelecionados.has(id));
   return `
   <div class="reg-lista-mobile">
+    <label class="reg-select-all-mobile no-print">
+      <input type="checkbox" id="chkTodosLoteRegMobile" ${todosMarcadosMobile?'checked':''} data-indet-lote="${algunsMarcadosMobile}">
+      Selecionar todos nesta página (${idsPagina.length})
+    </label>
     ${grupos.map(g=>`
     <div class="reg-grupo-data">
       <div class="reg-grupo-data-titulo">${escapeHtml(g.rotulo)}</div>
       ${g.itens.map(t=>`
       <div class="reg-card">
+        <label class="reg-card-check"><input type="checkbox" class="chkLoteReg" value="${escapeHtml(t.id)}" ${UI.regSelecionados.has(t.id)?'checked':''} aria-label="Selecionar lançamento"></label>
         <div class="reg-card-principal">
           <div class="reg-card-linha1">
             <span class="reg-card-descricao">${escapeHtml(t.descricao)}</span>
@@ -8266,8 +8300,8 @@ function renderRegistros(){
       `;
     })()}
     <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
-    <div class="toolbar" style="margin-top:0;">
-      ${list.length ? `<button class="btn btn-ghost" id="btnVerificarDuplicidade">🔍 Verificar duplicidade</button>` : ''}
+    <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
+      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade">🔍 Verificar duplicidade</button>` : ''}
       <button class="btn btn-gold" id="btnImportar">📥 Importar arquivo do banco</button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
       <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
@@ -12362,6 +12396,17 @@ function bindEvents(){
   // padrões diferentes de seleção/edição/exclusão em lote na aplicação.
   if(UI.tab==='registros'){
     bindSelecaoLote('Reg', UI.regSelecionados, ()=>render());
+    // "Selecionar todos nesta página" da lista mobile (item 18 do requisito de responsividade) — espelha
+    // exatamente a lógica do checkbox equivalente da tabela desktop (ver bindSelecaoLote), mas com id
+    // próprio porque cada checkbox "selecionar todos" precisa de um id único no HTML. Lê os ids da própria
+    // página a partir dos checkboxes .chkLoteReg já renderizados (mesma técnica usada em bindSelecaoLote,
+    // nunca recalcula a lista/filtro em JS).
+    document.getElementById('chkTodosLoteRegMobile')?.addEventListener('change', e=>{
+      const idsPagina = [...new Set([...document.querySelectorAll('.chkLoteReg')].map(el=>el.value))];
+      if(e.target.checked) idsPagina.forEach(id=>UI.regSelecionados.add(id));
+      else idsPagina.forEach(id=>UI.regSelecionados.delete(id));
+      render();
+    });
     // Botão "Filtros" com badge de contagem (item 12 do requisito de responsividade): no mobile, abre a
     // mesma barra de filtros (sem alterar seu funcionamento) como um painel/bottom sheet; no desktop, a
     // barra já fica sempre visível e este botão fica oculto por CSS.
