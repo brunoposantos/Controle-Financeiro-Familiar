@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Financeiro Familiar">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="assets/images/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -304,6 +304,16 @@ input,select{font-family:var(--sans);}
 .bn-item:hover{color:#dbe4f7;}
 .bn-item.active{color:var(--gold);}
 .bn-item:focus-visible{outline:2px solid var(--gold);outline-offset:-2px;}
+/* Item 2 do requisito (rodada iPhone 13): "☰" e "Painéis" ficam lado a lado, na mesma linha, alinhados à
+   ESQUERDA — nunca space-between (que empurraria o texto para longe do ícone) nem a pilha vertical
+   ícone-em-cima-do-texto herdada de .bn-item genérico (que fazia sentido com vários itens, mas agora
+   .bn-item-paineis é o único botão da barra). Padding horizontal mantém a área de toque confortável. */
+.bn-item-paineis{
+  flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;
+  padding-left:calc(16px + var(--safe-left));
+}
+.bn-item-paineis .bn-icone{font-size:20px;}
+.bn-item-paineis .bn-rotulo{font-size:13px;}
 /* Bottom sheet "Mais": desliza de baixo para cima, sobre um backdrop, sem empurrar o layout da página. */
 .mais-sheet{
   position:fixed;left:0;right:0;bottom:0;z-index:220;background:#fff;
@@ -390,8 +400,12 @@ input,select{font-family:var(--sans);}
   .app-title p{font-size:10.5px;display:none;}
   .app-title p.app-title-tab-atual{display:block;}
 
+  /* Item 4 do requisito (rodada iPhone 13): mês e ano lado a lado, alinhados à ESQUERDA, com espaçamento
+     horizontal consistente entre os dois — nunca justify-content:space-between (que empurrava um seletor
+     para cada ponta da linha, com um vão vazio enorme no meio). O conjunto ocupa só o espaço necessário,
+     como em um app financeiro nativo, em vez de esticar para preencher a linha toda. */
   .period-select{
-    order:4;flex:1 1 100%;width:100%;justify-content:space-between;font-size:12px;
+    order:4;flex:1 1 100%;width:100%;justify-content:flex-start;gap:10px;font-size:12px;
     margin:2px 0 0;padding-top:8px;border-top:1px solid rgba(255,255,255,.14);
   }
   .period-select input[type="number"]{width:50px;}
@@ -404,9 +418,15 @@ input,select{font-family:var(--sans);}
      distribuição de espaço seja guiada só por flex-grow/min-width, nunca pelo tamanho do conteúdo: o botão
      nunca quebra linha nem é empurrado para fora, e .filebar-info sempre cede o espaço que sobrar (com
      reticências), nunca sobrepondo o botão. */
+  /* Item 5 do requisito (rodada iPhone 13): o conteúdo fica alinhado à ESQUERDA (justify-content e
+     text-align explícitos, para nunca herdar uma centralização do desktop) — e, se o texto for longo
+     demais para uma linha (ex.: "Sessão Microsoft expirada — faça login novamente"), ele quebra
+     naturalmente para uma 2ª linha (em vez de cortar com reticências, que escondia justamente a parte mais
+     importante da mensagem) sem deslocar o bloco para o centro; o botão de sincronizar ao lado continua
+     `flex:0 0 auto`, então nunca é empurrado para fora mesmo com filebar-info ocupando duas linhas. */
   .filebar-info{
-    order:6;flex:1 1 0;min-width:0;justify-content:flex-start;
-    font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.85;
+    order:6;flex:1 1 0;min-width:0;justify-content:flex-start;text-align:left;
+    font-size:9px;white-space:normal;opacity:.85;
   }
   .sync-indicador-wrap{order:7;flex:0 0 auto;margin-left:0;}
   .sync-indicador{padding:3px 8px;font-size:10px;gap:4px;}
@@ -1519,6 +1539,18 @@ summary::marker{content:'';}
   }
   .tabela-cartoes td:nth-child(4) .data-editavel-linha,
   .tabela-cartoes td:nth-child(5) .data-editavel-linha{justify-content:flex-start;width:100%;}
+  /* Vencimento (coluna 5) alinhado à direita — Fechamento (coluna 4) continua à esquerda; as duas bordas
+     externas do par ficam alinhadas com o restante do card (rótulo à esquerda / valor à direita nas demais
+     linhas), em vez das duas datas empurradas para o mesmo lado. */
+  .tabela-cartoes td:nth-child(5){align-items:flex-end;}
+  .tabela-cartoes td:nth-child(5) .data-editavel-linha{justify-content:flex-end;}
+  /* Saldo parcelado em aberto: o valor continua na linha principal (rótulo à esquerda, valor+ícone à
+     direita, igual às demais linhas), mas o hint "N compras · M parcelas" quebra para a linha de baixo em
+     vez de ficar espremido ao lado do valor — flex-basis:100% força a quebra (mesma técnica já usada acima
+     para Fechamento/Vencimento), e o hint fica alinhado à direita, sob o valor. O seletor com "+" pega só o
+     hint que vem depois do valor (caso "—" sem parcelamento não é afetado, pois não tem valor antes). */
+  .tabela-cartoes td:nth-child(7){flex-wrap:wrap;}
+  .tabela-cartoes td:nth-child(7) .val-cell + .hint{flex:1 1 100%;min-width:0;text-align:right;margin-top:2px!important;}
   .tabela-cartoes td:last-child{border-bottom:none;}
   .tabela-cartoes td[data-label]:not([data-label=""])::before{
     content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
