@@ -330,21 +330,30 @@ input,select{font-family:var(--sans);}
   display:none;position:fixed;inset:0;background:rgba(11,42,94,.35);z-index:215;
 }
 .menu-mobile-backdrop.aberto{display:block;}
-.fab-novo-lancamento{
+.fab-novo-lancamento,.fab-novo-lancamento-modal{
   display:none;position:fixed;right:calc(18px + var(--safe-right));z-index:205;
   bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 18px);
   width:var(--fab-size);height:var(--fab-size);border-radius:50%;border:none;
   background:var(--gold);color:var(--navy-950);font-size:28px;line-height:1;font-weight:700;
   box-shadow:0 8px 20px rgba(11,42,94,.35);cursor:pointer;transition:transform .15s,box-shadow .15s;
 }
-.fab-novo-lancamento:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(11,42,94,.4);}
-.fab-novo-lancamento:active{transform:translateY(0);}
-.fab-novo-lancamento:focus-visible{outline:2px solid var(--navy-900);outline-offset:2px;}
+.fab-novo-lancamento:hover,.fab-novo-lancamento-modal:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(11,42,94,.4);}
+.fab-novo-lancamento:active,.fab-novo-lancamento-modal:active{transform:translateY(0);}
+.fab-novo-lancamento:focus-visible,.fab-novo-lancamento-modal:focus-visible{outline:2px solid var(--navy-900);outline-offset:2px;}
+/* Item 12 do requisito: dentro dos 4 modais de lançamentos, não existe bottom-nav visível (o modal cobre a
+   tela toda no mobile — ver @media(max-width:700px) .modal acima), então o FAB do modal usa só a área
+   segura inferior, sem descontar --bottom-nav-h; z-index baixo pois só precisa vencer .modal-head/.modal-foot
+   dentro do próprio contexto de empilhamento do overlay (já isolado por z-index dinâmico — attrZIndexModal). */
+.fab-novo-lancamento-modal{bottom:calc(var(--safe-bottom) + 18px);z-index:20;}
 @media(max-width:700px){
   .tabbar{display:none;}
   .bottom-nav{display:flex;}
-  .fab-novo-lancamento{display:flex;align-items:center;justify-content:center;}
+  .fab-novo-lancamento,.fab-novo-lancamento-modal{display:flex;align-items:center;justify-content:center;}
   main.app-main,.app>main{padding-bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);}
+  /* Especificidade precisa igualar ".btn{display:inline-flex}" (0,1,0), que vem depois no arquivo (fora de
+     media query) e venceria por ordem de declaração se o seletor abaixo tivesse só uma classe — mesma
+     armadilha de especificidade já corrigida antes nesta sessão (.mini-card-actions). */
+  .acoes-lancamento-modal .btn-novo-lanc-modal{display:none;}
 }
 
 /* ---- Responsividade do cabeçalho e do menu de abas ---- */
@@ -651,6 +660,29 @@ tbody tr:hover{background:var(--navy-50);}
   .registros-rodape-intervalo{text-align:center;}
   .registros-paginacao{justify-content:center;}
 }
+/* Item 13 do requisito: nos 4 modais de lançamentos (Ver Extrato/Lançamentos futuros/Ver Fatura/Ver
+   Próximas Faturas), a paginação do rodapé precisa caber numa única linha no mobile — ao contrário da aba
+   Registros acima, aqui NÃO empilha em coluna; em vez disso compacta tudo (fonte/gaps/paddings menores) e,
+   se mesmo assim não couber, ganha rolagem horizontal só dela (nunca da página toda). */
+@media(max-width:700px){
+  .modal-extrato-futuros .registros-rodape,
+  .modal-fatura-cartao .registros-rodape{
+    flex-direction:row;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    gap:8px;padding:7px 10px;font-size:11px;
+  }
+  .modal-extrato-futuros .registros-rodape-exibir,
+  .modal-fatura-cartao .registros-rodape-exibir,
+  .modal-extrato-futuros .registros-rodape-intervalo,
+  .modal-fatura-cartao .registros-rodape-intervalo,
+  .modal-extrato-futuros .registros-paginacao,
+  .modal-fatura-cartao .registros-paginacao{
+    flex-shrink:0;white-space:nowrap;
+  }
+  .modal-extrato-futuros .registros-pagina-btn,
+  .modal-fatura-cartao .registros-pagina-btn{
+    min-width:22px;height:22px;padding:0 4px;font-size:11px;
+  }
+}
 .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
 .reg-descricao-texto{display:block;}
 .reg-descricao-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
@@ -847,6 +879,22 @@ tbody tr:hover{background:var(--navy-50);}
   .toolbar-modal-padrao-filtros{ flex-wrap:wrap; }
   .toolbar-modal-padrao-busca{ margin-left:0; flex-wrap:wrap; }
   .modal-extrato-futuros .table-wrap-registros{ overflow-x:auto; }
+}
+/* Item 14 do requisito: no mobile (os 4 modais ficam em tela cheia — ver @media(max-width:700px) .modal),
+   o campo de busca + botão "Buscar" + "Verificar duplicidade" (dentro de .acoes-lancamento-modal, já que
+   "+ Novo Lançamento" virou FAB nessa largura — ver .btn-novo-lanc-modal acima) precisam caber numa única
+   linha: mesma técnica de flex-basis:0 usada em Registros (itens 10/11) para os 3 caberem sem quebrar. */
+@media(max-width:700px){
+  .toolbar-modal-padrao{ flex-wrap:wrap; gap:8px; }
+  .toolbar-modal-padrao-filtros{ order:1; flex:1 1 100%; }
+  /* "Verificar duplicidade" (único botão que sobra aqui, já que "+ Novo Lançamento" virou FAB) não pode
+     tomar mais da metade da linha, senão o campo de busca fica espremido a quase 0px — largura travada em
+     ~42% garante espaço mínimo pro input, com ellipsis se o texto não couber. */
+  .acoes-lancamento-modal{ order:2; flex:0 1 42%; max-width:180px; min-width:0; margin:0; }
+  .acoes-lancamento-modal button{ width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-left:8px; padding-right:8px; }
+  .toolbar-modal-padrao-busca{ order:2; flex:1 1 120px; min-width:0; margin-left:0; flex-wrap:nowrap; }
+  .toolbar-modal-padrao-busca input[type="search"]{ flex:1; min-width:50px; }
+  .toolbar-modal-padrao-busca button{ flex-shrink:0; white-space:nowrap; }
 }
 /* ---- Modais "Ver Fatura" e "Ver Próximas Faturas" (painel Cartões, aba Contas e Cartões) ----
    Largura responsiva (aproveita mais tela em monitores grandes, encolhe em telas menores, sempre dentro
@@ -6956,6 +7004,9 @@ function render(){
         // própria tela (item 7 do requisito de responsividade) — nunca globalmente em todos os painéis, e
         // nunca com uma ação diferente da que o botão de desktop correspondente executaria.
         if(UI.menuMobileAberto || UI.menuArquivoAberto || UI.filtrosMobileAberto!=null || nivelAcessoPasta==='leitura') return '';
+        // Item 12 do requisito: com um dos 4 modais de lançamentos aberto por cima, cada um já tem seu
+        // próprio FAB (ver renderBotoesAcoesLancamentoModal) — evita dois FABs sobrepostos na tela.
+        if(UI.extratoContaModal || UI.futurosContaModal || UI.faturaAtualModal || UI.projecaoFaturaModal) return '';
         if(UI.tab==='registros') return `<button type="button" class="fab-novo-lancamento" id="fabNovoLancamento" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
         if(UI.tab==='resumo') return `<button type="button" class="fab-novo-lancamento" id="fabNovaProjecao" aria-label="Novo lançamento previsto" title="Novo lançamento previsto">＋</button>`;
         if(UI.tab==='metas') return `<button type="button" class="fab-novo-lancamento" id="fabNovaMeta" aria-label="Nova meta" title="Nova meta">＋</button>`;
@@ -8503,11 +8554,15 @@ function renderRodapePaginacaoRegistros(totalFiltrado, porPagina, paginaAtual, t
    aparece — quando a tabela abaixo tem pelo menos um lançamento; "+ Novo Lançamento" continua sempre
    visível, já que cadastrar o primeiro lançamento é justamente o caminho para sair do estado vazio. */
 function renderBotoesAcoesLancamentoModal(conta, temLancamentos){
+  // Item 12 do requisito: no mobile, o botão textual "+ Novo Lançamento" vira um FAB (mesmo data-modal-novo-lanc,
+  // mesmo handler já existente em bindEvents — nenhuma lógica de criação de lançamento duplicada) — o botão
+  // textual continua existindo no HTML (some só via CSS em telas ≤700px) para não duplicar o data-attribute.
   return `
   <div class="acoes-lancamento-modal no-print">
     ${temLancamentos ? `<button class="btn btn-ghost btn-sm" data-modal-verificar-dup="${escapeHtml(conta)}">🔍 Verificar duplicidade</button>` : ''}
-    <button class="btn btn-primary btn-sm" data-modal-novo-lanc="${escapeHtml(conta)}">+ Novo Lançamento</button>
-  </div>`;
+    <button class="btn btn-primary btn-sm btn-novo-lanc-modal" data-modal-novo-lanc="${escapeHtml(conta)}">+ Novo Lançamento</button>
+  </div>
+  <button type="button" class="fab-novo-lancamento-modal no-print" data-modal-novo-lanc="${escapeHtml(conta)}" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
 }
 function renderModalDuplicidade(){
   const pares = UI.modalDuplicidade.pares;
