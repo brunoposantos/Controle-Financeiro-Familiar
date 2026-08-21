@@ -84,19 +84,27 @@ input,select{font-family:var(--sans);}
 .tela-inicial-card button:disabled{opacity:.5;cursor:not-allowed;}
 .ti-cabecalho{display:flex;align-items:center;gap:24px;margin-bottom:28px;text-align:center;}
 .ti-cabecalho .mark{height:200px;width:auto;flex-shrink:0;align-self:center;}
-/* .ti-cabecalho-textos é o flex container comum a título+hint (item 1 do requisito): align-items:center faz
-   o .hint ficar centralizado verticalmente em relação a .ti-cabecalho-titulos SEMPRE, em qualquer largura
-   — os dois são flex items lado a lado (sem position:absolute), então o navegador recalcula o
-   centro vertical sozinho a cada mudança de altura/quebra de texto, nunca desalinhando. */
+/* .ti-cabecalho-textos é o container do título+subtítulo+hint. Na marcação real, .hint fica DENTRO de
+   .ti-cabecalho-titulos (empilhado depois de h1/.subtitulo, não ao lado) — h1/subtítulo/hint sempre formam
+   uma coluna de texto simples, em qualquer largura. */
 .ti-cabecalho-textos{display:flex;align-items:center;justify-content:space-between;gap:24px;flex:1;min-width:0;flex-wrap:wrap;}
 .ti-cabecalho-titulos{min-width:0;flex:0 1 auto;}
 .ti-cabecalho h1{font-size:42px;margin:0;color:var(--navy-950);}
 .ti-cabecalho .subtitulo{margin:4px 0 0;font-size:30px;font-weight:600;color:var(--gold-dark);}
-.ti-cabecalho .hint{color:#5b6b85;margin:0;flex:1 1 auto;min-width:0;font-size:18px;font-style:italic;text-align:center;}
+/* Item do requisito: espaçamento vertical explícito entre o subtítulo e o hint — antes .hint tinha margin:0,
+   então ficava colado embaixo do subtítulo (0px de vão) sempre que o subtítulo quebrava em mais de uma
+   linha. Só afeta essa margem — não mexe no espaçamento h1→subtítulo nem no alinhamento geral do cabeçalho. */
+.ti-cabecalho .hint{color:#5b6b85;margin:10px 0 0;flex:1 1 auto;min-width:0;font-size:18px;font-style:italic;text-align:center;}
 .ti-opcoes{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-bottom:28px;}
 .ti-opcao{flex:1 1 280px;max-width:320px;border:1px solid var(--line);border-radius:14px;padding:18px 16px;background:var(--navy-50,#f4f7fc);text-align:center;display:flex;flex-direction:column;align-items:center;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;}
 .ti-opcao:hover{border-color:var(--navy-300,#a9bbdd);box-shadow:0 8px 22px rgba(16,64,141,.1);transform:translateY(-2px);}
 .ti-opcao-icone{width:44px;height:44px;border-radius:50%;background:var(--navy-50,#f4f7fc);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px;}
+/* Item do requisito: botão "Desconectar do OneDrive" usa o próprio ícone do OneDrive (reaproveita
+   ONEDRIVE_ICON_SVG, mesmo SVG usado em "Conectar ao OneDrive"/tela de sincronização — nunca um SVG
+   duplicado), mas em tons de cinza (grayscale) para manter o botão discreto — nunca o ícone colorido
+   oficial nessa ação. */
+.icone-onedrive-discreto{display:inline-flex;vertical-align:middle;filter:grayscale(1);opacity:.65;}
+.icone-onedrive-discreto svg{width:16px;height:16px;display:block;}
 .ti-opcao-titulo{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--navy-900);margin-bottom:6px;}
 .ti-opcao-desc{font-size:12.5px;color:#5b6b85;margin-bottom:14px;flex:1;}
 .ti-opcao .btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;}
@@ -703,7 +711,7 @@ tbody tr:hover{background:var(--navy-50);}
     min-width:22px;height:22px;padding:0 4px;font-size:11px;
   }
 }
-.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--mono);white-space:nowrap;}
 .reg-descricao-texto{display:block;}
 .reg-descricao-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
 .tag.Despesa{background:#fbe7e4;color:var(--despesa);}
@@ -3331,6 +3339,16 @@ function vencimentoLabel(comp, conta){
   if(!cfg || !cfg.vencimento || !comp) return '';
   const [ano,mes] = comp.split('-').map(Number);
   return `${pad2(cfg.vencimento)}/${pad2(mes)}/${ano}`;
+}
+/* Item do requisito: dia usado no Fluxo de Caixa para lançamentos vinculados a cartão — fonte única é o
+   vencimento configurado no painel Cartões - Competência (cfg.vencimento, ou o ajuste da fatura específica,
+   quando houver — mesma fonte de vencimentoLabel/vencimentoDataCalculada), nunca um dia gravado
+   estaticamente no lançamento previsto. Mudar o vencimento do cartão (ou ajustar uma fatura pontual) passa
+   a refletir automaticamente aqui, sem precisar editar cada lançamento. */
+function diaVencimentoCartaoNaCompetencia(conta, comp){
+  const ov = faturaOverride(conta, comp);
+  const iso = (ov && ov.vencimento) ? ov.vencimento : vencimentoDataCalculada(comp, conta);
+  return iso ? Number(iso.split('-')[2]) : null;
 }
 
 /* ---------- Melhor cartão para novas compras hoje ---------- */
@@ -6851,7 +6869,13 @@ function calcProjecoesMes(ano, mes, saldoInicial){
   const competencia = chaveMes(ano, mes);
   const linhas = STATE.projecoes
     .filter(item=>itemAtivoNaCompetencia(item, competencia))
-    .map(item=>({ ...item, competencia, valorCalculado: valorProjecaoItem(item, competencia) }))
+    .map(item=>{
+      // Item do requisito: para lançamentos de cartão, o dia exibido/usado para ordenar vem sempre do
+      // vencimento atual do cartão (diaVencimentoCartaoNaCompetencia) — nunca do item.dia gravado no
+      // lançamento previsto, que poderia ter ficado desatualizado desde a criação.
+      const diaCartao = item.cartao ? diaVencimentoCartaoNaCompetencia(item.cartao, competencia) : null;
+      return { ...item, competencia, valorCalculado: valorProjecaoItem(item, competencia), dia: diaCartao || item.dia };
+    })
     .sort((a,b)=>(Number(a.dia)||0)-(Number(b.dia)||0));
   let saldo = saldoInicial;
   linhas.forEach(l=>{ saldo += (l.tipo==='Receita' ? l.valorCalculado : -l.valorCalculado); l.saldo = saldo; });
@@ -7190,7 +7214,7 @@ function renderTelaInicial(){
           <div class="ti-opcao-desc">${msalConta ? 'Sua conta já está conectada. Os arquivos são lidos e gravados diretamente no seu OneDrive.' : 'Conecta com sua conta Microsoft para acessar os arquivos deste app no seu OneDrive.'}</div>
           <div class="ti-status-conexao ti-status-${statusConexaoOneDrive}">${statusConexaoOneDriveInfo().emoji} ${statusConexaoOneDriveInfo().texto}</div>
           ${msalConta
-            ? `<button class="btn btn-ghost" id="tiSairMicrosoft">🔌 Desconectar do OneDrive</button>`
+            ? `<button class="btn btn-ghost" id="tiSairMicrosoft"><span class="icone-onedrive-discreto">${ONEDRIVE_ICON_SVG}</span> Desconectar do OneDrive</button>`
             : `<button class="btn btn-gold" id="tiEntrarMicrosoft" ${(!hasFSAccess || statusConexaoOneDrive==='conectando')?'disabled':''}>${ONEDRIVE_ICON_SVG} Conectar ao OneDrive</button>`}
         </div>
         ${msalConta && faltamCriar && nivelAcessoPasta!=='leitura' ? `
@@ -9321,7 +9345,11 @@ function renderPainelProjecao(m, idx){
   // reconstruído do zero a cada renderização.
   const valores = m.linhas.filter(l=>!l.especial).map(l => l.cartao ? l.valorCalculado : l.valor);
   const saldos = m.linhas.map(l => l.saldo);
-  const chDia = 5, chTipo = 9, chAcoes = 7; // colunas de largura fixa — altere aqui para mudar Dia/Tipo/Ações
+  // chTipo aumentado (9→14): "Despesa"/"Receita" (dentro do badge .tag) precisam de espaço suficiente para
+  // nunca quebrar em duas linhas — com 9 a coluna ficava estreita demais em telas menores que a largura
+  // total da tabela, mesmo com table-layout:fixed. Só afeta o layout de tabela (desktop/tablet); no mobile
+  // (≤700px) a tabela vira lista de cards e essas larguras deixam de valer (ver @media(max-width:700px)).
+  const chDia = 5, chTipo = 14, chAcoes = 7; // colunas de largura fixa — altere aqui para mudar Dia/Tipo/Ações
   const chValor = Math.max(8, ...valores.map(v=>fmtBRL(v).length)) + 1.5;
   const chSaldo = Math.max(8, ...saldos.map(v=>fmtBRL(v).length)) + 1.5;
   // Descrição recebe um espaço moderado — nem domina a tabela, nem fica curta demais — proporcional ao
@@ -9789,7 +9817,7 @@ function renderNovaProjecaoModal(){
                 <input type="text" id="fNovaProjecaoDesc" value="${escapeHtml(m.descricao)}" placeholder="Ex.: Aluguel">
               </div>
               <div class="field tx-narrow"><label>Dia</label>
-                <input type="number" min="1" max="31" id="fNovaProjecaoDia" value="${m.dia}">
+                <input type="number" min="1" max="31" id="fNovaProjecaoDia" value="${m.dia}" ${m.cartao?'disabled title="Vem do vencimento configurado para este cartão em Contas e Cartões — mudar o vencimento do cartão já atualiza aqui automaticamente"':''}>
               </div>
             </div>
             <div class="tx-row">
@@ -12774,7 +12802,7 @@ function bindEvents(){
     const m = UI.novaProjecaoModal; if(!m) return;
     const g = id => document.getElementById(id);
     if(g('fNovaProjecaoDesc')) m.descricao = g('fNovaProjecaoDesc').value;
-    if(g('fNovaProjecaoDia')) m.dia = Math.min(31, Math.max(1, Number(g('fNovaProjecaoDia').value)||1));
+    if(g('fNovaProjecaoDia') && !g('fNovaProjecaoDia').disabled) m.dia = Math.min(31, Math.max(1, Number(g('fNovaProjecaoDia').value)||1));
     if(g('fNovaProjecaoValor') && !g('fNovaProjecaoValor').disabled) m.valor = g('fNovaProjecaoValor').value;
     if(g('fNovaProjecaoAno')) { const v = Number(g('fNovaProjecaoAno').value); if(v) m.ano = v; }
   }
@@ -12791,6 +12819,10 @@ function bindEvents(){
     if(UI.novaProjecaoModal.cartao){
       UI.novaProjecaoModal.tipo = 'Despesa';
       if(!UI.novaProjecaoModal.descricao.trim()) UI.novaProjecaoModal.descricao = UI.novaProjecaoModal.cartao;
+      // Só para exibição no campo desabilitado — o dia real usado no Fluxo de Caixa é sempre recalculado a
+      // partir do vencimento atual do cartão (ver diaVencimentoCartaoNaCompetencia), nunca deste valor.
+      const vencAtual = STATE.cardConfig[UI.novaProjecaoModal.cartao]?.vencimento;
+      if(vencAtual) UI.novaProjecaoModal.dia = vencAtual;
     }
     render();
   });
