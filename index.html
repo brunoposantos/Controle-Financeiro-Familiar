@@ -234,7 +234,13 @@ input,select{font-family:var(--sans);}
 }
 .app-title h1{font-size:28px;margin:0;font-weight:700;letter-spacing:.3px;}
 .app-title p{margin:2px 2px 0;font-size:14px;color:#b9c9ea;}
-.app-title-tab-atual{display:none;color:var(--gold)!important;font-weight:700;font-size:12.5px!important;}
+/* Item do requisito: a aba ativa fica sempre visível no topo, tanto no desktop quanto no mobile — no
+   desktop, como uma 3ª linha abaixo do título/subtítulo (o subtítulo "Família Gomes Oliveira" continua
+   visível normalmente, essa linha só soma); no mobile ela já substituía o subtítulo (ver
+   @media(max-width:600px) .app-title p{display:none}/.app-title-tab-atual{display:block} abaixo, mantido
+   como estava). O texto em si já vem de TABS_TODAS.find(...UI.tab) recalculado a cada render() — nunca
+   fica desatualizado, já que a troca de aba chama render() no mesmo clique, de forma síncrona. */
+.app-title-tab-atual{display:block;color:var(--gold)!important;font-weight:700;font-size:12.5px!important;}
 .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:16px;flex-wrap:wrap;}
 .period-select{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:15px;margin:13px 2px 0;flex-wrap:wrap;max-width:100%;}
 .period-select select{
@@ -1040,11 +1046,31 @@ tbody tr:hover{background:var(--navy-50);}
 }
 .info-card.warn{background:#fff8e6;border-color:#f0d090;color:#7a5000;}
 .info-card .info-card-icon{font-size:17px;line-height:1.4;}
-/* Previsão Financeira — item 9 do requisito de responsividade: Confiabilidade sempre na última linha,
-   layout empilhado e responsivo, nunca ultrapassando a largura do card. */
-.intel-faixa-previsao-linhas{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+/* Previsão Financeira: no desktop, Projeção e Confiabilidade dividem a mesma linha (Confiabilidade
+   alinhada à direita, via order+margin-left:auto — nunca empurrando para uma linha extra), com Faixa
+   provável na linha de baixo, ocupando a largura toda (flex-basis:100% força a quebra, mesma técnica já
+   usada nesta sessão). No mobile, a ordem volta a ser a natural do documento — Projeção, Faixa provável,
+   Confiabilidade por último — sem depender de "order" nenhum. */
+.intel-faixa-previsao-linhas{flex:1;min-width:0;display:flex;flex-direction:row;flex-wrap:wrap;column-gap:16px;row-gap:4px;align-items:baseline;}
 .intel-faixa-previsao-linha{overflow-wrap:break-word;word-break:break-word;}
-.intel-faixa-previsao-confiabilidade{margin-top:2px;padding-top:6px;border-top:1px dashed var(--navy-100);}
+.intel-fp-projecao{order:1;flex:1 1 auto;min-width:0;}
+.intel-faixa-previsao-confiabilidade{order:2;flex:0 0 auto;white-space:nowrap;margin-top:0;padding-top:0;border-top:none;}
+.intel-fp-faixa{order:3;flex:1 1 100%;}
+@media(max-width:700px){
+  .intel-faixa-previsao-linhas{flex-direction:column;}
+  .intel-fp-projecao,.intel-fp-faixa,.intel-faixa-previsao-confiabilidade{order:0;flex:1 1 auto;white-space:normal;}
+  .intel-faixa-previsao-confiabilidade{margin-top:2px;padding-top:6px;border-top:1px dashed var(--navy-100);}
+}
+/* Tabela do painel Previsão Financeira: larguras proporcionais (via % nos <th>, acima) + table-layout:fixed
+   para as colunas respeitarem essa proporção, texto sem quebra e padding reduzido — evita quebra de linha
+   nas células sem precisar de overflow-x no desktop. Só no desktop: ≤700px a tabela já vira lista de cards
+   (.tabela-cards-mobile) e reseta white-space para normal (!important), então essa regra nunca atrapalha o
+   mobile. */
+.tabela-previsao-financeira{table-layout:fixed;}
+.tabela-previsao-financeira th,.tabela-previsao-financeira td{white-space:nowrap;padding:8px 5px;}
+.tabela-previsao-financeira th{overflow:hidden;text-overflow:ellipsis;font-size:9.5px;}
+.tabela-previsao-financeira td{font-size:11px;}
+.tabela-previsao-financeira td .hint{font-size:9.5px;}
 .opcoes-block{
   display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;
   background:var(--navy-50);border:1px solid var(--line);border-radius:10px;padding:12px 16px;
@@ -1338,6 +1364,14 @@ summary::marker{content:'';}
 .fluxo-mes-resumo b.pos{color:var(--receita);}
 .fluxo-mes-resumo b.neg{color:var(--despesa);}
 .fluxo-mes-details[open] .fluxo-mes-corpo{margin-top:6px;}
+/* Item do requisito: altura visualmente padronizada entre as tabelas do Fluxo de Caixa, sem paginação nem
+   rolagem interna — max-height:none (sobrescreve o teto genérico de 520px de .table-wrap) garante que a
+   tabela SEMPRE mostra todos os lançamentos do mês, por mais que a lista cresça; min-height dá um piso
+   visual comum, então um mês com poucos lançamentos não fica visivelmente "mais raso" que os outros — mas
+   nunca limita por cima, um mês com mais lançamentos cresce livremente além do piso. overflow-x continua só
+   como rede de segurança (a tabela já não estoura a largura no uso normal, ver .tabela-fluxo no mobile). */
+.tabela-fluxo-wrap{max-height:none;overflow-y:visible;min-height:220px;}
+@media(max-width:700px){ .tabela-fluxo-wrap{min-height:0;} }
 .ajuda-fluxo{margin:18px 0;border:1px solid var(--line);border-radius:9px;background:#fff;}
 .ajuda-fluxo summary{
   cursor:pointer;padding:10px 14px;font-size:13px;font-weight:700;color:var(--navy-800);
@@ -6319,7 +6353,7 @@ function renderExtratoContaModal(){
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Extrato'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileExtrato" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Extrato', camposFiltroExtrato)}
-            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosExtrato">✕ Limpar filtros</button>` : ''}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosExtrato">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileExtrato">Aplicar</button></div>
           </div>
           ${UI.filtrosMobileAberto==='Extrato' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropExtrato"></div>` : ''}
@@ -6437,7 +6471,7 @@ function renderFuturosContaModal(){
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Futuros'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFuturos" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Futuros', camposFiltroFuturos)}
-            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFuturos">✕ Limpar filtros</button>` : ''}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFuturos">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileFuturos">Aplicar</button></div>
           </div>
           ${UI.filtrosMobileAberto==='Futuros' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFuturos"></div>` : ''}
@@ -8288,7 +8322,7 @@ function renderFiltroDataRange(f, prefixo){
         <label>De<input type="date" id="dataRangeInicio${prefixo}" value="${f.dataInicio||''}" ${modoLivre?'':'disabled'} max="${f.dataFim||''}"></label>
         <label>Até<input type="date" id="dataRangeFim${prefixo}" value="${f.dataFim||''}" ${modoLivre?'':'disabled'} min="${f.dataInicio||''}"></label>
       </div>
-      ${(f.dataInicio||f.dataFim) ? `<button type="button" class="btn btn-ghost btn-sm filtro-padrao-limpar" id="btnLimparData${prefixo}">Limpar período</button>` : ''}
+      ${(f.dataInicio||f.dataFim) ? `<button type="button" class="btn btn-ghost btn-sm filtro-padrao-limpar" id="btnLimparData${prefixo}">↺ Restaurar filtros padrão</button>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -8326,7 +8360,7 @@ function renderFiltroMultiSelect(f, prefixo, campo, label, options){
           ${escapeHtml(o.label)}
         </label>`).join('')}
       </div>
-      ${selected.size>0 ? `<button type="button" class="btn btn-ghost btn-sm filtro-padrao-limpar" id="btnLimparMultisel${prefixo}${campo}">Limpar seleção</button>` : ''}
+      ${selected.size>0 ? `<button type="button" class="btn btn-ghost btn-sm filtro-padrao-limpar" id="btnLimparMultisel${prefixo}${campo}">↺ Restaurar filtros padrão</button>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -8769,7 +8803,7 @@ function renderRegistros(){
       <summary>ℹ️ Informações sobre esta tela</summary>
       <div class="ajuda-fluxo-conteudo">
         <p><b>Busca</b>: o campo de busca considera exclusivamente a <b>Descrição</b> do lançamento — não busca por categoria, conta ou valor. Pressione Enter ou clique em "🔍 Buscar" para aplicar.</p>
-        <p><b>Filtros</b>: o filtro <b>Data</b> permite escolher um intervalo (data inicial e final) livremente, com atalhos para períodos comuns (Hoje, Ontem, Últimos 7/30 dias, Este mês, Mês anterior) ou um período Personalizado — totalmente independente do período exibido no cabeçalho da aplicação. Grupo, Natureza, Tipo, Conta e Fatura aceitam marcar mais de uma opção ao mesmo tempo (dentro do mesmo filtro, os registros que atendem a qualquer uma das opções marcadas aparecem); filtros diferentes se combinam entre si. Cada alteração já atualiza a lista e os totais na hora, sem recarregar a página. Use "✕ Limpar filtros" para voltar a ver todos os lançamentos.</p>
+        <p><b>Filtros</b>: o filtro <b>Data</b> permite escolher um intervalo (data inicial e final) livremente, com atalhos para períodos comuns (Hoje, Ontem, Últimos 7/30 dias, Este mês, Mês anterior) ou um período Personalizado — totalmente independente do período exibido no cabeçalho da aplicação. Grupo, Natureza, Tipo, Conta e Fatura aceitam marcar mais de uma opção ao mesmo tempo (dentro do mesmo filtro, os registros que atendem a qualquer uma das opções marcadas aparecem); filtros diferentes se combinam entre si. Cada alteração já atualiza a lista e os totais na hora, sem recarregar a página. Use "↺ Restaurar filtros padrão" para voltar a ver todos os lançamentos.</p>
         <p><b>Seleção em lote</b>: marque as caixas na primeira coluna (ou o checkbox "selecionar todos" no cabeçalho, que cobre a página atual) para abrir a barra de ações — mesmo componente usado nos modais da aba Contas e Cartões. Com pelo menos um lançamento marcado, é possível "✏️ Editar em Lote" (altera só os campos habilitados, em todos os selecionados de uma vez) ou "🗑️ Excluir selecionados" (pede confirmação antes de remover).</p>
         <p><b>Verificar duplicidade</b>: compara todos os lançamentos já registrados e aponta pares com data, valor e conta muito parecidos — útil depois de uma importação para conferir se algo entrou duas vezes.</p>
         <p><b>Importar arquivo do banco</b>: aceita extratos (.ofx/.xlsx) e faturas de cartão, holerites em PDF para contas do tipo Contracheque, e extratos .csv do PicPay para a conta Reserva de Emergência (com descrição e classificação — Aporte, Uso da Reserva ou Rendimento — geradas automaticamente a partir do Tipo de cada lançamento), com detecção automática de compras parceladas e de possíveis duplicatas antes de confirmar. O mesmo fluxo também pode ser iniciado direto pelo botão 📥 de uma conta específica (aba Contas e Cartões) ou de um cartão específico (coluna 📥 da tabela de Cartões) — nesse caso a conta de destino já vem travada, para nunca importar para a conta errada.</p>
@@ -8782,7 +8816,7 @@ function renderRegistros(){
         <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileReg" title="Fechar">✕</button></div>
         ${renderBarraFiltrosPadrao(f, 'Reg', camposFiltroReg)}
         <div class="filtros-barra-acoes-mobile">
-          ${qtdAtivos>0 ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosReg">✕ Limpar filtros</button>` : ''}
+          ${qtdAtivos>0 ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosReg">↺ Restaurar filtros padrão</button>` : ''}
           <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileReg">Aplicar</button>
         </div>
       </div>
@@ -9279,7 +9313,7 @@ function renderFaturaAtualModal(){
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Fatura'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFatura" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Fatura', camposFiltroFatura)}
-            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFatura">✕ Limpar filtros</button>` : ''}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFatura">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileFatura">Aplicar</button></div>
           </div>
           ${UI.filtrosMobileAberto==='Fatura' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFatura"></div>` : ''}
@@ -9401,7 +9435,7 @@ function renderProjecaoFaturaModal(){
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Projecao'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileProjecao" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Projecao', camposFiltroProjecao)}
-            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosProjecao">✕ Limpar filtros</button>` : ''}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosProjecao">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileProjecao">Aplicar</button></div>
           </div>
           ${UI.filtrosMobileAberto==='Projecao' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropProjecao"></div>` : ''}
@@ -9576,7 +9610,7 @@ function renderPainelProjecao(m, idx){
         <span class="expand-arrow" data-arrow-for="fluxo-mes-${chaveMesFluxo}">${abertoFluxo?'➖':'➕'}</span>
       </summary>
       <div class="fluxo-mes-corpo">
-        <div class="table-wrap" style="max-height:1335px;overflow-x:auto;"><table class="tabela-fluxo" style="table-layout:fixed;width:100%;">
+        <div class="table-wrap tabela-fluxo-wrap" style="overflow-x:auto;"><table class="tabela-fluxo" style="table-layout:fixed;width:100%;">
           <thead><tr>
             <th style="text-align:center;width:${pct(chDia)}%;">Dia</th>
             <th style="text-align:left;width:${pct(chDescricao)}%;">Descrição</th>
@@ -9789,13 +9823,19 @@ function renderInteligencia(){
       <div class="info-card intel-faixa-previsao" style="margin-top:0;margin-bottom:10px;">
         <span class="info-card-icon">🔮</span>
         <div class="intel-faixa-previsao-linhas">
-          <div class="intel-faixa-previsao-linha"><b>Projeção (${MESES[ult.mes-1]}/${ult.ano}):</b> ${fmtBRL(ult.saldoProjetado)}</div>
-          <div class="intel-faixa-previsao-linha"><b>Faixa provável:</b> ${fmtBRL(ult.faixaInferior)} a ${fmtBRL(ult.faixaSuperior)}</div>
+          <div class="intel-faixa-previsao-linha intel-fp-projecao"><b>Projeção (${MESES[ult.mes-1]}/${ult.ano}):</b> ${fmtBRL(ult.saldoProjetado)}</div>
+          <div class="intel-faixa-previsao-linha intel-fp-faixa"><b>Faixa provável:</b> ${fmtBRL(ult.faixaInferior)} a ${fmtBRL(ult.faixaSuperior)}</div>
           <div class="intel-faixa-previsao-linha intel-faixa-previsao-confiabilidade"><b>Confiabilidade:</b> ${ctx.confiabilidade.nivel}</div>
         </div>
       </div>`; })() : ''}
-      <div class="table-wrap" style="max-height:none;"><table class="tabela-cards-mobile">
-        <thead><tr><th>Mês</th><th style="text-align:right;">Receita Prevista</th><th style="text-align:right;">Despesa Prevista</th><th style="text-align:right;">Saldo Previsto</th><th style="text-align:right;">Poupança</th></tr></thead>
+      <div class="table-wrap" style="max-height:none;"><table class="tabela-cards-mobile tabela-previsao-financeira">
+        <thead><tr>
+          <th style="width:19%;">Mês</th>
+          <th style="text-align:right;width:19%;">Receita Prevista</th>
+          <th style="text-align:right;width:19%;">Despesa Prevista</th>
+          <th style="text-align:right;width:31%;">Saldo Previsto</th>
+          <th style="text-align:right;width:12%;">Poupança</th>
+        </tr></thead>
         <tbody>
           ${ctx.projecoes.map(p=>`<tr style="${p.risco==='alto'?'background:#fbe4e1;':(p.risco==='medio'?'background:#fdf3d8;':'')}">
             <td data-label="Mês">${MESES[p.mes-1]}/${p.ano} ${p.risco==='alto'?'🔴':(p.risco==='medio'?'🟡':'')}</td>
