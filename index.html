@@ -8980,7 +8980,7 @@ function renderRegistros(){
     ${list.length===0 ? `<div class="empty-state"><div class="big">🗒️</div>Nenhum lançamento encontrado com esses filtros.</div>
     <div class="registros-rodape registros-rodape-vazio">${rodapePaginacao}</div>` : `
     <div class="table-wrap table-wrap-registros reg-tabela-principal"><table class="tabela-registros">
-      <thead><tr>${renderColunaSelecaoLoteHead('Reg', pageList.map(t=>t.id), UI.regSelecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th>Natureza</th><th>Tipo</th><th>Conta</th><th>Fatura</th><th style="text-align:right;">Valor</th><th class="col-acoes"></th></tr></thead>
+      <thead><tr>${renderColunaSelecaoLoteHead('Reg', pageList.map(t=>t.id), UI.regSelecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th>Natureza</th><th>Tipo</th><th>Conta</th><th>Fatura</th><th style="text-align:right;">Valor</th><th class="col-acoes">Ações</th></tr></thead>
       <tbody>
         ${pageList.map(t=>`
           <tr>
@@ -10317,7 +10317,7 @@ function renderDuplicarMesesModal(){
         <div class="field-section-label" style="margin-top:14px;">Prévia dos lançamentos que serão criados (${qtd})</div>
         <div class="table-wrap" style="max-height:none;overflow:visible;">
           <table>
-            <thead><tr><th>#</th><th>Data</th><th style="text-align:right;">Valor</th><th></th><th class="col-acoes"></th></tr></thead>
+            <thead><tr><th>#</th><th>Data</th><th style="text-align:right;">Valor</th><th></th><th class="col-acoes">Ações</th></tr></thead>
             <tbody>
               ${pageList.map(o=>`
                 <tr ${o.duplicado?'style="background:#fff3ea;"':''}>
@@ -10412,7 +10412,7 @@ function renderMetas(){
     ${r.lista.length===0 ? `<div class="empty-state"><div class="big">🎯</div>Nenhuma meta cadastrada para este mês. Use "+ Nova meta" para começar.</div>` : `
     <div class="chart-box" style="height:${alturaBarra}px;margin-top:14px;"><canvas id="chartMetas"></canvas></div>
     <div class="table-wrap" style="margin-top:16px;"><table class="tabela-cards-mobile">
-      <thead><tr><th>Grupo</th><th>Categoria</th><th>Subcategoria</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Saldo</th><th>% Utilizado</th><th>Período</th><th>Situação</th><th class="col-acoes"></th></tr></thead>
+      <thead><tr><th>Grupo</th><th>Categoria</th><th>Subcategoria</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Saldo</th><th>% Utilizado</th><th>Período</th><th>Situação</th><th class="col-acoes">Ações</th></tr></thead>
       <tbody>
       ${r.lista.map(m=>{
         const info = SITUACAO_META_INFO[m.situacao];
@@ -11088,7 +11088,7 @@ function renderBackupModal(){
           !msalConta ? `<div class="empty-state"><div class="big">☁️</div>Conecte-se ao OneDrive para ver o histórico de versões.</div>` :
           !m.backups || m.backups.length===0 ? `<div class="empty-state"><div class="big">🗄️</div>Nenhum backup encontrado nesta pasta ainda.</div>` : `
         <div class="table-wrap" style="max-height:420px;"><table class="tabela-cards-mobile">
-          <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Arquivo</th><th style="text-align:right;">Tamanho</th><th style="text-align:right;">Registros</th><th style="text-align:center;">Integridade</th><th class="col-acoes"></th></tr></thead>
+          <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Arquivo</th><th style="text-align:right;">Tamanho</th><th style="text-align:right;">Registros</th><th style="text-align:center;">Integridade</th><th class="col-acoes">Ações</th></tr></thead>
           <tbody>
             ${m.backups.map(b=>`<tr>
               <td data-label="Data/Hora" style="white-space:nowrap;">${formatarDataHoraCurta(b.criadoEm)}</td>
@@ -11562,7 +11562,7 @@ function renderImportStep3(){
     ${qtdProvaveis>0?`<b>${qtdProvaveis}</b> lançamento(s) têm valor parecido com algo já registrado em data próxima — revise antes de confirmar.`:''}
   </div>` : ''}
   <div class="table-wrap" style="max-height:380px;"><table class="tabela-cards-mobile tabela-import-revisao">
-    <thead><tr><th>Importar</th><th>Status</th><th>Data</th><th>Descrição</th><th style="text-align:right;">Valor</th><th>Tipo</th><th>Subcategoria</th><th>Conta</th><th>Pgto</th><th>Parcela</th><th>Responsável</th><th>Interna</th><th class="col-acoes"></th></tr></thead>
+    <thead><tr><th>Importar</th><th>Status</th><th>Data</th><th>Descrição</th><th style="text-align:right;">Valor</th><th>Tipo</th><th>Subcategoria</th><th>Conta</th><th>Pgto</th><th>Parcela</th><th>Responsável</th><th>Interna</th><th class="col-acoes">Ações</th></tr></thead>
     <tbody>
     ${UI.importParsed.map((r,i)=>`
       <tr style="${r.duplicata==='exata'?'background:#fbe7e4;':(r.duplicata==='provavel'?'background:#fff4de;':'')}">
