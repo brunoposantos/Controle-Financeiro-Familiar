@@ -6204,7 +6204,7 @@ function renderExtratoContaModal(){
         ${det.itens.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itensFiltrados.length>0)}
-          <div class="toolbar-modal-padrao-filtros filtros-barra">
+          <div class="toolbar-modal-padrao-filtros">
             ${renderBarraFiltrosPadrao(f, 'Extrato', [
               {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:g}))]},
               {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
@@ -6317,7 +6317,7 @@ function renderFuturosContaModal(){
         ${futuros.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, futurosFiltrados.length>0)}
-          <div class="toolbar-modal-padrao-filtros filtros-barra">
+          <div class="toolbar-modal-padrao-filtros">
             ${renderBarraFiltrosPadrao(f, 'Futuros', [
               {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
             ])}
@@ -9010,7 +9010,7 @@ function renderFaturaAtualModal(){
         ${det.itens.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itensFiltrados.length>0)}
-          <div class="toolbar-modal-padrao-filtros filtros-barra">
+          <div class="toolbar-modal-padrao-filtros">
             ${renderBarraFiltrosPadrao(f, 'Fatura', [
               {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
               {campo:'parcela', label:'Parcela', options:[{value:'parcelado',label:'Parcelado'},{value:'avista',label:'À vista'}]},
@@ -9126,7 +9126,7 @@ function renderProjecaoFaturaModal(){
         ${itensBase.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itens.length>0)}
-          <div class="toolbar-modal-padrao-filtros filtros-barra">
+          <div class="toolbar-modal-padrao-filtros">
             ${renderBarraFiltrosPadrao(f, 'Projecao', [
               {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
               {campo:'parcela', label:'Parcela', options:[{value:'parcelado',label:'Parcelado'},{value:'avista',label:'À vista'}]},
