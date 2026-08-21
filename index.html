@@ -563,10 +563,15 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 .mc-dia-header{font-size:10px;text-align:center;color:#8393ac;font-weight:600;font-family:var(--mono);}
 .mc-mes-label{font-size:11.5px;font-weight:700;color:var(--navy-800);white-space:nowrap;padding-right:10px;font-family:var(--mono);}
 /* Destaque do mês atual (item do requisito: diferenciação visual efetiva, não só a posição da linha) —
-   reaproveita o mesmo selo dourado (.badge-count) já usado em todo o app para "contagem/estado atual" em
-   vez de inventar um novo padrão visual; não toca em .mc-cel, então nunca interfere na escala de
-   intensidade das próprias células. */
-.mc-mes-label-atual{background:var(--gold);color:var(--navy-950);border-radius:20px;padding:1px 8px;}
+   reaproveita o mesmo selo dourado (.badge-count) já usado em todo o app para "contagem/estado atual" no
+   rótulo do mês (.mc-mes-label-atual), e soma bordas superior/inferior em CADA célula da linha
+   (.mc-cel-mes-atual) — o grid não tem um wrapper por linha (cada célula é um item solto), então a borda
+   de cada célula se alinha perfeitamente com a das vizinhas, formando uma linha contínua. margin:3px 0 cria
+   o espaçamento vertical real pedido entre essa borda e as linhas adjacentes (soma ao gap padrão do grid,
+   nunca fica encostada/sobreposta) — só mexe em border/margin, nunca em background, então não altera a
+   intensidade das células nem os valores exibidos. */
+.mc-mes-label-atual{background:var(--gold);color:var(--navy-950);border-radius:20px;padding:1px 8px;border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);margin:3px 0;}
+.mc-cel-mes-atual{border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);margin:3px 0;}
 .mc-cel{aspect-ratio:1;border-radius:3px;background:var(--navy-50);min-width:16px;cursor:default;transition:background-color .35s ease,transform .12s ease,box-shadow .12s ease;}
 .mc-cel-inexistente{background:transparent;}
 /* Item do requisito: célula com lançamentos é clicável, sem precisar de botão extra — cursor + leve
@@ -586,6 +591,7 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
   .mc-grid{min-width:520px;gap:2px;}
   .mc-cel{min-width:13px;}
   .mc-mes-label{font-size:10.5px;padding-right:6px;}
+  .mc-cel-mes-atual, .mc-mes-label-atual{margin:2px 0;}
   .mc-dia-header{font-size:9px;}
   .mc-cel-clicavel:hover{transform:none;box-shadow:none;}
 }
@@ -988,6 +994,12 @@ tbody tr:hover{background:var(--navy-50);}
    compacta os espaçamentos internos (sem alterar os componentes originais, usados em outras telas) para
    caber mais conteúdo sem rolagem em resoluções comuns de notebook/desktop. */
 .modal-fatura-cartao{ width:min(1280px, 96vw); }
+/* Modal do Mapa de Calor de Despesas: mesmo padrão de largura responsiva já usado pelos modais de Cartões
+   acima (.modal-fatura-cartao) — teto de 1280px no desktop, encolhe em telas menores (sempre dentro do
+   teto global .modal{max-width:96vw}), sempre centralizado (herda o próprio .overlay). No mobile, a media
+   query global de modal (≤700px) já assume o modal quase em tela cheia — nenhuma regra extra necessária. */
+.modal-mapa-calor{ width:min(1280px, 96vw); }
+.modal-mapa-calor .cartoes-resumo-grid{ margin-bottom:10px; }
 .modal-fatura-cartao .modal-body{ padding:12px 18px 14px; }
 .modal-fatura-cartao .fatura-digital-head{ padding:10px 14px; }
 .modal-fatura-cartao .fatura-digital-head-info{ margin-top:8px; padding-top:8px; }
@@ -7721,11 +7733,12 @@ function renderMapaCalorDespesas(){
         <div class="mc-mes-label ${l.ehMesAtual?'mc-mes-label-atual':''}" title="Total do mês: ${fmtBRL(l.total)}${l.ehMesAtual?' (mês atual)':''}">${MESES[l.mes-1].slice(0,3)}/${String(l.ano).slice(2)}</div>
         ${diasHeader.map(d=>{
           const key = `${l.ano}-${l.mes}-${d}`;
-          if(d>l.diasNoMes) return `<div class="mc-cel mc-cel-inexistente" data-mc-key="${key}"></div>`;
+          const classeMesAtual = l.ehMesAtual ? ' mc-cel-mes-atual' : '';
+          if(d>l.diasNoMes) return `<div class="mc-cel mc-cel-inexistente${classeMesAtual}" data-mc-key="${key}"></div>`;
           const v = l.porDia[d]||0;
           const qtd = l.qtdPorDia[d]||0;
           const titulo = `${pad2(d)}/${pad2(l.mes)}/${l.ano} · ${fmtBRL(v)} · ${qtd} lançamento${qtd===1?'':'s'}`;
-          return `<div class="mc-cel ${v>0?'mc-cel-clicavel':''}" data-mc-key="${key}" ${v>0?`data-mc-dia="${l.ano}-${l.mes}-${d}" tabindex="0" role="button" aria-label="${escapeHtml(titulo)}"`:''} style="${corIntensidadeDespesa(v, maxValorDia)}" title="${escapeHtml(titulo)}"></div>`;
+          return `<div class="mc-cel${classeMesAtual} ${v>0?'mc-cel-clicavel':''}" data-mc-key="${key}" ${v>0?`data-mc-dia="${l.ano}-${l.mes}-${d}" tabindex="0" role="button" aria-label="${escapeHtml(titulo)}"`:''} style="${corIntensidadeDespesa(v, maxValorDia)}" title="${escapeHtml(titulo)}"></div>`;
         }).join('')}`).join('')}
       </div>
     </div>
@@ -7829,7 +7842,7 @@ function renderMapaCalorDiaModal(){
   const rodapePaginacaoMapaCalor = renderRodapePaginacaoGenerica(itensFiltrados.length, mcPorPagina, UI.mapaCalorDiaModal.pagina, mcTotalPaginas, mcInicioIdx, mcFimIdx, { selectId:'mapaCalorPorPagina', dataAttr:'mapa-calor-pagina', unidade:'lançamentos' });
   return `
   <div class="overlay" id="ovMapaCalorDia" ${attrZIndexModal('mapaCalorDiaModal')}>
-    <div class="modal">
+    <div class="modal modal-mapa-calor">
       <div class="modal-head"><h3>🔥 Despesas de ${pad2(dia)}/${pad2(mes)}/${ano}</h3><button class="close-x" id="closeMapaCalorDia">✕</button></div>
       <div class="modal-body">
         <div class="cartoes-resumo-grid" style="margin-bottom:14px;">
