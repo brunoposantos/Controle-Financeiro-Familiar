@@ -997,7 +997,14 @@ tbody tr:hover{background:var(--navy-50);}
 /* Modal do Mapa de Calor de Despesas: mesmo padrão de largura responsiva já usado pelos modais de Cartões
    acima (.modal-fatura-cartao) — teto de 1280px no desktop, encolhe em telas menores (sempre dentro do
    teto global .modal{max-width:96vw}), sempre centralizado (herda o próprio .overlay). No mobile, a media
-   query global de modal (≤700px) já assume o modal quase em tela cheia — nenhuma regra extra necessária. */
+   query global de modal (≤700px) já assume o modal quase em tela cheia — nenhuma regra extra necessária.
+   IMPORTANTE: como .modal e .modal-mapa-calor têm a MESMA especificidade CSS (uma classe cada), quem vier
+   depois no arquivo vence — e .modal{width:100%} vem depois desta regra, então ela sozinha NÃO bastava
+   (mesmo bug seria latente em .modal-fatura-cartao, se não fosse pelo style="width:1280px" inline que os 4
+   modais de Cartões sempre carregam junto). Por isso o markup também grava style="width:1280px" inline
+   (que sempre vence, independente de ordem) — a regra de classe abaixo fica como documentação/reforço, mas
+   quem efetivamente fixa a largura é o inline; max-width:96vw (herdado de .modal) continua garantindo o
+   encolhimento em telas menores mesmo com o inline. */
 .modal-mapa-calor{ width:min(1280px, 96vw); }
 .modal-mapa-calor .cartoes-resumo-grid{ margin-bottom:10px; }
 .modal-fatura-cartao .modal-body{ padding:12px 18px 14px; }
@@ -7842,7 +7849,7 @@ function renderMapaCalorDiaModal(){
   const rodapePaginacaoMapaCalor = renderRodapePaginacaoGenerica(itensFiltrados.length, mcPorPagina, UI.mapaCalorDiaModal.pagina, mcTotalPaginas, mcInicioIdx, mcFimIdx, { selectId:'mapaCalorPorPagina', dataAttr:'mapa-calor-pagina', unidade:'lançamentos' });
   return `
   <div class="overlay" id="ovMapaCalorDia" ${attrZIndexModal('mapaCalorDiaModal')}>
-    <div class="modal modal-mapa-calor">
+    <div class="modal modal-mapa-calor" style="width:1280px;">
       <div class="modal-head"><h3>🔥 Despesas de ${pad2(dia)}/${pad2(mes)}/${ano}</h3><button class="close-x" id="closeMapaCalorDia">✕</button></div>
       <div class="modal-body">
         <div class="cartoes-resumo-grid" style="margin-bottom:14px;">
