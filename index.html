@@ -906,6 +906,12 @@ tbody tr:hover{background:var(--navy-50);}
    linha: mesma técnica de flex-basis:0 usada em Registros (itens 10/11) para os 3 caberem sem quebrar. */
 @media(max-width:700px){
   .toolbar-modal-padrao{ flex-wrap:wrap; gap:8px; }
+  /* Botão "Filtros" (item do requisito: mesmo comportamento de Registros — um botão que abre a folha
+     inferior com os campos) ocupa sua própria linha, acima de Verificar duplicidade/Busca — flex-basis:100%
+     força a quebra de linha (mesma técnica já usada nesta sessão), então nunca fica espremido junto dos
+     outros dois botões daquela linha. Quando a folha está fechada, .toolbar-modal-padrao-filtros vira
+     display:none (ver .filtros-barra) e não ocupa espaço nenhum. */
+  .filtros-mobile-toggle{ order:1; flex:1 1 100%; text-align:left; }
   .toolbar-modal-padrao-filtros{ order:1; flex:1 1 100%; }
   /* "Verificar duplicidade" (único botão que sobra aqui, já que "+ Novo Lançamento" virou FAB) não pode
      tomar mais da metade da linha, senão o campo de busca fica espremido a quase 0px — largura travada em
@@ -6157,6 +6163,14 @@ function renderExtratoContaModal(){
   const saidasFiltradas = itensFiltrados.filter(t=>t.tipo==='Despesa' && !ehSaldoAnterior(t)).reduce((s,t)=>s+(Number(t.valor)||0),0);
   const saldoFinalFiltrado = det.saldoInicial + entradasFiltradas - saidasFiltradas;
   const filtrosAtivos = filtrosPadraoAtivos(f, [{campo:'grupo'},{campo:'tipo'}]) || !!fBusca.trim();
+  // Filtros do mobile funcionam como em Registros (item do requisito): um único botão "Filtros" abre uma
+  // folha inferior com os campos — camposFiltroExtrato/qtdAtivosExtrato hoisted para servir tanto o badge
+  // do botão quanto renderBarraFiltrosPadrao, sem duplicar a lista de campos.
+  const camposFiltroExtrato = [
+    {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:g}))]},
+    {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
+  ];
+  const qtdAtivosExtrato = contarFiltrosPadraoAtivos(f, camposFiltroExtrato);
   // Paginação da tabela — mesmo padrão/componente da tabela de Registros (ver
   // renderRodapePaginacaoGenerica), evita rolagem interna limitando a quantidade de linhas por página.
   const extPorPagina = UI.extratoContaModal.porPagina;
@@ -6204,13 +6218,14 @@ function renderExtratoContaModal(){
         ${det.itens.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itensFiltrados.length>0)}
-          <div class="toolbar-modal-padrao-filtros">
-            ${renderBarraFiltrosPadrao(f, 'Extrato', [
-              {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:g}))]},
-              {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
-            ])}
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileExtrato" title="Filtros">🔍 Filtros${qtdAtivosExtrato>0?` <span class="filtros-mobile-badge">${qtdAtivosExtrato}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Extrato'?'aberto-mobile':''}">
+            <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileExtrato" title="Fechar">✕</button></div>
+            ${renderBarraFiltrosPadrao(f, 'Extrato', camposFiltroExtrato)}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosExtrato">✕ Limpar filtros</button>` : ''}
+            <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileExtrato">Aplicar</button></div>
           </div>
+          ${UI.filtrosMobileAberto==='Extrato' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropExtrato"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="extratoBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
             <button class="btn btn-primary btn-sm" id="btnBuscarExtrato" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
@@ -6277,6 +6292,10 @@ function renderFuturosContaModal(){
   const efeitoFiltrado = futurosFiltrados.reduce((s,t)=> s + (t.tipo==='Receita' ? (Number(t.valor)||0) : -(Number(t.valor)||0)), 0);
   const saldoProjetadoFiltrado = saldoAtual + efeitoFiltrado;
   const filtrosAtivos = filtrosPadraoAtivos(f, [{campo:'tipo'}]) || !!fBusca.trim();
+  const camposFiltroFuturos = [
+    {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
+  ];
+  const qtdAtivosFuturos = contarFiltrosPadraoAtivos(f, camposFiltroFuturos);
   // Paginação da tabela — mesmo componente/padrão usado no modal Ver Extrato e na tabela de Registros
   // (ver renderRodapePaginacaoGenerica).
   const futPorPagina = UI.futurosContaModal.porPagina;
@@ -6317,12 +6336,14 @@ function renderFuturosContaModal(){
         ${futuros.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, futurosFiltrados.length>0)}
-          <div class="toolbar-modal-padrao-filtros">
-            ${renderBarraFiltrosPadrao(f, 'Futuros', [
-              {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
-            ])}
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileFuturos" title="Filtros">🔍 Filtros${qtdAtivosFuturos>0?` <span class="filtros-mobile-badge">${qtdAtivosFuturos}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Futuros'?'aberto-mobile':''}">
+            <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFuturos" title="Fechar">✕</button></div>
+            ${renderBarraFiltrosPadrao(f, 'Futuros', camposFiltroFuturos)}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFuturos">✕ Limpar filtros</button>` : ''}
+            <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileFuturos">Aplicar</button></div>
           </div>
+          ${UI.filtrosMobileAberto==='Futuros' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFuturos"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="futurosBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
             <button class="btn btn-primary btn-sm" id="btnBuscarFuturos" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
@@ -8151,6 +8172,21 @@ function bindFiltrosPadrao(f, prefixo, campos, onChange){
 function renderBarraFiltrosPadrao(f, prefixo, campos){
   return `${renderFiltroDataRange(f, prefixo)}${campos.map(c=>renderFiltroMultiSelect(f, prefixo, c.campo, c.label, c.options)).join('')}`;
 }
+/* Filtros no mobile funcionam como na aba Registros: um único botão "Filtros" (id btnFiltrosMobile<prefixo>)
+   abre a mesma folha inferior (.filtros-barra/.aberto-mobile) usada em Registros — fechar pelo X, pelo
+   fundo escurecido (backdrop) ou pelo botão "Aplicar" faz a mesma coisa (UI.filtrosMobileAberto=null),
+   já que os filtros em si já aplicam na hora via bindFiltrosPadrao; "Aplicar" só existe para dar ao usuário
+   uma forma explícita de fechar a folha depois de ajustar os filtros. Função genérica reutilizada pelos 4
+   modais de lançamento (Extrato/Futuros/Fatura/Projeção) para não duplicar essa lógica de abrir/fechar 4
+   vezes — nenhum modal cria seu próprio mecanismo paralelo. */
+function bindFiltrosMobileToggle(prefixo){
+  document.getElementById(`btnFiltrosMobile${prefixo}`)?.addEventListener('click', ()=>{
+    UI.filtrosMobileAberto = UI.filtrosMobileAberto===prefixo ? null : prefixo; render();
+  });
+  document.getElementById(`filtrosMobileBackdrop${prefixo}`)?.addEventListener('click', ()=>{ UI.filtrosMobileAberto = null; render(); });
+  document.getElementById(`btnFecharFiltrosMobile${prefixo}`)?.addEventListener('click', ()=>{ UI.filtrosMobileAberto = null; render(); });
+  document.getElementById(`btnAplicarFiltrosMobile${prefixo}`)?.addEventListener('click', ()=>{ UI.filtrosMobileAberto = null; render(); });
+}
 /* ---------- Seleção em lote (checkbox + barra de ações contextual) ----------
    Motor genérico reutilizado pelas 4 tabelas de lançamentos com esse recurso: Ver Fatura, Ver Próximas
    Faturas, Ver Extrato e Ver Lançamentos futuros. Cada modal guarda seu próprio Set de ids selecionados em
@@ -8973,6 +9009,11 @@ function renderFaturaAtualModal(){
   const totalAvistaFiltrado = itensFiltrados.filter(t=>t.tipo==='Despesa' && !(Number(t.totalParcelas)>1)).reduce((s,t)=>s+(Number(t.valor)||0),0);
   const totalCreditosFiltrado = itensFiltrados.filter(t=>t.tipo==='Receita').reduce((s,t)=>s+(Number(t.valor)||0),0);
   const filtrosAtivos = filtrosPadraoAtivos(f, [{campo:'tipo'},{campo:'parcela'}]) || !!fBusca.trim();
+  const camposFiltroFatura = [
+    {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
+    {campo:'parcela', label:'Parcela', options:[{value:'parcelado',label:'Parcelado'},{value:'avista',label:'À vista'}]},
+  ];
+  const qtdAtivosFatura = contarFiltrosPadraoAtivos(f, camposFiltroFatura);
   // Paginação da tabela — mesmo padrão/componente da tabela de Registros/Ver Extrato/Lançamentos futuros
   // (ver renderRodapePaginacaoGenerica), evita rolagem interna limitando a quantidade de linhas por página.
   const fatPorPagina = UI.faturaAtualModal.porPagina;
@@ -9010,13 +9051,14 @@ function renderFaturaAtualModal(){
         ${det.itens.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itensFiltrados.length>0)}
-          <div class="toolbar-modal-padrao-filtros">
-            ${renderBarraFiltrosPadrao(f, 'Fatura', [
-              {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
-              {campo:'parcela', label:'Parcela', options:[{value:'parcelado',label:'Parcelado'},{value:'avista',label:'À vista'}]},
-            ])}
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileFatura" title="Filtros">🔍 Filtros${qtdAtivosFatura>0?` <span class="filtros-mobile-badge">${qtdAtivosFatura}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Fatura'?'aberto-mobile':''}">
+            <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFatura" title="Fechar">✕</button></div>
+            ${renderBarraFiltrosPadrao(f, 'Fatura', camposFiltroFatura)}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFatura">✕ Limpar filtros</button>` : ''}
+            <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileFatura">Aplicar</button></div>
           </div>
+          ${UI.filtrosMobileAberto==='Fatura' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFatura"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="faturaBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
             <button class="btn btn-primary btn-sm" id="btnBuscarFatura" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
@@ -9070,6 +9112,11 @@ function renderProjecaoFaturaModal(){
     itens = itens.filter(t=>(t.descricao||'').toLowerCase().includes(fb));
   }
   const filtrosAtivos = filtrosPadraoAtivos(f, [{campo:'tipo'},{campo:'parcela'}]) || !!fBusca.trim();
+  const camposFiltroProjecao = [
+    {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
+    {campo:'parcela', label:'Parcela', options:[{value:'parcelado',label:'Parcelado'},{value:'avista',label:'À vista'}]},
+  ];
+  const qtdAtivosProjecao = contarFiltrosPadraoAtivos(f, camposFiltroProjecao);
   // Na impressão com uma competência selecionada, o resumo mostrado é o mesmo conjunto de cards do modal
   // "Ver Fatura" (valor total, parceladas, à vista, créditos), recalculado a partir dos itens já filtrados
   // acima (não apenas qtd/qtdParcelas).
@@ -9126,13 +9173,14 @@ function renderProjecaoFaturaModal(){
         ${itensBase.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itens.length>0)}
-          <div class="toolbar-modal-padrao-filtros">
-            ${renderBarraFiltrosPadrao(f, 'Projecao', [
-              {campo:'tipo', label:'Tipo', options:[{value:'Receita',label:'Receita'},{value:'Despesa',label:'Despesa'}]},
-              {campo:'parcela', label:'Parcela', options:[{value:'parcelado',label:'Parcelado'},{value:'avista',label:'À vista'}]},
-            ])}
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileProjecao" title="Filtros">🔍 Filtros${qtdAtivosProjecao>0?` <span class="filtros-mobile-badge">${qtdAtivosProjecao}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Projecao'?'aberto-mobile':''}">
+            <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileProjecao" title="Fechar">✕</button></div>
+            ${renderBarraFiltrosPadrao(f, 'Projecao', camposFiltroProjecao)}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosProjecao">✕ Limpar filtros</button>` : ''}
+            <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileProjecao">Aplicar</button></div>
           </div>
+          ${UI.filtrosMobileAberto==='Projecao' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropProjecao"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="projecaoBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
             <button class="btn btn-primary btn-sm" id="btnBuscarProjecao" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
@@ -12292,6 +12340,7 @@ function bindEvents(){
     UI.projecaoFaturaModal.pagina = 1;
     render();
   });
+  bindFiltrosMobileToggle('Projecao');
   document.querySelectorAll('[data-ver-fatura]').forEach(b=> b.addEventListener('click', ()=>{
     UI.faturaAtualModal = { conta: b.dataset.verFatura, filtros: criarFiltrosPadrao(), busca:'', pagina:1, porPagina:10, selecionados:new Set() }; render();
   }));
@@ -12330,6 +12379,7 @@ function bindEvents(){
     UI.faturaAtualModal.pagina = 1;
     render();
   });
+  bindFiltrosMobileToggle('Fatura');
   document.querySelectorAll('[data-extrato-conta]').forEach(b=> b.addEventListener('click', ()=>{
     UI.extratoContaModal = { conta: b.dataset.extratoConta, filtros: criarFiltrosPadrao(), busca:'', pagina:1, porPagina:10, selecionados:new Set() }; render();
   }));
@@ -12370,6 +12420,7 @@ function bindEvents(){
     UI.extratoContaModal.pagina = 1;
     render();
   });
+  bindFiltrosMobileToggle('Extrato');
   document.querySelectorAll('[data-futuros-conta]').forEach(b=> b.addEventListener('click', ()=>{
     UI.futurosContaModal = { conta: b.dataset.futurosConta, filtros: criarFiltrosPadrao(), busca:'', pagina:1, porPagina:10, selecionados:new Set() }; render();
   }));
@@ -12408,6 +12459,7 @@ function bindEvents(){
     UI.futurosContaModal.pagina = 1;
     render();
   });
+  bindFiltrosMobileToggle('Futuros');
   // Replicação do Contracheque: usa o contracheque atual (mês mais recente já lançado nessa conta) como
   // modelo-base e replica todos os seus lançamentos (receitas, despesas e parcelas de empréstimo) para os
   // meses seguintes, até a última parcela do empréstimo de maior número de parcelas — ver
