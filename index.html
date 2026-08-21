@@ -562,6 +562,11 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 .mc-canto{}
 .mc-dia-header{font-size:10px;text-align:center;color:#8393ac;font-weight:600;font-family:var(--mono);}
 .mc-mes-label{font-size:11.5px;font-weight:700;color:var(--navy-800);white-space:nowrap;padding-right:10px;font-family:var(--mono);}
+/* Destaque do mês atual (item do requisito: diferenciação visual efetiva, não só a posição da linha) —
+   reaproveita o mesmo selo dourado (.badge-count) já usado em todo o app para "contagem/estado atual" em
+   vez de inventar um novo padrão visual; não toca em .mc-cel, então nunca interfere na escala de
+   intensidade das próprias células. */
+.mc-mes-label-atual{background:var(--gold);color:var(--navy-950);border-radius:20px;padding:1px 8px;}
 .mc-cel{aspect-ratio:1;border-radius:3px;background:var(--navy-50);min-width:16px;cursor:default;transition:background-color .35s ease,transform .12s ease,box-shadow .12s ease;}
 .mc-cel-inexistente{background:transparent;}
 /* Item do requisito: célula com lançamentos é clicável, sem precisar de botão extra — cursor + leve
@@ -5017,21 +5022,23 @@ function dataEfetivaMapaCalorDespesa(t){
   }
   return t.data;
 }
-/* Mapa de calor de despesas do Painel Financeiro: uma linha por mês (o mês selecionado no cabeçalho e os
-   anteriores, mesma janela de "últimos N meses" já usada no histórico da Visão Geral), uma coluna por dia
-   do mês — cada célula soma as despesas do orçamento familiar (ehDespesaOrcamento, mesma regra do resto do
-   painel) lançadas naquele dia (ver dataEfetivaMapaCalorDespesa para a data efetiva de cada uma — só muda
-   para parcelas de cartão, nunca para despesas à vista). Não recalcula nada em paralelo: só agrega
-   STATE.transactions por dia, reaproveitando ehDespesaOrcamento já usado no restante do dashboard. */
-function calcMapaCalorDespesas(anoBase, mesBase, qtdMeses){
-  // Item do requisito: meses em ordem decrescente, o mais recente (mês selecionado no cabeçalho) no topo —
-  // por isso .push (não .unshift): o mês base entra primeiro e cada iteração seguinte volta um mês.
+/* Mapa de calor de despesas do Painel Financeiro: SEMPRE 7 linhas — 3 meses posteriores, o mês selecionado
+   no cabeçalho (sempre na 4ª linha/centro) e 3 meses anteriores, em ordem decrescente (mais recente/futuro
+   no topo) — uma coluna por dia do mês. Cada célula soma as despesas do orçamento familiar
+   (ehDespesaOrcamento, mesma regra do resto do painel) lançadas naquele dia (ver
+   dataEfetivaMapaCalorDespesa para a data efetiva de cada uma — só muda para parcelas de cartão, nunca
+   para despesas à vista) e conta quantas transações compõem esse total (qtdPorDia, usado no tooltip). Não
+   recalcula nada em paralelo: só agrega STATE.transactions por dia, reaproveitando ehDespesaOrcamento já
+   usado no restante do dashboard. */
+function calcMapaCalorDespesas(anoBase, mesBase){
   const meses = [];
-  let ano = anoBase, mes = mesBase;
-  for(let i=0;i<qtdMeses;i++){ meses.push({ano,mes}); ({ano,mes} = mesAnterior(ano,mes)); }
+  let am = { ano:anoBase, mes:mesBase };
+  for(let i=0;i<3;i++) am = proximoMes(am.ano, am.mes);
+  for(let i=0;i<7;i++){ meses.push(am); am = mesAnterior(am.ano, am.mes); }
   const linhas = meses.map(({ano,mes})=>{
     const diasNoMes = new Date(ano, mes, 0).getDate();
     const porDia = Array(diasNoMes+1).fill(0); // índice 1..diasNoMes (índice 0 não usado)
+    const qtdPorDia = Array(diasNoMes+1).fill(0);
     STATE.transactions.forEach(t=>{
       if(!ehDespesaOrcamento(t)) return;
       const dataEfetiva = dataEfetivaMapaCalorDespesa(t);
@@ -5039,8 +5046,10 @@ function calcMapaCalorDespesas(anoBase, mesBase, qtdMeses){
       const d = new Date(dataEfetiva+'T00:00:00');
       if(d.getFullYear()!==ano || (d.getMonth()+1)!==mes) return;
       porDia[d.getDate()] += Number(t.valor)||0;
+      qtdPorDia[d.getDate()] += 1;
     });
-    return { ano, mes, diasNoMes, porDia, total: porDia.reduce((s,v)=>s+v,0) };
+    const ehMesAtual = ano===anoBase && mes===mesBase;
+    return { ano, mes, diasNoMes, porDia, qtdPorDia, total: porDia.reduce((s,v)=>s+v,0), ehMesAtual };
   });
   const maxValorDia = Math.max(0, ...linhas.flatMap(l=>l.porDia.slice(1)));
   const maxDiasNoMes = Math.max(...linhas.map(l=>l.diasNoMes));
@@ -7684,35 +7693,38 @@ function renderTab(){
 
 /* ---------- DASHBOARD ---------- */
 /* Painel "Mapa de Calor de Despesas" (item do requisito) — fica ACIMA do painel "Visão geral" dentro do
-   Painel Financeiro. Linhas = meses (o mês selecionado no cabeçalho + os 5 anteriores, mesma janela de
-   "últimos 6 meses" já usada no histórico da Visão Geral — dimensão tempo×intensidade sugerida no
-   requisito, para revelar concentração de gastos, picos recorrentes e sazonalidade de forma mais rápida do
-   que meses lado a lado); colunas = dias do mês. Usa só calcMapaCalorDespesas/corIntensidadeDespesa (dados
-   já existentes em STATE.transactions, mesma regra de "despesa do orçamento" do resto do painel) — nenhum
-   cálculo paralelo. Cabe em telas estreitas via rolagem horizontal própria (.mc-scroll), sem forçar a
-   página inteira a rolar de lado (mesma técnica já usada nas tabelas largas de Cartões/Registros). */
+   Painel Financeiro. Linhas = SEMPRE 7 meses (3 posteriores + o mês selecionado no cabeçalho, sempre na 4ª
+   linha/centro, com destaque visual via .mc-mes-label-atual + 3 anteriores — ver calcMapaCalorDespesas);
+   colunas = dias do mês. Usa só calcMapaCalorDespesas/corIntensidadeDespesa (dados já existentes em
+   STATE.transactions, mesma regra de "despesa do orçamento" do resto do painel) — nenhum cálculo paralelo.
+   Cabe em telas estreitas via rolagem horizontal própria (.mc-scroll), sem forçar a página inteira a rolar
+   de lado (mesma técnica já usada nas tabelas largas de Cartões/Registros). */
 function renderMapaCalorDespesas(){
-  const { linhas, maxValorDia, maxDiasNoMes } = calcMapaCalorDespesas(UI.ano, UI.mes, 6);
+  const { linhas, maxValorDia, maxDiasNoMes } = calcMapaCalorDespesas(UI.ano, UI.mes);
   const diasHeader = Array.from({length:maxDiasNoMes}, (_,i)=>i+1);
   // Item do requisito: toda célula com lançamentos é clicável (abre o modal de transações do dia) — sem
   // botão adicional, o próprio toque/clique na célula já basta, com cursor/estado visual indicando que é
-  // interativa (.mc-cel-clicavel), consistente com o resto do app (hover no desktop, toque no mobile).
+  // interativa (.mc-cel-clicavel), consistente com o resto do app (hover no desktop, toque no mobile). O
+  // tooltip (title nativo) traz exatamente 3 informações — data · total · quantidade de lançamentos —,
+  // igual em toda célula (inclusive sem despesas, com total R$ 0,00 e 0 lançamentos); no mobile, sem hover,
+  // o toque já abre o modal diretamente (mesmo elemento/handler, sem depender do tooltip).
   return `
   <div class="panel" id="painelMapaCalorDespesas">
     <h2>🔥 Mapa de Calor de Despesas</h2>
-    <p class="hint" style="margin:0 0 12px;">Intensidade da cor é proporcional ao total de despesas lançadas em cada dia — quanto mais forte o vermelho, maior o gasto naquele dia. Clique num dia com despesas para ver os lançamentos. Últimos 6 meses até ${MESES[UI.mes-1]}/${UI.ano}.</p>
+    <p class="hint" style="margin:0 0 12px;">Intensidade da cor é proporcional ao total de despesas lançadas em cada dia — quanto mais forte o vermelho, maior o gasto naquele dia. Clique num dia com despesas para ver os lançamentos. 3 meses antes e 3 meses depois de ${MESES[UI.mes-1]}/${UI.ano}, o mês atual, destacado abaixo.</p>
     ${maxValorDia<=0 ? `<div class="empty-state"><div class="big">🔥</div>Nenhuma despesa lançada no período para montar o mapa de calor.</div>` : `
     <div class="mc-scroll">
       <div class="mc-grid" style="grid-template-columns:64px repeat(${maxDiasNoMes},1fr);">
         <div class="mc-canto"></div>
         ${diasHeader.map(d=>`<div class="mc-dia-header">${d}</div>`).join('')}
         ${linhas.map(l=>`
-        <div class="mc-mes-label" title="Total do mês: ${fmtBRL(l.total)}">${MESES[l.mes-1].slice(0,3)}/${String(l.ano).slice(2)}</div>
+        <div class="mc-mes-label ${l.ehMesAtual?'mc-mes-label-atual':''}" title="Total do mês: ${fmtBRL(l.total)}${l.ehMesAtual?' (mês atual)':''}">${MESES[l.mes-1].slice(0,3)}/${String(l.ano).slice(2)}</div>
         ${diasHeader.map(d=>{
           const key = `${l.ano}-${l.mes}-${d}`;
           if(d>l.diasNoMes) return `<div class="mc-cel mc-cel-inexistente" data-mc-key="${key}"></div>`;
           const v = l.porDia[d]||0;
-          const titulo = `${pad2(d)}/${pad2(l.mes)}/${l.ano} — ${v>0?fmtBRL(v):'sem despesas'}`;
+          const qtd = l.qtdPorDia[d]||0;
+          const titulo = `${pad2(d)}/${pad2(l.mes)}/${l.ano} · ${fmtBRL(v)} · ${qtd} lançamento${qtd===1?'':'s'}`;
           return `<div class="mc-cel ${v>0?'mc-cel-clicavel':''}" data-mc-key="${key}" ${v>0?`data-mc-dia="${l.ano}-${l.mes}-${d}" tabindex="0" role="button" aria-label="${escapeHtml(titulo)}"`:''} style="${corIntensidadeDespesa(v, maxValorDia)}" title="${escapeHtml(titulo)}"></div>`;
         }).join('')}`).join('')}
       </div>
@@ -7778,18 +7790,18 @@ function renderMapaCalorDiaModal(){
     .filter(t=> ehDespesaOrcamento(t) && dataEfetivaMapaCalorDespesa(t)===dataISO)
     .sort((a,b)=> (Number(b.valor)||0)-(Number(a.valor)||0));
   // Filtros/edição em lote/ações reaproveitam EXATAMENTE o mesmo motor genérico usado em Ver Extrato/
-  // Lançamentos futuros/Ver Fatura (bindFiltrosPadrao, renderBarraFiltrosPadrao, renderBarraAcoesLote,
+  // Lançamentos futuros/Ver Fatura (bindFiltroMultiSelect, renderFiltroMultiSelect, renderBarraAcoesLote,
   // abrirEdicaoLote, data-edit/data-duplicar/data-del) — nenhuma lógica paralela criada para este modal.
-  // Grupo e Conta são os únicos campos com precedente de filtro multi-seleção já usado em outras telas;
-  // como este é um recorte de UM dia, o filtro de Data (sempre incluso por renderBarraFiltrosPadrao) fica
-  // disponível mas normalmente não altera nada.
+  // SEM filtro de Data: como o modal já é um recorte de UM único dia (aberto a partir de uma célula
+  // específica do mapa), um seletor de período não faz sentido aqui — diferente de Extrato/Futuros, este
+  // modal NÃO chama renderBarraFiltrosPadrao/bindFiltrosPadrao (que sempre incluem o filtro de Data);
+  // Grupo e Conta continuam com o mesmo motor genérico de seleção múltipla usado no resto do app.
   const f = UI.mapaCalorDiaModal.filtros;
   const fBusca = UI.mapaCalorDiaModal.busca || '';
   const gruposUsados = Array.from(new Set(itensBase.filter(t=>t.grupo).map(t=>t.grupo))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
   const temSemGrupo = itensBase.some(t=>!t.grupo);
   const contasUsadas = Array.from(new Set(itensBase.filter(t=>t.conta).map(t=>t.conta))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
-  let itensFiltrados = itensBase.filter(t=> passaFiltroData(dataEfetivaMapaCalorDespesa(t), f)
-    && passaFiltroMultiSel(f.grupo, t.grupo || '__sem_grupo__')
+  let itensFiltrados = itensBase.filter(t=> passaFiltroMultiSel(f.grupo, t.grupo || '__sem_grupo__')
     && passaFiltroMultiSel(f.conta, t.conta));
   if(fBusca.trim()){
     const fb = fBusca.trim().toLowerCase();
@@ -7800,12 +7812,24 @@ function renderMapaCalorDiaModal(){
     {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:g}))]},
     {campo:'conta', label:'Conta', options:contasUsadas.map(c=>({value:c,label:c}))},
   ];
-  const filtrosAtivos = filtrosPadraoAtivos(f, camposFiltroMapaCalor) || !!fBusca.trim();
-  const qtdAtivosMapaCalor = contarFiltrosPadraoAtivos(f, camposFiltroMapaCalor);
+  const filtrosAtivos = camposFiltroMapaCalor.some(c=>f[c.campo].size>0) || !!fBusca.trim();
+  const qtdAtivosMapaCalor = camposFiltroMapaCalor.filter(c=>f[c.campo].size>0).length;
   const idsFiltrados = itensFiltrados.map(t=>t.id);
+  // Paginação — mesmo componente/lógica já usados em Ver Extrato/Lançamentos futuros (ver
+  // renderRodapePaginacaoGenerica), 10 por página por padrão; trocar de página não fecha o modal nem
+  // altera ano/mes/dia (UI.mapaCalorDiaModal.pagina é um campo independente do recorte de data).
+  const mcPorPagina = UI.mapaCalorDiaModal.porPagina;
+  const mcTotalPaginas = mcPorPagina==='TODOS' ? 1 : Math.max(1, Math.ceil(itensFiltrados.length/mcPorPagina));
+  if(UI.mapaCalorDiaModal.pagina>mcTotalPaginas) UI.mapaCalorDiaModal.pagina = mcTotalPaginas;
+  if(UI.mapaCalorDiaModal.pagina<1) UI.mapaCalorDiaModal.pagina = 1;
+  const mcInicioIdx = mcPorPagina==='TODOS' ? 0 : (UI.mapaCalorDiaModal.pagina-1)*mcPorPagina;
+  const mcFimIdx = mcPorPagina==='TODOS' ? itensFiltrados.length : Math.min(mcInicioIdx+mcPorPagina, itensFiltrados.length);
+  const itensPagina = itensFiltrados.slice(mcInicioIdx, mcFimIdx);
+  const idsPagina = itensPagina.map(t=>t.id);
+  const rodapePaginacaoMapaCalor = renderRodapePaginacaoGenerica(itensFiltrados.length, mcPorPagina, UI.mapaCalorDiaModal.pagina, mcTotalPaginas, mcInicioIdx, mcFimIdx, { selectId:'mapaCalorPorPagina', dataAttr:'mapa-calor-pagina', unidade:'lançamentos' });
   return `
   <div class="overlay" id="ovMapaCalorDia" ${attrZIndexModal('mapaCalorDiaModal')}>
-    <div class="modal" style="width:1280px;">
+    <div class="modal">
       <div class="modal-head"><h3>🔥 Despesas de ${pad2(dia)}/${pad2(mes)}/${ano}</h3><button class="close-x" id="closeMapaCalorDia">✕</button></div>
       <div class="modal-body">
         <div class="cartoes-resumo-grid" style="margin-bottom:14px;">
@@ -7817,7 +7841,7 @@ function renderMapaCalorDiaModal(){
           <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileMapaCalor" title="Filtros">🔍 Filtros${qtdAtivosMapaCalor>0?` <span class="filtros-mobile-badge">${qtdAtivosMapaCalor}</span>`:''}</button>
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='MapaCalor'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileMapaCalor" title="Fechar">✕</button></div>
-            ${renderBarraFiltrosPadrao(f, 'MapaCalor', camposFiltroMapaCalor)}
+            ${camposFiltroMapaCalor.map(c=>renderFiltroMultiSelect(f, 'MapaCalor', c.campo, c.label, c.options)).join('')}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosMapaCalor">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileMapaCalor">Aplicar</button></div>
           </div>
@@ -7828,10 +7852,10 @@ function renderMapaCalorDiaModal(){
           </div>
         </div>
         ${itensFiltrados.length ? `
-        <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, idsFiltrados, idsFiltrados)}</div>
+        <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, idsPagina, idsFiltrados)}</div>
         <div class="table-wrap table-wrap-registros reg-tabela-principal" style="margin-top:14px;"><table>
-          <thead><tr>${renderColunaSelecaoLoteHead('MapaCalor', idsFiltrados, UI.mapaCalorDiaModal.selecionados)}<th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Conta</th><th style="text-align:right;">Valor</th><th class="no-print">Ações</th></tr></thead>
-          <tbody>${itensFiltrados.map(t=>`<tr>
+          <thead><tr>${renderColunaSelecaoLoteHead('MapaCalor', idsPagina, UI.mapaCalorDiaModal.selecionados)}<th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Conta</th><th style="text-align:right;">Valor</th><th class="no-print">Ações</th></tr></thead>
+          <tbody>${itensPagina.map(t=>`<tr>
             ${renderColunaSelecaoLoteLinha('MapaCalor', t.id, UI.mapaCalorDiaModal.selecionados)}
             <td>
               <div class="reg-descricao-texto">${escapeHtml(t.descricao)}</div>
@@ -7848,11 +7872,12 @@ function renderMapaCalorDiaModal(){
             </td>
           </tr>`).join('')}</tbody>
         </table></div>
-        ${renderCardsLancamentosModal(itensFiltrados, {
+        ${renderCardsLancamentosModal(itensPagina, {
           valorTexto: t=>fmtBRL(t.valor), valorClasse: ()=>'neg',
           secundario: t=>`${t.categoria||'Sem categoria'} · ${t.grupo||'Sem Grupo'}`,
           tags: t=> `${t.conta ? `<span class="tag" style="background:var(--navy-100);color:var(--navy-900);">${escapeHtml(t.conta)}</span>` : ''}${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
-        })}` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhuma despesa encontrada com esses filtros.</div>`}`}
+        })}
+        <div class="registros-rodape no-print">${rodapePaginacaoMapaCalor}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhuma despesa encontrada com esses filtros.</div>`}`}
       </div>
       <div class="modal-foot">
         <button class="btn btn-primary" id="fecharMapaCalorDia">Fechar</button>
@@ -12851,35 +12876,54 @@ function bindEvents(){
   document.querySelectorAll('[data-mc-dia]').forEach(cel=>{
     const abrir = ()=>{
       const [ano,mes,dia] = cel.dataset.mcDia.split('-').map(Number);
-      UI.mapaCalorDiaModal = { ano, mes, dia, filtros: criarFiltrosPadrao(), busca:'', selecionados:new Set() }; render();
+      UI.mapaCalorDiaModal = { ano, mes, dia, filtros: criarFiltrosPadrao(), busca:'', selecionados:new Set(), pagina:1, porPagina:10 }; render();
     };
     cel.addEventListener('click', abrir);
     cel.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); abrir(); } });
   });
   document.getElementById('closeMapaCalorDia')?.addEventListener('click', ()=>{ UI.mapaCalorDiaModal=null; render(); });
   document.getElementById('fecharMapaCalorDia')?.addEventListener('click', ()=>{ UI.mapaCalorDiaModal=null; render(); });
-  // Filtros/edição em lote do Modal do Mapa de Calor — mesmo motor genérico usado em Ver Extrato/
-  // Lançamentos futuros (bindFiltrosPadrao/bindSelecaoLote/bindFiltrosMobileToggle), nenhuma lógica paralela.
-  function aplicarBuscaMapaCalor(){ UI.mapaCalorDiaModal.busca = document.getElementById('mapaCalorBusca')?.value || ''; render(); }
+  // Filtros/edição em lote/paginação do Modal do Mapa de Calor — mesmo motor genérico usado em Ver
+  // Extrato/Lançamentos futuros (bindFiltroMultiSelect/bindSelecaoLote/bindFiltrosMobileToggle/
+  // renderRodapePaginacaoGenerica), nenhuma lógica paralela. SEM bindFiltroDataRange/bindFiltrosPadrao: o
+  // modal não tem filtro de Data (é sempre um recorte de um único dia), então liga só os multi-selects.
+  function aplicarBuscaMapaCalor(){ UI.mapaCalorDiaModal.busca = document.getElementById('mapaCalorBusca')?.value || ''; UI.mapaCalorDiaModal.pagina = 1; render(); }
   document.getElementById('btnBuscarMapaCalor')?.addEventListener('click', aplicarBuscaMapaCalor);
   document.getElementById('mapaCalorBusca')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); aplicarBuscaMapaCalor(); } });
   if(UI.mapaCalorDiaModal){
     const { ano:mcAno, mes:mcMes, dia:mcDia } = UI.mapaCalorDiaModal;
     const mcDataISO = `${mcAno}-${pad2(mcMes)}-${pad2(mcDia)}`;
-    const itensMapaCalorAtual = STATE.transactions.filter(t=> t.data===mcDataISO && ehDespesaOrcamento(t));
+    const itensMapaCalorAtual = STATE.transactions.filter(t=> ehDespesaOrcamento(t) && dataEfetivaMapaCalorDespesa(t)===mcDataISO);
     const gruposMapaCalorAtual = [...new Set(itensMapaCalorAtual.filter(t=>t.grupo).map(t=>t.grupo))];
     const contasMapaCalorAtual = [...new Set(itensMapaCalorAtual.filter(t=>t.conta).map(t=>t.conta))];
-    bindFiltrosPadrao(UI.mapaCalorDiaModal.filtros, 'MapaCalor', [
+    const camposFiltroMapaCalorBind = [
       {campo:'grupo', options:[{value:'__sem_grupo__'}, ...gruposMapaCalorAtual.map(g=>({value:g}))]},
       {campo:'conta', options:contasMapaCalorAtual.map(c=>({value:c}))},
-    ], ()=>render());
+    ];
+    camposFiltroMapaCalorBind.forEach(c=> bindFiltroMultiSelect(UI.mapaCalorDiaModal.filtros, 'MapaCalor', c.campo, c.options, resetPagina=>{ if(resetPagina) UI.mapaCalorDiaModal.pagina = 1; render(); }));
     bindSelecaoLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosMapaCalor')?.addEventListener('click', ()=>{
     UI.mapaCalorDiaModal.filtros = criarFiltrosPadrao(); UI.mapaCalorDiaModal.busca='';
+    UI.mapaCalorDiaModal.pagina = 1;
     render();
   });
   bindFiltrosMobileToggle('MapaCalor');
+  // Paginação do Modal do Mapa de Calor — mesmo padrão de Ver Extrato/Lançamentos futuros (ver
+  // renderRodapePaginacaoGenerica): trocar de página não fecha o modal nem altera a data selecionada.
+  document.getElementById('mapaCalorPorPagina')?.addEventListener('change', e=>{
+    const v = e.target.value;
+    UI.mapaCalorDiaModal.porPagina = v==='TODOS' ? 'TODOS' : Number(v);
+    UI.mapaCalorDiaModal.pagina = 1;
+    render();
+  });
+  document.querySelectorAll('[data-mapa-calor-pagina]').forEach(b=> b.addEventListener('click', ()=>{
+    const v = b.dataset.mapaCalorPagina;
+    if(v==='prev') UI.mapaCalorDiaModal.pagina = Math.max(1, UI.mapaCalorDiaModal.pagina-1);
+    else if(v==='next') UI.mapaCalorDiaModal.pagina = UI.mapaCalorDiaModal.pagina+1; // clamp final em renderMapaCalorDiaModal()
+    else UI.mapaCalorDiaModal.pagina = Number(v);
+    render();
+  }));
   document.querySelectorAll('[data-editar-saldo-inicial-conta]').forEach(b=> b.addEventListener('click', ()=>{
     UI.editarSaldoInicialContaModal = { conta: b.dataset.editarSaldoInicialConta }; render();
     const inp = document.getElementById('inpSaldoInicialConta');
