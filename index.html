@@ -1020,6 +1020,10 @@ tbody tr:hover{background:var(--navy-50);}
    estreitas, quando a tabela ganha rolagem horizontal própria (media query abaixo), a coluna permanece
    fixa à direita para os botões continuarem acessíveis sem precisar rolar até o fim da tabela. */
 .col-acoes-fatura{ white-space:nowrap; text-align:right; width:1%; }
+/* Coluna de Ações (Editar/Duplicar/Excluir/etc.) de todas as demais tabelas do app que não usam o padrão
+   acima (.col-acoes-fatura, específico dos modais de Fatura) — mesma ideia, alinhada à direita tanto no
+   cabeçalho quanto nas linhas, para nunca ficar solta à esquerda encostada no valor da coluna anterior. */
+.col-acoes{ white-space:nowrap; text-align:right; }
 /* Seleção em lote (checkbox por linha + barra de ações contextual) — usada em Ver Fatura, Ver Próximas
    Faturas, Ver Extrato e Ver Lançamentos futuros. */
 .col-checkbox-lote{ width:1%; text-align:center; padding-left:10px; padding-right:2px; }
@@ -6422,7 +6426,7 @@ function renderExtratoContaModal(){
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Extrato', UI.extratoContaModal.selecionados, itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), itensFiltrados.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
-          <thead><tr>${renderColunaSelecaoLoteHead('Extrato', itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), UI.extratoContaModal.selecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th style="text-align:center;">Tipo</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Saldo</th><th class="no-print">Ações</th></tr></thead>
+          <thead><tr>${renderColunaSelecaoLoteHead('Extrato', itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), UI.extratoContaModal.selecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th style="text-align:center;">Tipo</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Saldo</th><th class="no-print col-acoes">Ações</th></tr></thead>
           <tbody>${itensPagina.map(t=>`<tr>
             ${ehSaldoAnterior(t) ? `<td class="no-print"></td>` : renderColunaSelecaoLoteLinha('Extrato', t.id, UI.extratoContaModal.selecionados)}
             <td style="white-space:nowrap;">${fmtData(t.data)}</td>
@@ -6431,7 +6435,7 @@ function renderExtratoContaModal(){
             <td style="text-align:center;"><span class="tag ${t.tipo}">${t.tipo}</span></td>
             <td class="val-cell ${t.tipo==='Receita'?'pos':'neg'}" style="text-align:right;">${fmtBRL(t.valor)}</td>
             <td class="val-cell ${t.saldoAcumulado>=0?'pos':'neg'}" style="text-align:right;">${fmtBRL(t.saldoAcumulado)}</td>
-            <td class="no-print" style="white-space:nowrap;">
+            <td class="no-print col-acoes">
               <button class="icon-btn" data-edit="${t.id}" title="Editar">✏️</button>
               <button class="icon-btn" data-duplicar="${t.id}" title="Duplicar">📄</button>
               <button class="icon-btn" data-del="${t.id}" title="Excluir">🗑️</button>
@@ -6540,7 +6544,7 @@ function renderFuturosContaModal(){
         ${futurosFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Futuros', UI.futurosContaModal.selecionados, futurosPagina.map(t=>t.id), futurosFiltrados.map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
-          <thead><tr>${renderColunaSelecaoLoteHead('Futuros', futurosPagina.map(t=>t.id), UI.futurosContaModal.selecionados)}<th>Data prevista</th><th>Descrição</th><th style="text-align:center;">Tipo</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Saldo projetado</th><th class="no-print">Ações</th></tr></thead>
+          <thead><tr>${renderColunaSelecaoLoteHead('Futuros', futurosPagina.map(t=>t.id), UI.futurosContaModal.selecionados)}<th>Data prevista</th><th>Descrição</th><th style="text-align:center;">Tipo</th><th style="text-align:right;">Valor</th><th style="text-align:right;">Saldo projetado</th><th class="no-print col-acoes">Ações</th></tr></thead>
           <tbody>${futurosPagina.map(t=>`<tr>
             ${renderColunaSelecaoLoteLinha('Futuros', t.id, UI.futurosContaModal.selecionados)}
             <td style="white-space:nowrap;">${fmtData(t.data)}</td>
@@ -6548,7 +6552,7 @@ function renderFuturosContaModal(){
             <td style="text-align:center;"><span class="tag ${t.tipo}">${t.tipo}</span></td>
             <td class="val-cell ${t.tipo==='Receita'?'pos':'neg'}" style="text-align:right;">${t.tipo==='Despesa'?'-':''}${fmtBRL(t.valor)}</td>
             <td class="val-cell ${t.saldoProjetado>=0?'pos':'neg'}" style="text-align:right;">${fmtBRL(t.saldoProjetado)}</td>
-            <td class="no-print" style="white-space:nowrap;">
+            <td class="no-print col-acoes">
               <button class="icon-btn" data-edit="${t.id}" title="Editar">✏️</button>
               <button class="icon-btn" data-duplicar="${t.id}" title="Duplicar">📄</button>
               <button class="icon-btn" data-del="${t.id}" title="Excluir">🗑️</button>
@@ -7874,7 +7878,7 @@ function renderMapaCalorDiaModal(){
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, idsPagina, idsFiltrados)}</div>
         <div class="table-wrap table-wrap-registros reg-tabela-principal" style="margin-top:14px;"><table>
-          <thead><tr>${renderColunaSelecaoLoteHead('MapaCalor', idsPagina, UI.mapaCalorDiaModal.selecionados)}<th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Conta</th><th style="text-align:right;">Valor</th><th class="no-print">Ações</th></tr></thead>
+          <thead><tr>${renderColunaSelecaoLoteHead('MapaCalor', idsPagina, UI.mapaCalorDiaModal.selecionados)}<th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Conta</th><th style="text-align:right;">Valor</th><th class="no-print col-acoes">Ações</th></tr></thead>
           <tbody>${itensPagina.map(t=>`<tr>
             ${renderColunaSelecaoLoteLinha('MapaCalor', t.id, UI.mapaCalorDiaModal.selecionados)}
             <td>
@@ -7885,7 +7889,7 @@ function renderMapaCalorDiaModal(){
             <td>${escapeHtml(t.categoria||'—')}</td>
             <td>${t.conta?escapeHtml(t.conta):'<span class="hint">—</span>'}</td>
             <td class="val-cell neg" style="text-align:right;">${fmtBRL(t.valor)}</td>
-            <td class="no-print" style="white-space:nowrap;">
+            <td class="no-print col-acoes">
               <button class="icon-btn" data-edit="${t.id}" title="Editar">✏️</button>
               <button class="icon-btn" data-duplicar="${t.id}" title="Duplicar">📄</button>
               <button class="icon-btn" data-del="${t.id}" title="Excluir">🗑️</button>
@@ -8976,7 +8980,7 @@ function renderRegistros(){
     ${list.length===0 ? `<div class="empty-state"><div class="big">🗒️</div>Nenhum lançamento encontrado com esses filtros.</div>
     <div class="registros-rodape registros-rodape-vazio">${rodapePaginacao}</div>` : `
     <div class="table-wrap table-wrap-registros reg-tabela-principal"><table class="tabela-registros">
-      <thead><tr>${renderColunaSelecaoLoteHead('Reg', pageList.map(t=>t.id), UI.regSelecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th>Natureza</th><th>Tipo</th><th>Conta</th><th>Fatura</th><th style="text-align:right;">Valor</th><th></th></tr></thead>
+      <thead><tr>${renderColunaSelecaoLoteHead('Reg', pageList.map(t=>t.id), UI.regSelecionados)}<th>Data</th><th>Descrição</th><th>Grupo</th><th>Natureza</th><th>Tipo</th><th>Conta</th><th>Fatura</th><th style="text-align:right;">Valor</th><th class="col-acoes"></th></tr></thead>
       <tbody>
         ${pageList.map(t=>`
           <tr>
@@ -8992,7 +8996,7 @@ function renderRegistros(){
             <td>${escapeHtml(t.conta)}</td>
             <td>${t.competencia?competenciaLabel(t.competencia):'—'}</td>
             <td class="val-cell ${t.tipo==='Despesa'?'neg':'pos'}" style="text-align:right;">${t.tipo==='Despesa'?'-':''}${fmtBRL(t.valor)}</td>
-            <td style="white-space:nowrap;">
+            <td class="col-acoes">
               <button class="icon-btn" data-edit="${t.id}" title="Editar">✏️</button>
               <button class="icon-btn" data-duplicar="${t.id}" title="Duplicar">📄</button>
               <button class="icon-btn" data-del="${t.id}" title="Excluir">🗑️</button>
@@ -10313,7 +10317,7 @@ function renderDuplicarMesesModal(){
         <div class="field-section-label" style="margin-top:14px;">Prévia dos lançamentos que serão criados (${qtd})</div>
         <div class="table-wrap" style="max-height:none;overflow:visible;">
           <table>
-            <thead><tr><th>#</th><th>Data</th><th style="text-align:right;">Valor</th><th></th><th></th></tr></thead>
+            <thead><tr><th>#</th><th>Data</th><th style="text-align:right;">Valor</th><th></th><th class="col-acoes"></th></tr></thead>
             <tbody>
               ${pageList.map(o=>`
                 <tr ${o.duplicado?'style="background:#fff3ea;"':''}>
@@ -10321,7 +10325,7 @@ function renderDuplicarMesesModal(){
                   <td>${fmtData(o.data)}${o.editado?' <span class="hint" style="margin:0;display:inline;font-style:italic;">(editado)</span>':''}</td>
                   <td style="text-align:right;">${original.tipo==='Despesa'?'-':''}${fmtBRL(o.valor)}</td>
                   <td style="white-space:nowrap;">${o.duplicado?'<span title="Já existe um lançamento igual nesta data, conta, valor e tipo" style="color:#c0392b;white-space:nowrap;">⚠️ possível duplicidade</span>':''}</td>
-                  <td style="white-space:nowrap;"><button type="button" class="icon-btn" data-editar-ocorrencia-duplicar="${o.idx}" title="Editar">✏️</button></td>
+                  <td class="col-acoes"><button type="button" class="icon-btn" data-editar-ocorrencia-duplicar="${o.idx}" title="Editar">✏️</button></td>
                 </tr>`).join('')}
             </tbody>
           </table>
@@ -10408,7 +10412,7 @@ function renderMetas(){
     ${r.lista.length===0 ? `<div class="empty-state"><div class="big">🎯</div>Nenhuma meta cadastrada para este mês. Use "+ Nova meta" para começar.</div>` : `
     <div class="chart-box" style="height:${alturaBarra}px;margin-top:14px;"><canvas id="chartMetas"></canvas></div>
     <div class="table-wrap" style="margin-top:16px;"><table class="tabela-cards-mobile">
-      <thead><tr><th>Grupo</th><th>Categoria</th><th>Subcategoria</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Saldo</th><th>% Utilizado</th><th>Período</th><th>Situação</th><th></th></tr></thead>
+      <thead><tr><th>Grupo</th><th>Categoria</th><th>Subcategoria</th><th style="text-align:right;">Meta</th><th style="text-align:right;">Gasto</th><th style="text-align:right;">Saldo</th><th>% Utilizado</th><th>Período</th><th>Situação</th><th class="col-acoes"></th></tr></thead>
       <tbody>
       ${r.lista.map(m=>{
         const info = SITUACAO_META_INFO[m.situacao];
@@ -10425,7 +10429,7 @@ function renderMetas(){
           </td>
           <td data-label="Período">${RECORRENCIA_LABEL[m.recorrencia]||'—'}</td>
           <td data-label="Situação"><span class="meta-situacao-tag" style="background:${info.cor}1a;color:${info.cor};">${info.emoji} ${info.label}</span></td>
-          <td data-label="" style="white-space:nowrap;">
+          <td data-label="" class="col-acoes">
             <button class="icon-btn" data-editar-meta="${m.id}" title="Editar">✏️</button>
             <button class="icon-btn" data-historico-meta="${m.id}" title="Ver histórico">📈</button>
             <button class="icon-btn" data-excluir-meta="${m.id}" title="Excluir">🗑️</button>
@@ -11084,7 +11088,7 @@ function renderBackupModal(){
           !msalConta ? `<div class="empty-state"><div class="big">☁️</div>Conecte-se ao OneDrive para ver o histórico de versões.</div>` :
           !m.backups || m.backups.length===0 ? `<div class="empty-state"><div class="big">🗄️</div>Nenhum backup encontrado nesta pasta ainda.</div>` : `
         <div class="table-wrap" style="max-height:420px;"><table class="tabela-cards-mobile">
-          <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Arquivo</th><th style="text-align:right;">Tamanho</th><th style="text-align:right;">Registros</th><th style="text-align:center;">Integridade</th><th></th></tr></thead>
+          <thead><tr><th>Data/Hora</th><th>Tipo</th><th>Arquivo</th><th style="text-align:right;">Tamanho</th><th style="text-align:right;">Registros</th><th style="text-align:center;">Integridade</th><th class="col-acoes"></th></tr></thead>
           <tbody>
             ${m.backups.map(b=>`<tr>
               <td data-label="Data/Hora" style="white-space:nowrap;">${formatarDataHoraCurta(b.criadoEm)}</td>
@@ -11558,7 +11562,7 @@ function renderImportStep3(){
     ${qtdProvaveis>0?`<b>${qtdProvaveis}</b> lançamento(s) têm valor parecido com algo já registrado em data próxima — revise antes de confirmar.`:''}
   </div>` : ''}
   <div class="table-wrap" style="max-height:380px;"><table class="tabela-cards-mobile tabela-import-revisao">
-    <thead><tr><th>Importar</th><th>Status</th><th>Data</th><th>Descrição</th><th style="text-align:right;">Valor</th><th>Tipo</th><th>Subcategoria</th><th>Conta</th><th>Pgto</th><th>Parcela</th><th>Responsável</th><th>Interna</th><th></th></tr></thead>
+    <thead><tr><th>Importar</th><th>Status</th><th>Data</th><th>Descrição</th><th style="text-align:right;">Valor</th><th>Tipo</th><th>Subcategoria</th><th>Conta</th><th>Pgto</th><th>Parcela</th><th>Responsável</th><th>Interna</th><th class="col-acoes"></th></tr></thead>
     <tbody>
     ${UI.importParsed.map((r,i)=>`
       <tr style="${r.duplicata==='exata'?'background:#fbe7e4;':(r.duplicata==='provavel'?'background:#fff4de;':'')}">
@@ -11590,7 +11594,7 @@ function renderImportStep3(){
             ${contasOrdenadas().filter(c=>c!==r.conta).map(c=>`<option value="${escapeHtml(c)}" ${r.contaTransferencia===c?'selected':''}>${r.tipo==='Receita'?'De: ':'Para: '}${escapeHtml(c)}</option>`).join('')}
           </select>` : ''}` : `<span class="hint">—</span>`}
         </td>
-        <td data-label=""><button class="icon-btn" data-imp-del="${i}" title="Remover">🗑️</button></td>
+        <td data-label="" class="col-acoes"><button class="icon-btn" data-imp-del="${i}" title="Remover">🗑️</button></td>
       </tr>`).join('')}
     </tbody>
   </table></div>`;
