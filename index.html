@@ -234,13 +234,19 @@ input,select{font-family:var(--sans);}
 }
 .app-title h1{font-size:28px;margin:0;font-weight:700;letter-spacing:.3px;}
 .app-title p{margin:2px 2px 0;font-size:14px;color:#b9c9ea;}
-/* Item do requisito: a aba ativa fica sempre visível no topo, tanto no desktop quanto no mobile — no
-   desktop, como uma 3ª linha abaixo do título/subtítulo (o subtítulo "Família Gomes Oliveira" continua
-   visível normalmente, essa linha só soma); no mobile ela já substituía o subtítulo (ver
-   @media(max-width:600px) .app-title p{display:none}/.app-title-tab-atual{display:block} abaixo, mantido
-   como estava). O texto em si já vem de TABS_TODAS.find(...UI.tab) recalculado a cada render() — nunca
-   fica desatualizado, já que a troca de aba chama render() no mesmo clique, de forma síncrona. */
-.app-title-tab-atual{display:block;color:var(--gold)!important;font-weight:700;font-size:12.5px!important;}
+/* Item do requisito: a aba ativa fica sempre visível no topo, tanto no desktop quanto no mobile. No
+   desktop, .app-title-info vira uma coluna de 2 linhas: h1 sozinho na 1ª linha, e uma 2ª linha
+   (.app-title-linha2) com o subtítulo à esquerda e o nome da aba atual à direita, alinhado à largura
+   ocupada pelo h1 — nunca uma 3ª linha exclusiva para a aba. No mobile, .app-title p continua com
+   display:none (ver @media(max-width:600px) abaixo) — como .app-title-linha2 é flex, sobra só o nome
+   da aba na linha, sem sobreposição nem linha extra. O texto em si já vem de
+   TABS_TODAS.find(...UI.tab) recalculado a cada render() — nunca fica desatualizado, já que a troca de
+   aba chama render() no mesmo clique, de forma síncrona. */
+.app-title-info{display:flex;flex-direction:column;min-width:0;}
+.app-title-linha2{display:flex;align-items:baseline;justify-content:space-between;gap:14px;min-width:0;}
+.app-title-linha2 p{margin:2px 0 0;min-width:0;}
+.app-title-linha2 p:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;}
+.app-title-tab-atual{display:block;color:var(--gold)!important;font-weight:700;font-size:12.5px!important;flex:0 0 auto;white-space:nowrap;}
 .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:16px;flex-wrap:wrap;}
 .period-select{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:15px;margin:13px 2px 0;flex-wrap:wrap;max-width:100%;}
 .period-select select{
@@ -3564,7 +3570,7 @@ let UI = {
   futurosContaModal: null, // { conta, filtros, busca, pagina, porPagina } — modal "Ver lançamentos futuros" do card de Contas (lançamentos com data > hoje), com filtros próprios do modal (mesmo motor genérico de Data por período + seleção múltipla da aba Registros — ver criarFiltrosPadrao)
   editarSaldoInicialFluxoCaixaModal: null, // true — editar os saldos iniciais das contas que compõem o Fluxo de Caixa
   modalEmpateCartao: null, // { empatados:[...], chaveEmpate, hojeISO } — escolha manual quando há empate persistente
-  mapaCalorDiaModal: null, // { ano, mes, dia } — modal de transações do dia, aberto ao clicar numa célula do Mapa de Calor de Despesas
+  mapaCalorDiaModal: null, // { ano, mes, dia, filtros, busca, selecionados } — modal de transações do dia, aberto ao clicar numa célula do Mapa de Calor de Despesas
 };
 
 /* =====================================================================================
@@ -7049,6 +7055,10 @@ function calcProjecoesMultiMes(anoBase, mesBase, qtdMeses){
 
 /* ===================== RENDER RAIZ ===================== */
 const root = document.getElementById('root');
+// Guarda a última aba renderizada para o item de requisito "troca de aba sempre abre no topo": um
+// render() comum (digitar num filtro, marcar um checkbox etc.) deve preservar a posição de rolagem
+// atual, mas um render() causado por uma troca de UI.tab nunca deve herdar o scrollTop da aba anterior.
+let ultimaAbaRenderizada = null;
 let chartInstances = [];
 let renderSeq = 0;
 if(typeof ChartDataLabels !== 'undefined'){ Chart.register(ChartDataLabels); Chart.defaults.set('plugins.datalabels', { display:false }); }
@@ -7223,9 +7233,11 @@ function render(){
     bindEvents();
     return;
   }
-  const scrollY = window.scrollY;
+  const trocouAba = ultimaAbaRenderizada!==null && ultimaAbaRenderizada!==UI.tab;
+  const scrollY = trocouAba ? 0 : window.scrollY;
+  ultimaAbaRenderizada = UI.tab;
   const wraps = Array.from(document.querySelectorAll('.table-wrap, .modal, .filtro-multisel-lista'));
-  const wrapScrolls = wraps.map(w=>w.scrollTop);
+  const wrapScrolls = trocouAba ? [] : wraps.map(w=>w.scrollTop);
   root.innerHTML = `
     <div class="app">
       <div class="sticky-top">
@@ -7433,7 +7445,8 @@ function renderHeader(){
       <img class="mark" src="${LOGO_APP}" alt="Logo">
 		<div class="app-title-wrap">
 			<div class="app-title-info">
-				<h1>Controle Financeiro Familiar</h1><p>Família Gomes Oliveira</p><p class="app-title-tab-atual">${(TABS_TODAS.find(([id])=>id===UI.tab)||[])[1]||''}</p>
+				<h1>Controle Financeiro Familiar</h1>
+				<div class="app-title-linha2"><p>Família Gomes Oliveira</p><p class="app-title-tab-atual">${(TABS_TODAS.find(([id])=>id===UI.tab)||[])[1]||''}</p></div>
 			</div>
 			<div class="period-select">
 				<span>Período:</span>
@@ -7734,36 +7747,82 @@ function animarTransicaoMapaCalor(){
 function renderMapaCalorDiaModal(){
   const { ano, mes, dia } = UI.mapaCalorDiaModal;
   const dataISO = `${ano}-${pad2(mes)}-${pad2(dia)}`;
-  const itens = STATE.transactions
+  const itensBase = STATE.transactions
     .filter(t=> t.data===dataISO && ehDespesaOrcamento(t))
     .sort((a,b)=> (Number(b.valor)||0)-(Number(a.valor)||0));
-  const total = itens.reduce((s,t)=>s+(Number(t.valor)||0),0);
+  // Filtros/edição em lote/ações reaproveitam EXATAMENTE o mesmo motor genérico usado em Ver Extrato/
+  // Lançamentos futuros/Ver Fatura (bindFiltrosPadrao, renderBarraFiltrosPadrao, renderBarraAcoesLote,
+  // abrirEdicaoLote, data-edit/data-duplicar/data-del) — nenhuma lógica paralela criada para este modal.
+  // Grupo e Conta são os únicos campos com precedente de filtro multi-seleção já usado em outras telas;
+  // como este é um recorte de UM dia, o filtro de Data (sempre incluso por renderBarraFiltrosPadrao) fica
+  // disponível mas normalmente não altera nada.
+  const f = UI.mapaCalorDiaModal.filtros;
+  const fBusca = UI.mapaCalorDiaModal.busca || '';
+  const gruposUsados = Array.from(new Set(itensBase.filter(t=>t.grupo).map(t=>t.grupo))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const temSemGrupo = itensBase.some(t=>!t.grupo);
+  const contasUsadas = Array.from(new Set(itensBase.filter(t=>t.conta).map(t=>t.conta))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  let itensFiltrados = itensBase.filter(t=> passaFiltroData(t.data, f)
+    && passaFiltroMultiSel(f.grupo, t.grupo || '__sem_grupo__')
+    && passaFiltroMultiSel(f.conta, t.conta));
+  if(fBusca.trim()){
+    const fb = fBusca.trim().toLowerCase();
+    itensFiltrados = itensFiltrados.filter(t=>(t.descricao||'').toLowerCase().includes(fb));
+  }
+  const totalFiltrado = itensFiltrados.reduce((s,t)=>s+(Number(t.valor)||0),0);
+  const camposFiltroMapaCalor = [
+    {campo:'grupo', label:'Grupo', options:[...(temSemGrupo?[{value:'__sem_grupo__',label:'Sem Grupo'}]:[]), ...gruposUsados.map(g=>({value:g,label:g}))]},
+    {campo:'conta', label:'Conta', options:contasUsadas.map(c=>({value:c,label:c}))},
+  ];
+  const filtrosAtivos = filtrosPadraoAtivos(f, camposFiltroMapaCalor) || !!fBusca.trim();
+  const qtdAtivosMapaCalor = contarFiltrosPadraoAtivos(f, camposFiltroMapaCalor);
+  const idsFiltrados = itensFiltrados.map(t=>t.id);
   return `
   <div class="overlay" id="ovMapaCalorDia" ${attrZIndexModal('mapaCalorDiaModal')}>
     <div class="modal" style="width:1280px;">
       <div class="modal-head"><h3>🔥 Despesas de ${pad2(dia)}/${pad2(mes)}/${ano}</h3><button class="close-x" id="closeMapaCalorDia">✕</button></div>
       <div class="modal-body">
         <div class="cartoes-resumo-grid" style="margin-bottom:14px;">
-          <div class="cartoes-resumo-item"><span class="ico">🧾</span><div><div class="val">${itens.length}</div><div class="lbl">lançamento${itens.length===1?'':'s'}</div></div></div>
-          <div class="cartoes-resumo-item"><span class="ico">💸</span><div><div class="val">${fmtBRL(total)}</div><div class="lbl">total de despesas no dia</div></div></div>
+          <div class="cartoes-resumo-item"><span class="ico">🧾</span><div><div class="val">${itensFiltrados.length}</div><div class="lbl">lançamento${itensFiltrados.length===1?'':'s'}</div></div></div>
+          <div class="cartoes-resumo-item"><span class="ico">💸</span><div><div class="val">${fmtBRL(totalFiltrado)}</div><div class="lbl">total de despesas no dia</div></div></div>
         </div>
-        ${itens.length===0 ? `<div class="empty-state"><div class="big">🔥</div>Nenhuma despesa encontrada neste dia.</div>` : `
-        <div class="table-wrap table-wrap-registros reg-tabela-principal"><table>
-          <thead><tr><th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Conta</th><th style="text-align:right;">Valor</th></tr></thead>
-          <tbody>${itens.map(t=>`<tr>
+        ${itensBase.length===0 ? `<div class="empty-state"><div class="big">🔥</div>Nenhuma despesa encontrada neste dia.</div>` : `
+        <div class="toolbar toolbar-modal-padrao no-print">
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileMapaCalor" title="Filtros">🔍 Filtros${qtdAtivosMapaCalor>0?` <span class="filtros-mobile-badge">${qtdAtivosMapaCalor}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='MapaCalor'?'aberto-mobile':''}">
+            <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileMapaCalor" title="Fechar">✕</button></div>
+            ${renderBarraFiltrosPadrao(f, 'MapaCalor', camposFiltroMapaCalor)}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosMapaCalor">↺ Restaurar filtros padrão</button>` : ''}
+            <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileMapaCalor">Aplicar</button></div>
+          </div>
+          ${UI.filtrosMobileAberto==='MapaCalor' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropMapaCalor"></div>` : ''}
+          <div class="toolbar-modal-padrao-busca">
+            <input type="search" id="mapaCalorBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
+            <button class="btn btn-primary btn-sm" id="btnBuscarMapaCalor" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+          </div>
+        </div>
+        ${itensFiltrados.length ? `
+        <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, idsFiltrados, idsFiltrados)}</div>
+        <div class="table-wrap table-wrap-registros reg-tabela-principal" style="margin-top:14px;"><table>
+          <thead><tr>${renderColunaSelecaoLoteHead('MapaCalor', idsFiltrados, UI.mapaCalorDiaModal.selecionados)}<th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Conta</th><th style="text-align:right;">Valor</th><th class="no-print">Ações</th></tr></thead>
+          <tbody>${itensFiltrados.map(t=>`<tr>
+            ${renderColunaSelecaoLoteLinha('MapaCalor', t.id, UI.mapaCalorDiaModal.selecionados)}
             <td>${escapeHtml(t.descricao)}</td>
             <td>${escapeHtml(t.grupo||'—')}</td>
             <td>${escapeHtml(t.categoria||'—')}</td>
             <td>${t.conta?escapeHtml(t.conta):'<span class="hint">—</span>'}</td>
             <td class="val-cell neg" style="text-align:right;">${fmtBRL(t.valor)}</td>
+            <td class="no-print" style="white-space:nowrap;">
+              <button class="icon-btn" data-edit="${t.id}" title="Editar">✏️</button>
+              <button class="icon-btn" data-duplicar="${t.id}" title="Duplicar">📄</button>
+              <button class="icon-btn" data-del="${t.id}" title="Excluir">🗑️</button>
+            </td>
           </tr>`).join('')}</tbody>
         </table></div>
-        ${renderCardsLancamentosModal(itens, {
+        ${renderCardsLancamentosModal(itensFiltrados, {
           valorTexto: t=>fmtBRL(t.valor), valorClasse: ()=>'neg',
           secundario: t=>`${t.categoria||'Sem categoria'} · ${t.grupo||'Sem Grupo'}`,
           tags: t=> t.conta ? `<span class="tag" style="background:var(--navy-100);color:var(--navy-900);">${escapeHtml(t.conta)}</span>` : '',
-          semAcao: ()=>true,
-        })}`}
+        })}` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhuma despesa encontrada com esses filtros.</div>`}`}
       </div>
       <div class="modal-foot">
         <button class="btn btn-primary" id="fecharMapaCalorDia">Fechar</button>
@@ -12762,13 +12821,35 @@ function bindEvents(){
   document.querySelectorAll('[data-mc-dia]').forEach(cel=>{
     const abrir = ()=>{
       const [ano,mes,dia] = cel.dataset.mcDia.split('-').map(Number);
-      UI.mapaCalorDiaModal = { ano, mes, dia }; render();
+      UI.mapaCalorDiaModal = { ano, mes, dia, filtros: criarFiltrosPadrao(), busca:'', selecionados:new Set() }; render();
     };
     cel.addEventListener('click', abrir);
     cel.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); abrir(); } });
   });
   document.getElementById('closeMapaCalorDia')?.addEventListener('click', ()=>{ UI.mapaCalorDiaModal=null; render(); });
   document.getElementById('fecharMapaCalorDia')?.addEventListener('click', ()=>{ UI.mapaCalorDiaModal=null; render(); });
+  // Filtros/edição em lote do Modal do Mapa de Calor — mesmo motor genérico usado em Ver Extrato/
+  // Lançamentos futuros (bindFiltrosPadrao/bindSelecaoLote/bindFiltrosMobileToggle), nenhuma lógica paralela.
+  function aplicarBuscaMapaCalor(){ UI.mapaCalorDiaModal.busca = document.getElementById('mapaCalorBusca')?.value || ''; render(); }
+  document.getElementById('btnBuscarMapaCalor')?.addEventListener('click', aplicarBuscaMapaCalor);
+  document.getElementById('mapaCalorBusca')?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); aplicarBuscaMapaCalor(); } });
+  if(UI.mapaCalorDiaModal){
+    const { ano:mcAno, mes:mcMes, dia:mcDia } = UI.mapaCalorDiaModal;
+    const mcDataISO = `${mcAno}-${pad2(mcMes)}-${pad2(mcDia)}`;
+    const itensMapaCalorAtual = STATE.transactions.filter(t=> t.data===mcDataISO && ehDespesaOrcamento(t));
+    const gruposMapaCalorAtual = [...new Set(itensMapaCalorAtual.filter(t=>t.grupo).map(t=>t.grupo))];
+    const contasMapaCalorAtual = [...new Set(itensMapaCalorAtual.filter(t=>t.conta).map(t=>t.conta))];
+    bindFiltrosPadrao(UI.mapaCalorDiaModal.filtros, 'MapaCalor', [
+      {campo:'grupo', options:[{value:'__sem_grupo__'}, ...gruposMapaCalorAtual.map(g=>({value:g}))]},
+      {campo:'conta', options:contasMapaCalorAtual.map(c=>({value:c}))},
+    ], ()=>render());
+    bindSelecaoLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, ()=>render());
+  }
+  document.getElementById('btnLimparFiltrosMapaCalor')?.addEventListener('click', ()=>{
+    UI.mapaCalorDiaModal.filtros = criarFiltrosPadrao(); UI.mapaCalorDiaModal.busca='';
+    render();
+  });
+  bindFiltrosMobileToggle('MapaCalor');
   document.querySelectorAll('[data-editar-saldo-inicial-conta]').forEach(b=> b.addEventListener('click', ()=>{
     UI.editarSaldoInicialContaModal = { conta: b.dataset.editarSaldoInicialConta }; render();
     const inp = document.getElementById('inpSaldoInicialConta');
@@ -13554,7 +13635,7 @@ function bindEvents(){
       if(m.origemPrefixo==='Reg'){
         UI.regSelecionados.clear();
       } else {
-        const origem = { Fatura:UI.faturaAtualModal, Projecao:UI.projecaoFaturaModal, Extrato:UI.extratoContaModal, Futuros:UI.futurosContaModal }[m.origemPrefixo];
+        const origem = { Fatura:UI.faturaAtualModal, Projecao:UI.projecaoFaturaModal, Extrato:UI.extratoContaModal, Futuros:UI.futurosContaModal, MapaCalor:UI.mapaCalorDiaModal }[m.origemPrefixo];
         if(origem && origem.selecionados) origem.selecionados.clear();
       }
       UI.edicaoLoteModal = null;
