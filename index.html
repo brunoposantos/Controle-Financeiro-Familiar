@@ -6430,7 +6430,10 @@ function renderExtratoContaModal(){
           <tbody>${itensPagina.map(t=>`<tr>
             ${ehSaldoAnterior(t) ? `<td class="no-print"></td>` : renderColunaSelecaoLoteLinha('Extrato', t.id, UI.extratoContaModal.selecionados)}
             <td style="white-space:nowrap;">${fmtData(t.data)}</td>
-            <td>${escapeHtml(t.descricao)}</td>
+            <td>
+              <div class="reg-descricao-texto">${escapeHtml(t.descricao)}</div>
+              ${Number(t.totalParcelas)>1 ? `<div class="reg-descricao-tags"><span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span></div>` : ''}
+            </td>
             <td>${escapeHtml(t.grupo||'—')}</td>
             <td style="text-align:center;"><span class="tag ${t.tipo}">${t.tipo}</span></td>
             <td class="val-cell ${t.tipo==='Receita'?'pos':'neg'}" style="text-align:right;">${fmtBRL(t.valor)}</td>
@@ -6445,7 +6448,7 @@ function renderExtratoContaModal(){
         ${renderCardsLancamentosModal(itensPagina, {
           valorTexto: t=>fmtBRL(t.valor), valorClasse: t=> ehSaldoAnterior(t)?'':(t.tipo==='Receita'?'pos':'neg'),
           secundario: t=>`${fmtData(t.data)} · ${t.grupo||'Sem Grupo'}`,
-          tags: t=> ehSaldoAnterior(t) ? '' : `<span class="tag ${t.tipo}">${t.tipo}</span>`,
+          tags: t=> ehSaldoAnterior(t) ? '' : `<span class="tag ${t.tipo}">${t.tipo}</span>${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
           extra: t=>`<div class="reg-card-extra">Saldo: <b class="val-cell ${t.saldoAcumulado>=0?'pos':'neg'}">${fmtBRL(t.saldoAcumulado)}</b></div>`,
           semAcao: t=> ehSaldoAnterior(t),
         })}
@@ -6548,7 +6551,10 @@ function renderFuturosContaModal(){
           <tbody>${futurosPagina.map(t=>`<tr>
             ${renderColunaSelecaoLoteLinha('Futuros', t.id, UI.futurosContaModal.selecionados)}
             <td style="white-space:nowrap;">${fmtData(t.data)}</td>
-            <td>${escapeHtml(t.descricao)}</td>
+            <td>
+              <div class="reg-descricao-texto">${escapeHtml(t.descricao)}</div>
+              ${Number(t.totalParcelas)>1 ? `<div class="reg-descricao-tags"><span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span></div>` : ''}
+            </td>
             <td style="text-align:center;"><span class="tag ${t.tipo}">${t.tipo}</span></td>
             <td class="val-cell ${t.tipo==='Receita'?'pos':'neg'}" style="text-align:right;">${t.tipo==='Despesa'?'-':''}${fmtBRL(t.valor)}</td>
             <td class="val-cell ${t.saldoProjetado>=0?'pos':'neg'}" style="text-align:right;">${fmtBRL(t.saldoProjetado)}</td>
@@ -6562,7 +6568,7 @@ function renderFuturosContaModal(){
         ${renderCardsLancamentosModal(futurosPagina, {
           valorTexto: t=>`${t.tipo==='Despesa'?'-':''}${fmtBRL(t.valor)}`, valorClasse: t=> t.tipo==='Receita'?'pos':'neg',
           secundario: t=>`${fmtData(t.data)} (prevista)`,
-          tags: t=>`<span class="tag ${t.tipo}">${t.tipo}</span>`,
+          tags: t=>`<span class="tag ${t.tipo}">${t.tipo}</span>${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
           extra: t=>`<div class="reg-card-extra">Saldo projetado: <b class="val-cell ${t.saldoProjetado>=0?'pos':'neg'}">${fmtBRL(t.saldoProjetado)}</b></div>`,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoFuturos}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento futuro cadastrado para esta conta.</div>`}
@@ -6617,7 +6623,7 @@ function renderModalAportes(){
                   <table class="aportes-tabela-itens"><tbody>
                     ${txsSub.map(t=>`<tr${txInPeriod(t,ano,mes) ? ' style="background:var(--navy-50);"' : ''}>
                       <td data-label="Data" style="white-space:nowrap;">${fmtData(t.data)}</td>
-                      <td data-label="Descrição">${escapeHtml(t.descricao)}</td>
+                      <td data-label="Descrição">${escapeHtml(t.descricao)}${Number(t.totalParcelas)>1 ? ` <span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}</td>
                       <td data-label="Conta">${escapeHtml(t.conta)}</td>
                       <td data-label="Valor" class="val-cell pos" style="text-align:right;">${fmtBRL(t.valor)}</td>
                     </tr>`).join('')}
@@ -9843,7 +9849,7 @@ function renderDrillIntelLancamentos(grupo, subgrupo, categoria, f){
   <div class="drill-intel-nivel drill-intel-nivel-3">
     ${txs.length===0 ? `<p class="hint">Nenhum lançamento encontrado.</p>` : `
     <table class="drill-intel-tabela"><tbody>
-      ${txs.map(t=>`<tr><td>${fmtData(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td style="text-align:right;">${fmtBRL(t.valor)}</td></tr>`).join('')}
+      ${txs.map(t=>`<tr><td>${fmtData(t.data)}</td><td>${escapeHtml(t.descricao)}${Number(t.totalParcelas)>1 ? ` <span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}</td><td style="text-align:right;">${fmtBRL(t.valor)}</td></tr>`).join('')}
     </tbody></table>`}
     <button type="button" class="btn btn-ghost btn-sm" data-drill-ver-registros="${escapeHtml(grupo)}|||${escapeHtml(categoria)}" style="margin-top:8px;">🔎 Ver estes lançamentos em Registros</button>
   </div>`;
