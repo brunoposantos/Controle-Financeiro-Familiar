@@ -234,7 +234,13 @@ input,select{font-family:var(--sans);}
 }
 .app-title h1{font-size:28px;margin:0;font-weight:700;letter-spacing:.3px;}
 .app-title p{margin:2px 2px 0;font-size:14px;color:#b9c9ea;}
-.app-title-tab-atual{display:none;color:var(--gold)!important;font-weight:700;font-size:12.5px!important;}
+/* Item do requisito: a aba ativa fica sempre visível no topo, tanto no desktop quanto no mobile — no
+   desktop, como uma 3ª linha abaixo do título/subtítulo (o subtítulo "Família Gomes Oliveira" continua
+   visível normalmente, essa linha só soma); no mobile ela já substituía o subtítulo (ver
+   @media(max-width:600px) .app-title p{display:none}/.app-title-tab-atual{display:block} abaixo, mantido
+   como estava). O texto em si já vem de TABS_TODAS.find(...UI.tab) recalculado a cada render() — nunca
+   fica desatualizado, já que a troca de aba chama render() no mesmo clique, de forma síncrona. */
+.app-title-tab-atual{display:block;color:var(--gold)!important;font-weight:700;font-size:12.5px!important;}
 .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:16px;flex-wrap:wrap;}
 .period-select{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:15px;margin:13px 2px 0;flex-wrap:wrap;max-width:100%;}
 .period-select select{
@@ -550,15 +556,27 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 .mc-canto{}
 .mc-dia-header{font-size:10px;text-align:center;color:#8393ac;font-weight:600;font-family:var(--mono);}
 .mc-mes-label{font-size:11.5px;font-weight:700;color:var(--navy-800);white-space:nowrap;padding-right:10px;font-family:var(--mono);}
-.mc-cel{aspect-ratio:1;border-radius:3px;background:var(--navy-50);min-width:16px;cursor:default;}
+.mc-cel{aspect-ratio:1;border-radius:3px;background:var(--navy-50);min-width:16px;cursor:default;transition:background-color .35s ease,transform .12s ease,box-shadow .12s ease;}
 .mc-cel-inexistente{background:transparent;}
+/* Item do requisito: célula com lançamentos é clicável, sem precisar de botão extra — cursor + leve
+   destaque no hover (desktop) indicam a interatividade; :focus-visible cobre navegação por teclado, e o
+   toque simples já funciona no mobile por ser o próprio elemento clicável (role="button"). */
+.mc-cel-clicavel{cursor:pointer;}
+.mc-cel-clicavel:hover{transform:scale(1.15);box-shadow:0 0 0 1px rgba(11,42,94,.25);z-index:1;position:relative;}
+.mc-cel-clicavel:focus-visible{outline:2px solid var(--navy-900);outline-offset:1px;}
 .mc-legenda{display:flex;align-items:center;gap:4px;margin-top:12px;font-size:11px;color:#8393ac;}
 .mc-legenda-swatch{width:18px;height:11px;border-radius:2px;}
+/* Fade suave de todo o grid ao trocar de período (item do requisito de animação) — o crossfade por célula
+   (cor antiga → nova) é feito via JS em animarTransicaoMapaCalor(); esta classe cobre a entrada/saída de
+   LINHAS inteiras (mês que sai/entra na janela de 6 meses), que não têm uma "cor antiga" equivalente. */
+.mc-grid-transicionando{animation:mc-fade-suave .4s ease;}
+@keyframes mc-fade-suave{from{opacity:.35;}to{opacity:1;}}
 @media(max-width:700px){
   .mc-grid{min-width:520px;gap:2px;}
   .mc-cel{min-width:13px;}
   .mc-mes-label{font-size:10.5px;padding-right:6px;}
   .mc-dia-header{font-size:9px;}
+  .mc-cel-clicavel:hover{transform:none;box-shadow:none;}
 }
 .charts-row{display:grid;grid-template-columns:3fr 7fr;gap:14px;}
 @media(max-width:900px){.charts-row{grid-template-columns:1fr;}}
@@ -1028,11 +1046,31 @@ tbody tr:hover{background:var(--navy-50);}
 }
 .info-card.warn{background:#fff8e6;border-color:#f0d090;color:#7a5000;}
 .info-card .info-card-icon{font-size:17px;line-height:1.4;}
-/* Previsão Financeira — item 9 do requisito de responsividade: Confiabilidade sempre na última linha,
-   layout empilhado e responsivo, nunca ultrapassando a largura do card. */
-.intel-faixa-previsao-linhas{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
+/* Previsão Financeira: no desktop, Projeção e Confiabilidade dividem a mesma linha (Confiabilidade
+   alinhada à direita, via order+margin-left:auto — nunca empurrando para uma linha extra), com Faixa
+   provável na linha de baixo, ocupando a largura toda (flex-basis:100% força a quebra, mesma técnica já
+   usada nesta sessão). No mobile, a ordem volta a ser a natural do documento — Projeção, Faixa provável,
+   Confiabilidade por último — sem depender de "order" nenhum. */
+.intel-faixa-previsao-linhas{flex:1;min-width:0;display:flex;flex-direction:row;flex-wrap:wrap;column-gap:16px;row-gap:4px;align-items:baseline;}
 .intel-faixa-previsao-linha{overflow-wrap:break-word;word-break:break-word;}
-.intel-faixa-previsao-confiabilidade{margin-top:2px;padding-top:6px;border-top:1px dashed var(--navy-100);}
+.intel-fp-projecao{order:1;flex:1 1 auto;min-width:0;}
+.intel-faixa-previsao-confiabilidade{order:2;flex:0 0 auto;white-space:nowrap;margin-top:0;padding-top:0;border-top:none;}
+.intel-fp-faixa{order:3;flex:1 1 100%;}
+@media(max-width:700px){
+  .intel-faixa-previsao-linhas{flex-direction:column;}
+  .intel-fp-projecao,.intel-fp-faixa,.intel-faixa-previsao-confiabilidade{order:0;flex:1 1 auto;white-space:normal;}
+  .intel-faixa-previsao-confiabilidade{margin-top:2px;padding-top:6px;border-top:1px dashed var(--navy-100);}
+}
+/* Tabela do painel Previsão Financeira: larguras proporcionais (via % nos <th>, acima) + table-layout:fixed
+   para as colunas respeitarem essa proporção, texto sem quebra e padding reduzido — evita quebra de linha
+   nas células sem precisar de overflow-x no desktop. Só no desktop: ≤700px a tabela já vira lista de cards
+   (.tabela-cards-mobile) e reseta white-space para normal (!important), então essa regra nunca atrapalha o
+   mobile. */
+.tabela-previsao-financeira{table-layout:fixed;}
+.tabela-previsao-financeira th,.tabela-previsao-financeira td{white-space:nowrap;padding:8px 5px;}
+.tabela-previsao-financeira th{overflow:hidden;text-overflow:ellipsis;font-size:9.5px;}
+.tabela-previsao-financeira td{font-size:11px;}
+.tabela-previsao-financeira td .hint{font-size:9.5px;}
 .opcoes-block{
   display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;
   background:var(--navy-50);border:1px solid var(--line);border-radius:10px;padding:12px 16px;
@@ -1326,6 +1364,14 @@ summary::marker{content:'';}
 .fluxo-mes-resumo b.pos{color:var(--receita);}
 .fluxo-mes-resumo b.neg{color:var(--despesa);}
 .fluxo-mes-details[open] .fluxo-mes-corpo{margin-top:6px;}
+/* Item do requisito: altura visualmente padronizada entre as tabelas do Fluxo de Caixa, sem paginação nem
+   rolagem interna — max-height:none (sobrescreve o teto genérico de 520px de .table-wrap) garante que a
+   tabela SEMPRE mostra todos os lançamentos do mês, por mais que a lista cresça; min-height dá um piso
+   visual comum, então um mês com poucos lançamentos não fica visivelmente "mais raso" que os outros — mas
+   nunca limita por cima, um mês com mais lançamentos cresce livremente além do piso. overflow-x continua só
+   como rede de segurança (a tabela já não estoura a largura no uso normal, ver .tabela-fluxo no mobile). */
+.tabela-fluxo-wrap{max-height:none;overflow-y:visible;min-height:220px;}
+@media(max-width:700px){ .tabela-fluxo-wrap{min-height:0;} }
 .ajuda-fluxo{margin:18px 0;border:1px solid var(--line);border-radius:9px;background:#fff;}
 .ajuda-fluxo summary{
   cursor:pointer;padding:10px 14px;font-size:13px;font-weight:700;color:var(--navy-800);
@@ -3518,6 +3564,7 @@ let UI = {
   futurosContaModal: null, // { conta, filtros, busca, pagina, porPagina } — modal "Ver lançamentos futuros" do card de Contas (lançamentos com data > hoje), com filtros próprios do modal (mesmo motor genérico de Data por período + seleção múltipla da aba Registros — ver criarFiltrosPadrao)
   editarSaldoInicialFluxoCaixaModal: null, // true — editar os saldos iniciais das contas que compõem o Fluxo de Caixa
   modalEmpateCartao: null, // { empatados:[...], chaveEmpate, hojeISO } — escolha manual quando há empate persistente
+  mapaCalorDiaModal: null, // { ano, mes, dia } — modal de transações do dia, aberto ao clicar numa célula do Mapa de Calor de Despesas
 };
 
 /* =====================================================================================
@@ -3558,6 +3605,7 @@ const CAMADAS_MODAL = [
   'faturaAtualModal',                  // painel Cartões — Ver Fatura
   'projecaoFaturaModal',               // painel Cartões — Ver Próximas Faturas
   'aportesModal',                      // Painel Financeiro — detalhe de aportes em Economias
+  'mapaCalorDiaModal',                 // Painel Financeiro — transações do dia, aberto de uma célula do Mapa de Calor de Despesas
   'metaModal',                         // Metas de Gastos — nova/editar meta
   'novaSubcategoria',                  // Configurações → Categorias
   'moverCategoriaModal',               // Configurações → Categorias
@@ -4950,9 +4998,11 @@ function calcDashboard(ano, mes){
    painel) lançadas naquele dia. Não recalcula nada em paralelo: só agrega STATE.transactions por dia,
    reaproveitando txInPeriod/ehDespesaOrcamento já usados no restante do dashboard. */
 function calcMapaCalorDespesas(anoBase, mesBase, qtdMeses){
+  // Item do requisito: meses em ordem decrescente, o mais recente (mês selecionado no cabeçalho) no topo —
+  // por isso .push (não .unshift): o mês base entra primeiro e cada iteração seguinte volta um mês.
   const meses = [];
   let ano = anoBase, mes = mesBase;
-  for(let i=0;i<qtdMeses;i++){ meses.unshift({ano,mes}); ({ano,mes} = mesAnterior(ano,mes)); }
+  for(let i=0;i<qtdMeses;i++){ meses.push({ano,mes}); ({ano,mes} = mesAnterior(ano,mes)); }
   const linhas = meses.map(({ano,mes})=>{
     const diasNoMes = new Date(ano, mes, 0).getDate();
     const porDia = Array(diasNoMes+1).fill(0); // índice 1..diasNoMes (índice 0 não usado)
@@ -6303,7 +6353,7 @@ function renderExtratoContaModal(){
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Extrato'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileExtrato" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Extrato', camposFiltroExtrato)}
-            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosExtrato">✕ Limpar filtros</button>` : ''}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosExtrato">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileExtrato">Aplicar</button></div>
           </div>
           ${UI.filtrosMobileAberto==='Extrato' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropExtrato"></div>` : ''}
@@ -6421,7 +6471,7 @@ function renderFuturosContaModal(){
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Futuros'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFuturos" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Futuros', camposFiltroFuturos)}
-            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFuturos">✕ Limpar filtros</button>` : ''}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFuturos">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileFuturos">Aplicar</button></div>
           </div>
           ${UI.filtrosMobileAberto==='Futuros' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFuturos"></div>` : ''}
@@ -7212,11 +7262,13 @@ function render(){
     ${UI.faturaAtualModal!==null ? renderFaturaAtualModal() : ""}
     ${UI.modalDuplicidade!==null ? renderModalDuplicidade() : ""}
     ${UI.aportesModal ? renderModalAportes() : ""}
+    ${UI.mapaCalorDiaModal ? renderMapaCalorDiaModal() : ""}
     ${UI.duplicarMesesModal!==null ? renderDuplicarMesesModal() : ""}
     ${UI.modalConflitoGravacao ? renderModalConflitoGravacao() : ""}
     ${UI.modalFecharSessao ? renderModalFecharSessao() : ""}
   `;
   bindEvents();
+  animarTransicaoMapaCalor();
   if(UI.tab==="dashboard" || UI.tab==="metas" || UI.tab==="inteligencia"){
     // Chart.js mede o tamanho do container do canvas no momento em que é criado. Chamar isso logo após
     // trocar o innerHTML (síncrono, no mesmo tick) pode medir um layout ainda não assentado pelo navegador
@@ -7606,10 +7658,13 @@ function renderTab(){
 function renderMapaCalorDespesas(){
   const { linhas, maxValorDia, maxDiasNoMes } = calcMapaCalorDespesas(UI.ano, UI.mes, 6);
   const diasHeader = Array.from({length:maxDiasNoMes}, (_,i)=>i+1);
+  // Item do requisito: toda célula com lançamentos é clicável (abre o modal de transações do dia) — sem
+  // botão adicional, o próprio toque/clique na célula já basta, com cursor/estado visual indicando que é
+  // interativa (.mc-cel-clicavel), consistente com o resto do app (hover no desktop, toque no mobile).
   return `
   <div class="panel" id="painelMapaCalorDespesas">
     <h2>🔥 Mapa de Calor de Despesas</h2>
-    <p class="hint" style="margin:0 0 12px;">Intensidade da cor é proporcional ao total de despesas lançadas em cada dia — quanto mais forte o vermelho, maior o gasto naquele dia. Últimos 6 meses até ${MESES[UI.mes-1]}/${UI.ano}.</p>
+    <p class="hint" style="margin:0 0 12px;">Intensidade da cor é proporcional ao total de despesas lançadas em cada dia — quanto mais forte o vermelho, maior o gasto naquele dia. Clique num dia com despesas para ver os lançamentos. Últimos 6 meses até ${MESES[UI.mes-1]}/${UI.ano}.</p>
     ${maxValorDia<=0 ? `<div class="empty-state"><div class="big">🔥</div>Nenhuma despesa lançada no período para montar o mapa de calor.</div>` : `
     <div class="mc-scroll">
       <div class="mc-grid" style="grid-template-columns:64px repeat(${maxDiasNoMes},1fr);">
@@ -7618,10 +7673,11 @@ function renderMapaCalorDespesas(){
         ${linhas.map(l=>`
         <div class="mc-mes-label" title="Total do mês: ${fmtBRL(l.total)}">${MESES[l.mes-1].slice(0,3)}/${String(l.ano).slice(2)}</div>
         ${diasHeader.map(d=>{
-          if(d>l.diasNoMes) return `<div class="mc-cel mc-cel-inexistente"></div>`;
+          const key = `${l.ano}-${l.mes}-${d}`;
+          if(d>l.diasNoMes) return `<div class="mc-cel mc-cel-inexistente" data-mc-key="${key}"></div>`;
           const v = l.porDia[d]||0;
           const titulo = `${pad2(d)}/${pad2(l.mes)}/${l.ano} — ${v>0?fmtBRL(v):'sem despesas'}`;
-          return `<div class="mc-cel" style="${corIntensidadeDespesa(v, maxValorDia)}" title="${escapeHtml(titulo)}"></div>`;
+          return `<div class="mc-cel ${v>0?'mc-cel-clicavel':''}" data-mc-key="${key}" ${v>0?`data-mc-dia="${l.ano}-${l.mes}-${d}" tabindex="0" role="button" aria-label="${escapeHtml(titulo)}"`:''} style="${corIntensidadeDespesa(v, maxValorDia)}" title="${escapeHtml(titulo)}"></div>`;
         }).join('')}`).join('')}
       </div>
     </div>
@@ -7631,6 +7687,82 @@ function renderMapaCalorDespesas(){
       <span>Mais</span>
     </div>
     `}
+  </div>`;
+}
+/* Item do requisito ("animação temporal"): quando o período do cabeçalho muda (setas de mês/ano), o Mapa
+   de Calor não troca instantaneamente — as células que representam a MESMA data em ambas as janelas de 6
+   meses (a maioria, já que mover 1 mês só troca a linha mais antiga por uma nova) fazem um crossfade da
+   cor antiga para a nova, e o grid como um todo ganha um fade suave (cobre as linhas que entram/saem da
+   janela). Guardado só em variáveis de módulo (mcCelColorCacheAnterior/mcPeriodoAnterior) — nenhum estado
+   novo em UI/STATE, e a lógica roda inteiramente depois do DOM já estar pronto (chamada no fim de render()),
+   então nunca interfere no cálculo/dado exibido, só na transição visual. Leve o bastante para o iPhone: é
+   só 1 reflow forçado + troca de propriedade CSS por célula, sem nenhuma lib de animação. */
+let mcCelColorCacheAnterior = null;
+let mcPeriodoAnterior = null;
+function animarTransicaoMapaCalor(){
+  const grid = document.querySelector('#painelMapaCalorDespesas .mc-grid');
+  if(!grid){ mcCelColorCacheAnterior = null; mcPeriodoAnterior = null; return; }
+  const periodoAtual = `${UI.ano}-${UI.mes}`;
+  const celulas = grid.querySelectorAll('.mc-cel[data-mc-key]');
+  const cacheNovo = new Map();
+  celulas.forEach(cel=> cacheNovo.set(cel.dataset.mcKey, cel.style.background));
+  if(mcPeriodoAnterior!==null && mcPeriodoAnterior!==periodoAtual && mcCelColorCacheAnterior){
+    celulas.forEach(cel=>{
+      const corAntiga = mcCelColorCacheAnterior.get(cel.dataset.mcKey);
+      if(corAntiga===undefined) return; // célula nova na janela (mês que acabou de entrar) — só o fade do grid cobre
+      const corFinal = cel.style.background;
+      if(corAntiga===corFinal) return; // nada mudou nessa data — evita trabalho/reflow à toa
+      cel.style.transition = 'none';
+      cel.style.background = corAntiga;
+      void cel.offsetHeight; // força reflow para o navegador "ver" o valor antigo antes de animar
+      cel.style.transition = '';
+      requestAnimationFrame(()=>{ cel.style.background = corFinal; });
+    });
+    grid.classList.remove('mc-grid-transicionando');
+    void grid.offsetHeight;
+    grid.classList.add('mc-grid-transicionando');
+  }
+  mcCelColorCacheAnterior = cacheNovo;
+  mcPeriodoAnterior = periodoAtual;
+}
+/* ---------- Modal: transações de UM dia, aberto ao clicar numa célula do Mapa de Calor de Despesas ----------
+   Mesmo padrão visual/comportamento dos demais modais de detalhe do app (.overlay/.modal/.modal-head/
+   .modal-body/.modal-foot, fechar só pelo ✕ ou pelo botão do rodapé — sem fechar ao clicar no fundo, igual
+   a todos os outros modais já existentes). Lista as transações do dia reaproveitando os mesmos campos já
+   usados nas demais telas (descrição/grupo/categoria/responsável/valor via t.descricao/t.grupo/t.categoria/
+   t.responsavel/t.valor) — nenhum dado novo, só uma consulta filtrada de STATE.transactions. */
+function renderMapaCalorDiaModal(){
+  const { ano, mes, dia } = UI.mapaCalorDiaModal;
+  const dataISO = `${ano}-${pad2(mes)}-${pad2(dia)}`;
+  const itens = STATE.transactions
+    .filter(t=> t.data===dataISO && ehDespesaOrcamento(t))
+    .sort((a,b)=> (Number(b.valor)||0)-(Number(a.valor)||0));
+  const total = itens.reduce((s,t)=>s+(Number(t.valor)||0),0);
+  return `
+  <div class="overlay" id="ovMapaCalorDia" ${attrZIndexModal('mapaCalorDiaModal')}>
+    <div class="modal" style="width:520px;">
+      <div class="modal-head"><h3>🔥 Despesas de ${pad2(dia)}/${pad2(mes)}/${ano}</h3><button class="close-x" id="closeMapaCalorDia">✕</button></div>
+      <div class="modal-body">
+        <div class="cartoes-resumo-grid" style="margin-bottom:14px;">
+          <div class="cartoes-resumo-item"><span class="ico">🧾</span><div><div class="val">${itens.length}</div><div class="lbl">lançamento${itens.length===1?'':'s'}</div></div></div>
+          <div class="cartoes-resumo-item"><span class="ico">💸</span><div><div class="val">${fmtBRL(total)}</div><div class="lbl">total de despesas no dia</div></div></div>
+        </div>
+        ${itens.length===0 ? `<div class="empty-state"><div class="big">🔥</div>Nenhuma despesa encontrada neste dia.</div>` : `
+        <div class="table-wrap"><table>
+          <thead><tr><th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Responsável</th><th style="text-align:right;">Valor</th></tr></thead>
+          <tbody>${itens.map(t=>`<tr>
+            <td>${escapeHtml(t.descricao)}</td>
+            <td>${escapeHtml(t.grupo||'—')}</td>
+            <td>${escapeHtml(t.categoria||'—')}</td>
+            <td>${t.responsavel?escapeHtml(t.responsavel):'<span class="hint">—</span>'}</td>
+            <td class="val-cell neg" style="text-align:right;">${fmtBRL(t.valor)}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>`}
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-primary" id="fecharMapaCalorDia">Fechar</button>
+      </div>
+    </div>
   </div>`;
 }
 function renderDashboard(){
@@ -8190,7 +8322,7 @@ function renderFiltroDataRange(f, prefixo){
         <label>De<input type="date" id="dataRangeInicio${prefixo}" value="${f.dataInicio||''}" ${modoLivre?'':'disabled'} max="${f.dataFim||''}"></label>
         <label>Até<input type="date" id="dataRangeFim${prefixo}" value="${f.dataFim||''}" ${modoLivre?'':'disabled'} min="${f.dataInicio||''}"></label>
       </div>
-      ${(f.dataInicio||f.dataFim) ? `<button type="button" class="btn btn-ghost btn-sm filtro-padrao-limpar" id="btnLimparData${prefixo}">Limpar período</button>` : ''}
+      ${(f.dataInicio||f.dataFim) ? `<button type="button" class="btn btn-ghost btn-sm filtro-padrao-limpar" id="btnLimparData${prefixo}">↺ Restaurar filtros padrão</button>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -8228,7 +8360,7 @@ function renderFiltroMultiSelect(f, prefixo, campo, label, options){
           ${escapeHtml(o.label)}
         </label>`).join('')}
       </div>
-      ${selected.size>0 ? `<button type="button" class="btn btn-ghost btn-sm filtro-padrao-limpar" id="btnLimparMultisel${prefixo}${campo}">Limpar seleção</button>` : ''}
+      ${selected.size>0 ? `<button type="button" class="btn btn-ghost btn-sm filtro-padrao-limpar" id="btnLimparMultisel${prefixo}${campo}">↺ Restaurar filtros padrão</button>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -8671,7 +8803,7 @@ function renderRegistros(){
       <summary>ℹ️ Informações sobre esta tela</summary>
       <div class="ajuda-fluxo-conteudo">
         <p><b>Busca</b>: o campo de busca considera exclusivamente a <b>Descrição</b> do lançamento — não busca por categoria, conta ou valor. Pressione Enter ou clique em "🔍 Buscar" para aplicar.</p>
-        <p><b>Filtros</b>: o filtro <b>Data</b> permite escolher um intervalo (data inicial e final) livremente, com atalhos para períodos comuns (Hoje, Ontem, Últimos 7/30 dias, Este mês, Mês anterior) ou um período Personalizado — totalmente independente do período exibido no cabeçalho da aplicação. Grupo, Natureza, Tipo, Conta e Fatura aceitam marcar mais de uma opção ao mesmo tempo (dentro do mesmo filtro, os registros que atendem a qualquer uma das opções marcadas aparecem); filtros diferentes se combinam entre si. Cada alteração já atualiza a lista e os totais na hora, sem recarregar a página. Use "✕ Limpar filtros" para voltar a ver todos os lançamentos.</p>
+        <p><b>Filtros</b>: o filtro <b>Data</b> permite escolher um intervalo (data inicial e final) livremente, com atalhos para períodos comuns (Hoje, Ontem, Últimos 7/30 dias, Este mês, Mês anterior) ou um período Personalizado — totalmente independente do período exibido no cabeçalho da aplicação. Grupo, Natureza, Tipo, Conta e Fatura aceitam marcar mais de uma opção ao mesmo tempo (dentro do mesmo filtro, os registros que atendem a qualquer uma das opções marcadas aparecem); filtros diferentes se combinam entre si. Cada alteração já atualiza a lista e os totais na hora, sem recarregar a página. Use "↺ Restaurar filtros padrão" para voltar a ver todos os lançamentos.</p>
         <p><b>Seleção em lote</b>: marque as caixas na primeira coluna (ou o checkbox "selecionar todos" no cabeçalho, que cobre a página atual) para abrir a barra de ações — mesmo componente usado nos modais da aba Contas e Cartões. Com pelo menos um lançamento marcado, é possível "✏️ Editar em Lote" (altera só os campos habilitados, em todos os selecionados de uma vez) ou "🗑️ Excluir selecionados" (pede confirmação antes de remover).</p>
         <p><b>Verificar duplicidade</b>: compara todos os lançamentos já registrados e aponta pares com data, valor e conta muito parecidos — útil depois de uma importação para conferir se algo entrou duas vezes.</p>
         <p><b>Importar arquivo do banco</b>: aceita extratos (.ofx/.xlsx) e faturas de cartão, holerites em PDF para contas do tipo Contracheque, e extratos .csv do PicPay para a conta Reserva de Emergência (com descrição e classificação — Aporte, Uso da Reserva ou Rendimento — geradas automaticamente a partir do Tipo de cada lançamento), com detecção automática de compras parceladas e de possíveis duplicatas antes de confirmar. O mesmo fluxo também pode ser iniciado direto pelo botão 📥 de uma conta específica (aba Contas e Cartões) ou de um cartão específico (coluna 📥 da tabela de Cartões) — nesse caso a conta de destino já vem travada, para nunca importar para a conta errada.</p>
@@ -8684,7 +8816,7 @@ function renderRegistros(){
         <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileReg" title="Fechar">✕</button></div>
         ${renderBarraFiltrosPadrao(f, 'Reg', camposFiltroReg)}
         <div class="filtros-barra-acoes-mobile">
-          ${qtdAtivos>0 ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosReg">✕ Limpar filtros</button>` : ''}
+          ${qtdAtivos>0 ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosReg">↺ Restaurar filtros padrão</button>` : ''}
           <button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileReg">Aplicar</button>
         </div>
       </div>
@@ -9181,7 +9313,7 @@ function renderFaturaAtualModal(){
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Fatura'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFatura" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Fatura', camposFiltroFatura)}
-            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFatura">✕ Limpar filtros</button>` : ''}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFatura">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileFatura">Aplicar</button></div>
           </div>
           ${UI.filtrosMobileAberto==='Fatura' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFatura"></div>` : ''}
@@ -9303,7 +9435,7 @@ function renderProjecaoFaturaModal(){
           <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Projecao'?'aberto-mobile':''}">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileProjecao" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Projecao', camposFiltroProjecao)}
-            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosProjecao">✕ Limpar filtros</button>` : ''}
+            ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosProjecao">↺ Restaurar filtros padrão</button>` : ''}
             <div class="filtros-barra-acoes-mobile"><button type="button" class="btn btn-primary btn-sm" id="btnAplicarFiltrosMobileProjecao">Aplicar</button></div>
           </div>
           ${UI.filtrosMobileAberto==='Projecao' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropProjecao"></div>` : ''}
@@ -9478,7 +9610,7 @@ function renderPainelProjecao(m, idx){
         <span class="expand-arrow" data-arrow-for="fluxo-mes-${chaveMesFluxo}">${abertoFluxo?'➖':'➕'}</span>
       </summary>
       <div class="fluxo-mes-corpo">
-        <div class="table-wrap" style="max-height:1335px;overflow-x:auto;"><table class="tabela-fluxo" style="table-layout:fixed;width:100%;">
+        <div class="table-wrap tabela-fluxo-wrap" style="overflow-x:auto;"><table class="tabela-fluxo" style="table-layout:fixed;width:100%;">
           <thead><tr>
             <th style="text-align:center;width:${pct(chDia)}%;">Dia</th>
             <th style="text-align:left;width:${pct(chDescricao)}%;">Descrição</th>
@@ -9691,13 +9823,19 @@ function renderInteligencia(){
       <div class="info-card intel-faixa-previsao" style="margin-top:0;margin-bottom:10px;">
         <span class="info-card-icon">🔮</span>
         <div class="intel-faixa-previsao-linhas">
-          <div class="intel-faixa-previsao-linha"><b>Projeção (${MESES[ult.mes-1]}/${ult.ano}):</b> ${fmtBRL(ult.saldoProjetado)}</div>
-          <div class="intel-faixa-previsao-linha"><b>Faixa provável:</b> ${fmtBRL(ult.faixaInferior)} a ${fmtBRL(ult.faixaSuperior)}</div>
+          <div class="intel-faixa-previsao-linha intel-fp-projecao"><b>Projeção (${MESES[ult.mes-1]}/${ult.ano}):</b> ${fmtBRL(ult.saldoProjetado)}</div>
+          <div class="intel-faixa-previsao-linha intel-fp-faixa"><b>Faixa provável:</b> ${fmtBRL(ult.faixaInferior)} a ${fmtBRL(ult.faixaSuperior)}</div>
           <div class="intel-faixa-previsao-linha intel-faixa-previsao-confiabilidade"><b>Confiabilidade:</b> ${ctx.confiabilidade.nivel}</div>
         </div>
       </div>`; })() : ''}
-      <div class="table-wrap" style="max-height:none;"><table class="tabela-cards-mobile">
-        <thead><tr><th>Mês</th><th style="text-align:right;">Receita Prevista</th><th style="text-align:right;">Despesa Prevista</th><th style="text-align:right;">Saldo Previsto</th><th style="text-align:right;">Poupança</th></tr></thead>
+      <div class="table-wrap" style="max-height:none;"><table class="tabela-cards-mobile tabela-previsao-financeira">
+        <thead><tr>
+          <th style="width:19%;">Mês</th>
+          <th style="text-align:right;width:19%;">Receita Prevista</th>
+          <th style="text-align:right;width:19%;">Despesa Prevista</th>
+          <th style="text-align:right;width:31%;">Saldo Previsto</th>
+          <th style="text-align:right;width:12%;">Poupança</th>
+        </tr></thead>
         <tbody>
           ${ctx.projecoes.map(p=>`<tr style="${p.risco==='alto'?'background:#fbe4e1;':(p.risco==='medio'?'background:#fdf3d8;':'')}">
             <td data-label="Mês">${MESES[p.mes-1]}/${p.ano} ${p.risco==='alto'?'🔴':(p.risco==='medio'?'🟡':'')}</td>
@@ -12613,6 +12751,18 @@ function bindEvents(){
   document.getElementById('btnIrParaCartoes')?.addEventListener('click', ()=>{ UI.tab='cartoes'; UI.cartoesSecaoAtiva='cartoes'; render(); });
   document.getElementById('closeAportes')?.addEventListener('click', ()=>{ UI.aportesModal=false; render(); });
   document.getElementById('closeAportes2')?.addEventListener('click', ()=>{ UI.aportesModal=false; render(); });
+  // Mapa de Calor de Despesas: célula com lançamentos é o próprio elemento clicável (sem botão extra) —
+  // clique (mouse/toque) ou Enter/Espaço (teclado, já que a célula tem role="button" tabindex="0").
+  document.querySelectorAll('[data-mc-dia]').forEach(cel=>{
+    const abrir = ()=>{
+      const [ano,mes,dia] = cel.dataset.mcDia.split('-').map(Number);
+      UI.mapaCalorDiaModal = { ano, mes, dia }; render();
+    };
+    cel.addEventListener('click', abrir);
+    cel.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); abrir(); } });
+  });
+  document.getElementById('closeMapaCalorDia')?.addEventListener('click', ()=>{ UI.mapaCalorDiaModal=null; render(); });
+  document.getElementById('fecharMapaCalorDia')?.addEventListener('click', ()=>{ UI.mapaCalorDiaModal=null; render(); });
   document.querySelectorAll('[data-editar-saldo-inicial-conta]').forEach(b=> b.addEventListener('click', ()=>{
     UI.editarSaldoInicialContaModal = { conta: b.dataset.editarSaldoInicialConta }; render();
     const inp = document.getElementById('inpSaldoInicialConta');
