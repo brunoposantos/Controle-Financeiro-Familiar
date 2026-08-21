@@ -7740,7 +7740,7 @@ function renderMapaCalorDiaModal(){
   const total = itens.reduce((s,t)=>s+(Number(t.valor)||0),0);
   return `
   <div class="overlay" id="ovMapaCalorDia" ${attrZIndexModal('mapaCalorDiaModal')}>
-    <div class="modal" style="width:520px;">
+    <div class="modal" style="width:1280px;">
       <div class="modal-head"><h3>🔥 Despesas de ${pad2(dia)}/${pad2(mes)}/${ano}</h3><button class="close-x" id="closeMapaCalorDia">✕</button></div>
       <div class="modal-body">
         <div class="cartoes-resumo-grid" style="margin-bottom:14px;">
