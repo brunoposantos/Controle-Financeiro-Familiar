@@ -7748,16 +7748,22 @@ function renderMapaCalorDiaModal(){
           <div class="cartoes-resumo-item"><span class="ico">💸</span><div><div class="val">${fmtBRL(total)}</div><div class="lbl">total de despesas no dia</div></div></div>
         </div>
         ${itens.length===0 ? `<div class="empty-state"><div class="big">🔥</div>Nenhuma despesa encontrada neste dia.</div>` : `
-        <div class="table-wrap"><table>
-          <thead><tr><th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Responsável</th><th style="text-align:right;">Valor</th></tr></thead>
+        <div class="table-wrap table-wrap-registros reg-tabela-principal"><table>
+          <thead><tr><th>Descrição</th><th>Grupo</th><th>Categoria</th><th>Conta</th><th style="text-align:right;">Valor</th></tr></thead>
           <tbody>${itens.map(t=>`<tr>
             <td>${escapeHtml(t.descricao)}</td>
             <td>${escapeHtml(t.grupo||'—')}</td>
             <td>${escapeHtml(t.categoria||'—')}</td>
-            <td>${t.responsavel?escapeHtml(t.responsavel):'<span class="hint">—</span>'}</td>
+            <td>${t.conta?escapeHtml(t.conta):'<span class="hint">—</span>'}</td>
             <td class="val-cell neg" style="text-align:right;">${fmtBRL(t.valor)}</td>
           </tr>`).join('')}</tbody>
-        </table></div>`}
+        </table></div>
+        ${renderCardsLancamentosModal(itens, {
+          valorTexto: t=>fmtBRL(t.valor), valorClasse: ()=>'neg',
+          secundario: t=>`${t.categoria||'Sem categoria'} · ${t.grupo||'Sem Grupo'}`,
+          tags: t=> t.conta ? `<span class="tag" style="background:var(--navy-100);color:var(--navy-900);">${escapeHtml(t.conta)}</span>` : '',
+          semAcao: ()=>true,
+        })}`}
       </div>
       <div class="modal-foot">
         <button class="btn btn-primary" id="fecharMapaCalorDia">Fechar</button>
