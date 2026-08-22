@@ -293,7 +293,16 @@ input,select{font-family:var(--sans);}
 .banner b{color:#5c3d00;}
 .pwa-banner{background:var(--navy-900);color:#fff;font-size:12.5px;padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center;}
 
-.tabbar{display:flex;gap:2px;background:var(--navy-800);padding:0 20px;overflow-x:auto;}
+.tabbar{display:flex;gap:2px;background:var(--navy-800);padding:0 20px;overflow:hidden;flex-wrap:nowrap;}
+/* Item 20 do requisito: a tabbar NUNCA pode rolar horizontalmente nem ficar cortada — quando as abas não
+   cabem numa única linha, mesmo acima de 700px (ex.: janela do navegador redimensionada), a aplicação troca
+   para bottom-nav via classe .forcar-nav-mobile no <html> (ver ajustarNavResponsiva/UI.forcarNavMobile),
+   com as MESMAS regras já usadas pelo breakpoint fixo abaixo — só a navegação muda, não o layout todo. */
+html.forcar-nav-mobile .tabbar{display:none;}
+html.forcar-nav-mobile .bottom-nav{display:flex;}
+html.forcar-nav-mobile .fab-novo-lancamento,html.forcar-nav-mobile .fab-novo-lancamento-modal{display:flex;align-items:center;justify-content:center;}
+html.forcar-nav-mobile main.app-main,html.forcar-nav-mobile .app>main{padding-bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);}
+html.forcar-nav-mobile .acoes-lancamento-modal .btn-novo-lanc-modal{display:none;}
 .tab-btn{
   border:none;background:transparent;color:#c7d3ea;padding:10px 20px 9px;font-size:13px;font-weight:600;
   font-family:var(--sans);clip-path:polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%);
@@ -534,8 +543,10 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 @media(max-width:480px){
   .cenario-inputs-linha{flex-wrap:wrap;}
   /* Item 10 do requisito de responsividade: controles fáceis de tocar — os campos de variação percentual
-     ganham altura mínima de toque (--touch-min) só no mobile, sem alterar o desktop. */
-  .cenario-input-3d{min-height:var(--touch-min);font-size:14px;}
+     ganham altura mínima de toque (--touch-min) só no mobile, sem alterar o desktop. Item 9 (rodada de
+     ajustes globais): fonte do input exatamente 2pt menor que a do próprio label (.cenario-input-grupo,
+     font-size:11px) — calc() garante que os dois nunca se descolem se um dia o tamanho do label mudar. */
+  .cenario-input-3d{min-height:var(--touch-min);font-size:calc(11px - 2pt);}
 }
 @media(max-width:900px){.grid-cards{grid-template-columns:repeat(2,1fr);}}
 .kpi{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--paper);position:relative;overflow:hidden;}
@@ -548,7 +559,11 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
   display:none;background:linear-gradient(135deg,var(--navy-900) 0%, var(--navy-950) 100%);color:#fff;
   border-radius:var(--radius-lg);padding:var(--sp-5) var(--sp-6);margin-bottom:var(--sp-4);text-align:center;
 }
-.dash-hero-saldo-lbl{font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:#b9c9ea;}
+/* Item 7 do requisito: rótulo à esquerda e data (dinâmica, sempre "hoje") à direita, na mesma linha,
+   alinhados verticalmente — mesmo quando o texto encolhe, os dois nunca quebram para linhas separadas. */
+.dash-hero-saldo-topo{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.dash-hero-saldo-lbl{font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:#b9c9ea;white-space:nowrap;}
+.dash-hero-saldo-data{font-size:12.5px;font-weight:600;color:#b9c9ea;white-space:nowrap;flex:0 0 auto;}
 .dash-hero-saldo-val{font-family:var(--mono);font-size:32px;font-weight:700;margin-top:6px;color:var(--gold);}
 .dash-hero-saldo-val.neg{color:#ff8a7a;}
 @media(max-width:700px){ .dash-hero-saldo{display:block;} }
@@ -795,6 +810,11 @@ tbody tr:hover{background:var(--navy-50);}
   display:flex;align-items:center;gap:8px;font-size:12.5px;color:#5b6b85;font-weight:600;
   padding:6px 2px 10px;user-select:none;
 }
+/* Backups (item 1 do requisito): mesmo componente visual/comportamental de "Selecionar todos" da aba
+   Registros (.reg-select-all-mobile), mas só existe no mobile — no desktop o checkbox já mora no
+   cabeçalho (<thead>) da própria tabela, então este rótulo fica oculto para não duplicar a ação. */
+.backup-select-all-mobile{display:none;}
+@media(max-width:700px){ .backup-select-all-mobile{display:flex;} }
 .reg-card-principal{flex:1;min-width:0;}
 .reg-card-linha1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
 .reg-card-descricao{font-size:14px;font-weight:600;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -878,6 +898,16 @@ tbody tr:hover{background:var(--navy-50);}
 }
 .icon-btn{background:transparent;border:none;color:#6a7a97;padding:4px;border-radius:5px;}
 .icon-btn:hover{background:var(--navy-100);color:var(--navy-900);}
+/* Botão de busca somente-ícone (item 11 do requisito): mesma aparência "fantasma" do .icon-btn, mas com
+   área de toque mínima garantida em qualquer largura (não só mobile), já que substitui um botão de texto
+   em toda a aplicação. */
+.btn-buscar-icone{background:transparent;border:none;color:#2f6fed;border-radius:6px;min-width:var(--touch-min);min-height:34px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex:0 0 auto;}
+.btn-buscar-icone:hover{background:var(--navy-100);}
+@media(max-width:700px){ .btn-buscar-icone{min-height:var(--touch-min);} }
+/* Ícone SVG padrão de filtro (item 3) e de "Verificar duplicidade" (item 14) — tamanho/alinhamento
+   consistentes em qualquer botão que os utilize. */
+.ico-filtro,.ico-dup{width:12px;height:12px;flex:0 0 auto;vertical-align:middle;display:inline-block;}
+.btn-filtro-padrao{display:inline-flex;align-items:center;gap:6px;}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
 /* Configurações — busca e controles superiores (itens 19/20 do requisito de responsividade): grupos
    próprios para nunca comprimir três botões numa única linha estreita, e um campo de busca que nunca
@@ -909,16 +939,18 @@ tbody tr:hover{background:var(--navy-50);}
      com reticências (ellipsis) mas o ícone nunca some, e o título (atributo title) mantém a ação identificável. */
   .reg-toolbar-acoes{align-items:stretch;gap:6px;}
   .reg-toolbar-acoes #btnFiltrosMobileReg,
-  .reg-toolbar-acoes #btnVerificarDuplicidade,
-  .reg-toolbar-acoes #btnImportar{
+  .reg-toolbar-acoes #btnVerificarDuplicidade{
     flex:1 1 0;min-width:0;padding-left:6px;padding-right:6px;
     overflow:hidden;white-space:nowrap;font-size:12px;
   }
   .reg-toolbar-acoes #btnFiltrosMobileReg .reg-toolbar-label,
-  .reg-toolbar-acoes #btnVerificarDuplicidade .reg-toolbar-label,
-  .reg-toolbar-acoes #btnImportar .reg-toolbar-label{
+  .reg-toolbar-acoes #btnVerificarDuplicidade .reg-toolbar-label{
     flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
+  /* Item 15 do requisito: no mobile, "Importar arquivo do banco" mostra somente o ícone — libera espaço
+     para Filtros/Verificar duplicidade manterem o rótulo de texto legível. */
+  .reg-toolbar-acoes #btnImportar{ flex:0 0 auto; min-width:var(--touch-min); min-height:var(--touch-min); padding:6px 10px; }
+  .reg-toolbar-acoes #btnImportar .reg-toolbar-label{ display:none; }
   .reg-toolbar-acoes .reg-busca-wrap{order:99;}
   /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto"/"+ Nova meta"
      (itens 7 e 14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em
@@ -933,6 +965,14 @@ tbody tr:hover{background:var(--navy-50);}
    permitido — e a tabela ganha rolagem horizontal própria em vez de forçar o modal a ultrapassar a
    viewport. */
 .modal-extrato-futuros{ width:1280px; }
+/* Item 12 do requisito: no modal Extrato da Conta (inclui Contracheque/TRT), "Imprimir" e "Replicar
+   Contracheque" ficam juntos, alinhados à direita, na mesma linha enquanto couberem; em telas estreitas
+   empilham um acima do outro (sempre à direita, nunca ultrapassando a largura do painel). */
+.extrato-conta-acoes-topo{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+@media(max-width:480px){
+  .extrato-conta-acoes-topo{flex-direction:column;align-items:stretch;width:100%;}
+  .extrato-conta-acoes-topo .btn{width:100%;text-align:center;}
+}
 /* Compacta os espaçamentos verticais internos destes dois modais (mesma lógica de .modal-fatura-cartao
    logo abaixo, aplicada aqui aos modais "Ver Extrato"/"Lançamentos futuros") — cabeçalho + botões de ação
    + resumo + filtros + tabela + paginação cabem sem precisar da rolagem própria do modal na maioria das
@@ -1008,8 +1048,10 @@ tbody tr:hover{background:var(--navy-50);}
 .modal-mapa-calor{ width:min(1280px, 96vw); }
 /* Modal de Backup e Restauração: mesmo padrão de largura responsiva (teto 1280px) usado pelos demais
    modais grandes acima — inline style="width:1280px" no markup é quem efetivamente fixa a largura
-   (ver comentário do .modal-mapa-calor sobre a ordem de especificidade do CSS); altura 100% também vai
-   inline (style="height:100%"), respeitando o teto global .modal{max-height:96vh}. */
+   (ver comentário do .modal-mapa-calor sobre a ordem de especificidade do CSS). SEM altura forçada: o
+   modal cresce com o conteúdo (mais backups = mais alto), até o teto global .modal{max-height:96vh}; só
+   aí o scroll único do próprio .modal (overflow:auto) entra em ação — nunca height:100% fixo, que deixaria
+   espaço vazio embaixo da tabela quando há poucos backups. */
 .modal-backup{ width:min(1280px, 96vw); }
 .modal-mapa-calor .cartoes-resumo-grid{ margin-bottom:10px; }
 .modal-fatura-cartao .modal-body{ padding:12px 18px 14px; }
@@ -1290,6 +1332,17 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
 .filtro-multisel-lista{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
 .filtro-multisel-item{padding:3px 2px;}
 .filtros-barra{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+/* Item 2 do requisito: chips dos filtros ativos, entre a toolbar de filtros e a tabela. */
+.chips-filtros-ativos{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;}
+.chip-filtro-ativo{
+  display:inline-flex;align-items:center;gap:5px;background:var(--navy-100);color:var(--navy-900);
+  font-size:11.5px;font-weight:600;padding:4px 6px 4px 10px;border-radius:var(--radius-full);
+}
+.chip-filtro-remover{
+  background:transparent;border:none;color:var(--navy-900);cursor:pointer;padding:2px;line-height:1;
+  border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+}
+.chip-filtro-remover:hover{background:rgba(0,0,0,.08);}
 /* Botão "Filtros" com badge (item 12 do requisito de responsividade): só existe visualmente no mobile —
    no desktop a barra de filtros já fica sempre visível, então o botão fica oculto por CSS. */
 .filtros-mobile-toggle{display:none;}
@@ -1438,12 +1491,23 @@ summary::marker{content:'';}
 
 /* ---- Aba Contas e Cartões ---- */
 .cartoes-resumo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+/* Item 17 do requisito: resumo do painel Cartões — usa flex em vez de grid, então quando o último card
+   (ex.: "parcelado em aberto") sobra sozinho numa linha, ele estica (flex:1) até preencher todo o espaço
+   horizontal restante, em vez de ficar do tamanho de uma única coluna com vazio ao lado. Responsivo em
+   qualquer largura (desktop ou mobile), já que é o mesmo flex-wrap em ambos. */
+.cartoes-resumo-grid-flex-fill{display:flex;flex-wrap:wrap;}
+.cartoes-resumo-grid-flex-fill .cartoes-resumo-item{flex:1 1 140px;}
 /* Modal "Ver detalhes" de Economias — agrupamento Categoria → Subcategoria → lançamentos. */
 .aportes-categoria-bloco{margin-bottom:14px;}
 .aportes-categoria-bloco:last-child{margin-bottom:0;}
 .aportes-categoria-cabecalho{display:flex;justify-content:space-between;background:var(--navy-900);color:#fff;padding:6px 10px;border-radius:6px;font-size:12.5px;}
 .aportes-subcategoria-bloco{margin:6px 0 0 10px;}
-.aportes-subcategoria-cabecalho{display:flex;justify-content:space-between;background:var(--navy-50,#eef2f9);padding:4px 10px;font-size:12px;font-weight:600;color:#4a5468;border-radius:4px;}
+.aportes-subcategoria-cabecalho{display:flex;justify-content:space-between;align-items:baseline;gap:8px;background:var(--navy-50,#eef2f9);padding:4px 10px;font-size:12px;font-weight:600;color:#4a5468;border-radius:4px;}
+/* Item 6 do requisito: o valor total do cabeçalho de subcategoria nunca quebra linha no mobile — encolhe
+   o nome da subcategoria (com reticências) antes de deixar o valor quebrar. */
+.aportes-subcategoria-cabecalho span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;}
+.aportes-subcategoria-cabecalho span:last-child{white-space:nowrap;flex:0 0 auto;}
+@media(max-width:700px){ .aportes-subcategoria-cabecalho{font-size:11.5px;} }
 .aportes-tabela-itens{width:100%;font-size:12px;border-collapse:collapse;}
 /* Classe genérica reutilizável para transformar qualquer tabela em cards empilhados no mobile (mesma
    técnica já usada em Fluxo de Caixa/Cartões/Economias) — usar quando a tabela não tem nenhum estilo
@@ -1472,10 +1536,14 @@ summary::marker{content:'';}
      lado a lado, preservando a quebra de linha interna da célula. */
   .tabela-cards-mobile td.val-cell{display:block;text-align:right!important;}
   .tabela-cards-mobile td.val-cell[data-label]:not([data-label=""])::before{display:block;text-align:left;margin-bottom:2px;}
-  /* Backups (item 21 do requisito): "Restaurar" continua a ação principal, em destaque, numa linha própria. */
-  .tabela-cards-mobile td.backup-linha-acoes{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding-top:10px;}
-  .tabela-cards-mobile td.backup-linha-acoes .btn{width:100%;min-height:var(--touch-min);}
-  .tabela-cards-mobile td.backup-linha-acoes .icon-btn{align-self:center;min-height:var(--touch-min);min-width:var(--touch-min);}
+  /* Backups (item 1 do requisito de responsividade): "Restaurar" e "Excluir" ficam na MESMA linha — Restaurar
+     ocupa o espaço disponível à esquerda, Excluir (só ícone) fica alinhado à direita do card. */
+  .tabela-cards-mobile td.backup-linha-acoes{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;padding-top:10px;}
+  .tabela-cards-mobile td.backup-linha-acoes .btn{flex:1 1 auto;min-height:var(--touch-min);}
+  .tabela-cards-mobile td.backup-linha-acoes .icon-btn{flex:0 0 auto;margin-left:auto;min-height:var(--touch-min);min-width:var(--touch-min);}
+  /* Checkbox de seleção de cada card de backup: mesma célula "sem rótulo" das ações, mas alinhada à
+     esquerda no topo do card em vez de dentro da linha de botões. */
+  .tabela-cards-mobile td.backup-linha-checkbox{justify-content:flex-start;border-bottom:none;padding-bottom:0;}
   /* Revisão da importação (item 20 do requisito): cada linha vira um card com os campos editáveis
      empilhados (rótulo acima do campo, não ao lado) — os mesmos <input>/<select>, sem duplicar estado. */
   .tabela-import-revisao td{display:block;padding:8px 0;}
@@ -1533,10 +1601,21 @@ summary::marker{content:'';}
 .cartoes-resumo-item{
   display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--navy-50);
 }
-.cartoes-resumo-item .ico{font-size:20px;line-height:1;}
-.cartoes-resumo-item .val{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--navy-900);line-height:1.2;}
+.cartoes-resumo-item .ico{font-size:20px;line-height:1;flex-shrink:0;}
+/* Item 10 do requisito: o valor principal (fonte maior) do cartão-resumo NUNCA quebra em duas linhas —
+   como a regra é uma classe única compartilhada por TODOS os cartões-resumo da aplicação, qualquer redução
+   de fonte para caber (clamp abaixo) já se aplica igualmente a todos os cartões do mesmo conjunto, nunca
+   deixando um card visualmente diferente dos outros só por ter um valor maior. */
+.cartoes-resumo-item{min-width:0;}
+.cartoes-resumo-item > div{min-width:0;}
+.cartoes-resumo-item .val{font-family:var(--mono);font-weight:800;font-size:clamp(12px, 3.6vw, 15px);color:var(--navy-900);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cartoes-resumo-item .lbl{font-size:10.5px;color:#6a7a97;font-weight:600;}
 .tabela-cartoes{min-width:640px;}
+/* Item 18 do requisito: célula extra só para o card mobile — um ÚNICO ícone de editar compartilhado entre
+   Fechamento e Vencimento (a edição já altera as duas datas de uma vez, então dois ícones eram redundantes).
+   Fica oculta no desktop (onde cada coluna já tem o próprio ícone, revelado no hover) — table-layout:fixed
+   ignora células display:none na contagem de colunas, então não desalinha o <thead> de 7 colunas. */
+.col-editar-fatura-mobile{display:none;}
 .tabela-cartoes td{padding:10px 8px;vertical-align:middle;}
 .tabela-cartoes th{padding:8px;}
 .linha-fatura{transition:background-color .15s ease;}
@@ -1635,25 +1714,23 @@ summary::marker{content:'';}
      baixo em vez de ficar na mesma linha (item 13 do requisito), mesmo com overflow:hidden/ellipsis no nome. */
   .tabela-cartoes td:first-child .cartao-col{min-width:0;}
   .tabela-cartoes td.col-importar-cartao{flex:0 0 auto;order:2;border-bottom:none;padding-bottom:8px;justify-content:flex-end;}
-  /* Item 16 do requisito: ordem explícita das linhas do card no mobile — identificação (1/2), valor da
-     fatura (3), fechamento+vencimento lado a lado (4), status (5), parcelado em aberto com o resumo de
-     compras/parcelas (6) — nunca depender da ordem "3" genérica/empatada por ordem de documento. */
+  /* Item 16/18 do requisito: ordem explícita das linhas do card no mobile — identificação (1/2), valor da
+     fatura (3), fechamento+vencimento+ícone único de editar (4), status (5), parcelado em aberto com o
+     resumo de compras/parcelas (6) — nunca depender da ordem "3" genérica/empatada por ordem de documento.
+     Coluna 6 é a nova .col-editar-fatura-mobile (ver markup), então Status/Saldo parcelado avançaram uma
+     posição (7ª/8ª) em relação à versão anterior deste card. */
   .tabela-cartoes td:nth-child(3){order:3;}
-  .tabela-cartoes td:nth-child(6){order:5;}
-  .tabela-cartoes td:nth-child(7){order:6;}
+  .tabela-cartoes td:nth-child(7){order:5;}
+  .tabela-cartoes td:nth-child(8){order:6;}
   /* Fechamento e Vencimento (colunas 4 e 5) formam duas colunas de largura equilibrada na mesma linha, em
      vez de duas linhas cheias empilhadas — mesma técnica flex-basis:0 já usada nesta sessão para dividir
-     largura igualmente entre itens sem depender do tamanho do conteúdo. */
-  /* flex-basis:45% (não 0) é proposital aqui: junto com a linha anterior (Valor da fatura, basis:100%), o
-     total acumulado (100%+45%+45%=190%) ultrapassa a largura do container e força a quebra de linha ANTES
-     do par Fechamento/Vencimento — com basis:0 os dois ficavam "encaixados" na mesma linha do Valor da
-     fatura só que com largura zero (o algoritmo de quebra do flexbox só quebra quando o total excede o
-     espaço disponível, e 100%+0+0 nunca excede). min-width:0 continua garantindo que encolham se precisar. */
+     largura igualmente entre itens sem depender do tamanho do conteúdo. flex-basis:42% (não 45%) abre
+     espaço para o ícone único de editar (col-editar-fatura-mobile) ficar entre os dois na mesma linha. */
   /* Coluna estreita demais para rótulo+valor lado a lado (como nas outras linhas) — rótulo empilha ACIMA
      do valor em vez de à esquerda, senão o texto "Fechamento"/"Vencimento" espreme a data a ponto de
      quebrar caractere por caractere (largura efetiva de cada metade gira em torno de 110-170px). */
   .tabela-cartoes td:nth-child(4),.tabela-cartoes td:nth-child(5){
-    flex:1 1 45%;min-width:0;order:4;flex-direction:column;align-items:flex-start;gap:2px;
+    flex:1 1 42%;min-width:0;order:4;flex-direction:column;align-items:flex-start;gap:2px;
   }
   .tabela-cartoes td:nth-child(4) .data-editavel-linha,
   .tabela-cartoes td:nth-child(5) .data-editavel-linha{justify-content:flex-start;width:100%;}
@@ -1662,13 +1739,24 @@ summary::marker{content:'';}
      linhas), em vez das duas datas empurradas para o mesmo lado. */
   .tabela-cartoes td:nth-child(5){align-items:flex-end;}
   .tabela-cartoes td:nth-child(5) .data-editavel-linha{justify-content:flex-end;}
+  /* Item 18: só um ícone de editar entre Fechamento e Vencimento no mobile — os dois ícones originais (um
+     por coluna, revelados no hover no desktop) ficam ocultos; o ícone único (.col-editar-fatura-mobile,
+     mesma ação: ajusta as duas datas de uma vez) mora entre os dois, centralizado na própria linha. */
+  .tabela-cartoes td:nth-child(4) .edit-data-icon,
+  .tabela-cartoes td:nth-child(5) .edit-data-icon{display:none;}
+  .tabela-cartoes td.col-editar-fatura-mobile{
+    display:flex;order:4;flex:0 0 auto;align-self:center;justify-content:center;padding:0;border-bottom:none;
+  }
+  /* Item 18: linha de Status — a tag e a informação complementar (progresso/"Totalmente"/"Parcialmente")
+     ficam lado a lado (não mais empilhadas) e alinhadas à direita do card. */
+  .tabela-cartoes .status-col{flex-direction:row;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px;}
   /* Saldo parcelado em aberto: o valor continua na linha principal (rótulo à esquerda, valor+ícone à
      direita, igual às demais linhas), mas o hint "N compras · M parcelas" quebra para a linha de baixo em
      vez de ficar espremido ao lado do valor — flex-basis:100% força a quebra (mesma técnica já usada acima
-     para Fechamento/Vencimento), e o hint fica alinhado à direita, sob o valor. O seletor com "+" pega só o
-     hint que vem depois do valor (caso "—" sem parcelamento não é afetado, pois não tem valor antes). */
-  .tabela-cartoes td:nth-child(7){flex-wrap:wrap;}
-  .tabela-cartoes td:nth-child(7) .val-cell + .hint{flex:1 1 100%;min-width:0;text-align:right;margin-top:2px!important;}
+     para Fechamento/Vencimento). Item 18: gap reduzido (2px, não os 10px herdados de ".tabela-cartoes td")
+     para o hint ficar mais próximo verticalmente do valor, em vez do espaçamento grande anterior. */
+  .tabela-cartoes td:nth-child(8){flex-wrap:wrap;gap:2px;}
+  .tabela-cartoes td:nth-child(8) .val-cell + .hint{flex:1 1 100%;min-width:0;text-align:right;margin-top:0!important;}
   .tabela-cartoes td:last-child{border-bottom:none;}
   .tabela-cartoes td[data-label]:not([data-label=""])::before{
     content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
@@ -1676,7 +1764,9 @@ summary::marker{content:'';}
   }
   .tabela-cartoes .data-editavel-linha{justify-content:flex-end;}
   .tabela-cartoes .edit-data-icon{opacity:1!important;transform:none!important;min-width:var(--touch-min);min-height:var(--touch-min);}
-  .tabela-cartoes .status-col{align-items:flex-end;}
+  /* Item 18 do requisito: todas as linhas do card usam justify-content:space-around para alinhamento
+     consistente entre os elementos (rótulo/valor, ou os múltiplos elementos da linha de Status). */
+  .tabela-cartoes td{justify-content:space-around;}
 }
 .status-col{display:flex;flex-direction:column;gap:5px;align-items:center;}
 .status-pill-novo{
@@ -3390,6 +3480,10 @@ function alertasFluxoCaixaMes(){
   return alertas.sort((a,b)=>a.dias-b.dias);
 }
 function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Ícone SVG padrão de filtro (item 3 do requisito) — usado em TODOS os botões de filtro da aplicação.
+const ICONE_FILTRO_SVG = '<svg class="ico-filtro" width="12" height="12" viewBox="0 0 0.24 0.24" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M.225.03v.025L.15.126V.21H.09V.126L.015.055V.03zm-.12.09v.075h.03V.12L.21.049V.045H.03v.004z"/></svg>';
+// Ícone SVG padrão de "Verificar duplicidade" (item 14 do requisito).
+const ICONE_DUPLICIDADE_SVG = '<svg class="ico-dup" width="12" height="12" viewBox="0 0 0.36 0.36" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M.142.09h.173v.097H.281L.27.209.217.21v.037H.183L.172.269H.09L.079.247H.045V.15h.098zm.022.06h.052v.038h.039L.266.166h.026V.112H.165zM.066.172v.053h.026l.011.022h.055L.169.225h.026V.173z" fill="currentColor"/></svg>';
 
 /* ---------- Lógica de competência de fatura (fechamento/vencimento por cartão) ---------- */
 function competenciaFatura(dataISO, conta){
@@ -3525,6 +3619,7 @@ let UI = {
   tab: "dashboard",
   ano: new Date().getFullYear(),
   mes: new Date().getMonth()+1,
+  forcarNavMobile: false, // item 20 do requisito: quando a tabbar não cabe numa única linha em nenhuma largura de viewport (não só abaixo de 700px), força bottom-nav em vez de permitir rolagem horizontal — ver ajustarNavResponsiva()
   regFiltro: "",
   regFiltros: criarFiltrosPadrao(), // filtro de Data por período (com predefinidos) + seleção múltipla de Grupo/Natureza/Tipo/Conta/Fatura (ver motor genérico de filtros)
   regPorPagina: 10,    // 10 | 25 | 50 | 100 | 'TODOS' — quantidade de registros por página na tabela de Registros
@@ -4892,6 +4987,20 @@ function importarBackupExterno(){
 /* Excluir um backup do histórico — manuais e de pré-restauração sempre pedem uma confirmação adicional
    mais explícita (seção 10: nunca excluir automaticamente sem confirmação), e nunca é permitido excluir o
    único backup válido restante. */
+/* Valida e exclui UM backup, sem pedir confirmação (a confirmação é responsabilidade de quem chama —
+   uma vez só para exclusão individual, uma vez só para o LOTE inteiro na exclusão múltipla, nunca por
+   item). Retorna {ok:true} ou {ok:false, motivo} para permitir relatório detalhado no caso de lote. */
+async function excluirBackupSemConfirmar(item, listaCompleta){
+  if(nivelAcessoPasta==='leitura') return { ok:false, motivo:'sua conta tem apenas permissão de leitura na pasta compartilhada.' };
+  const validosRestantes = listaCompleta.filter(b=>b.integro && b.nome!==item.nome);
+  if(item.integro && validosRestantes.length===0) return { ok:false, motivo:'é o único backup válido disponível — não é permitido excluí-lo.' };
+  const dir = await obterPastaBackup(true);
+  if(!dir) return { ok:false, motivo:'não foi possível acessar a pasta de backup no OneDrive.' };
+  try{ await dir.removeEntry(item.nome); registrarAuditoria('excluir-backup', item.nome, 'sucesso'); return { ok:true }; }
+  catch(e){ registrarAuditoria('excluir-backup', item.nome, 'falha', e.mensagemAmigavel||e.message); return { ok:false, motivo:e.mensagemAmigavel||e.message||String(e) }; }
+}
+/* Exclusão de UM backup a partir do botão 🗑️ de cada linha/card — pede confirmação individual (mantido
+   exatamente como antes; a exclusão MÚLTIPLA usa uma confirmação única, ver btnExcluirBackupsSelecionados). */
 async function excluirBackupDoHistorico(item, listaCompleta){
   if(nivelAcessoPasta==='leitura'){ alert('Sua conta tem apenas permissão de leitura na pasta compartilhada e não pode excluir backups.'); return false; }
   const validosRestantes = listaCompleta.filter(b=>b.integro && b.nome!==item.nome);
@@ -4901,10 +5010,9 @@ async function excluirBackupDoHistorico(item, listaCompleta){
   }
   const avisoExtra = (item.tipo==='manual'||item.tipo==='pre-restore') ? '\n\nEste é um backup MANUAL ou de PRÉ-RESTAURAÇÃO — normalmente preservado pela política de retenção.' : '';
   if(!confirm(`Excluir permanentemente o backup "${item.nome}"?${avisoExtra}\n\nEsta ação não pode ser desfeita.`)) return false;
-  const dir = await obterPastaBackup(true);
-  if(!dir) return false;
-  try{ await dir.removeEntry(item.nome); registrarAuditoria('excluir-backup', item.nome, 'sucesso'); return true; }
-  catch(e){ registrarAuditoria('excluir-backup', item.nome, 'falha', e.mensagemAmigavel||e.message); alert(`Não foi possível excluir o backup.\n\nMotivo técnico: ${e.message||e}`); return false; }
+  const r = await excluirBackupSemConfirmar(item, listaCompleta);
+  if(!r.ok) alert(`Não foi possível excluir o backup.\n\nMotivo: ${r.motivo}`);
+  return r.ok;
 }
 /* Backup automático (seção 3, 11): "ao iniciar" dispara logo depois de clicar em <svg width="13" height="13" viewBox="-0.016 0 0.39 0.39" xmlns="http://www.w3.org/2000/svg"><path d="M.36.21v.001a.2.2 0 0 1-.015.07V.28C.317.345.253.39.179.39S.042.345.015.281V.28A.2.2 0 0 1 0 .211V.21C0 .152.028.1.072.067A.03.03 0 0 1 .095.061a.03.03 0 0 1 .019.012.03.03 0 0 1 .006.022.03.03 0 0 1-.012.02.12.12 0 0 0-.048.096.12.12 0 1 0 .192-.096.03.03 0 0 1-.012-.02.03.03 0 0 1 .006-.022.03.03 0 0 1 .02-.012.03.03 0 0 1 .022.006A.18.18 0 0 1 .36.21M.21.03v.151a.03.03 0 0 1-.06 0V.03q0-.013.009-.021T.18 0c.013-.001.016.003.021.009A.03.03 0 0 1 .21.03"/></svg>️ Iniciar App; "periódico"
    usa um timer; "após alterações" é chamado (com debounce) de dentro de scheduleSave(); "ao fechar" é
@@ -6396,7 +6504,7 @@ function renderExtratoContaModal(){
                 </div>
               </div>
             </div>
-            <div class="no-print" style="display:flex;gap:8px;">
+            <div class="no-print extrato-conta-acoes-topo">
               ${tipo==='Contracheque' ? `<button type="button" class="btn btn-ghost btn-sm no-print btn-imprimir-fatura" data-replicar-contracheque="${escapeHtml(conta)}" title="Replica todos os lançamentos do contracheque atual para os meses seguintes, até a última parcela do empréstimo mais longo">🔁 Replicar Contracheque</button>` : ''}
               <button class="btn btn-ghost btn-sm no-print btn-imprimir-fatura" id="printExtratoConta">🖨️ Imprimir</button>
             </div>
@@ -6408,8 +6516,8 @@ function renderExtratoContaModal(){
         </div>
         <div class="cartoes-resumo-grid">
           <div class="cartoes-resumo-item"><span class="ico">🏁</span><div><div class="val">${fmtBRL(det.saldoInicial)}</div><div class="lbl">saldo inicial</div></div></div>
-          <div class="cartoes-resumo-item"><span class="ico">📥</span><div><div class="val">${fmtBRL(entradasFiltradas)}</div><div class="lbl">entradas</div></div></div>
-          <div class="cartoes-resumo-item"><span class="ico">📤</span><div><div class="val">${fmtBRL(saidasFiltradas)}</div><div class="lbl">saídas</div></div></div>
+          <div class="cartoes-resumo-item"><span class="ico">📈</span><div><div class="val">${fmtBRL(entradasFiltradas)}</div><div class="lbl">entradas</div></div></div>
+          <div class="cartoes-resumo-item"><span class="ico">📉</span><div><div class="val">${fmtBRL(saidasFiltradas)}</div><div class="lbl">saídas</div></div></div>
           <div class="cartoes-resumo-item"><span class="ico">💰</span><div><div class="val">${fmtBRL(saldoFinalFiltrado)}</div><div class="lbl">saldo final</div></div></div>
         </div>
         ${det.itens.length ? `
@@ -6425,9 +6533,10 @@ function renderExtratoContaModal(){
           ${UI.filtrosMobileAberto==='Extrato' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropExtrato"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="extratoBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarExtrato" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarExtrato" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'Extrato', camposFiltroExtrato)}
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Extrato', UI.extratoContaModal.selecionados, itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), itensFiltrados.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
@@ -6456,6 +6565,7 @@ function renderExtratoContaModal(){
           tags: t=> ehSaldoAnterior(t) ? '' : `<span class="tag ${t.tipo}">${t.tipo}</span>${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
           extra: t=>`<div class="reg-card-extra">Saldo: <b class="val-cell ${t.saldoAcumulado>=0?'pos':'neg'}">${fmtBRL(t.saldoAcumulado)}</b></div>`,
           semAcao: t=> ehSaldoAnterior(t),
+          prefixo: 'Extrato', selecionados: UI.extratoContaModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoExtrato}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento nesta conta na competência selecionada.</div>`}
       </div>
@@ -6546,9 +6656,10 @@ function renderFuturosContaModal(){
           ${UI.filtrosMobileAberto==='Futuros' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFuturos"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="futurosBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarFuturos" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarFuturos" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'Futuros', camposFiltroFuturos)}
         ${futurosFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Futuros', UI.futurosContaModal.selecionados, futurosPagina.map(t=>t.id), futurosFiltrados.map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
@@ -6575,6 +6686,7 @@ function renderFuturosContaModal(){
           secundario: t=>`${fmtData(t.data)} (prevista)`,
           tags: t=>`<span class="tag ${t.tipo}">${t.tipo}</span>${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
           extra: t=>`<div class="reg-card-extra">Saldo projetado: <b class="val-cell ${t.saldoProjetado>=0?'pos':'neg'}">${fmtBRL(t.saldoProjetado)}</b></div>`,
+          prefixo: 'Futuros', selecionados: UI.futurosContaModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoFuturos}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento futuro cadastrado para esta conta.</div>`}
       </div>
@@ -7048,6 +7160,43 @@ function itemAtivoNaCompetencia(item, competencia){
   if(item.competenciaFim && competencia > item.competenciaFim) return false;
   return true;
 }
+/* Item 8 do requisito (rodada de ajustes globais): quando um lançamento previsto (não vinculado a cartão,
+   cujo dia já vem sempre do vencimento atual — ver diaCartao acima) já possui um lançamento efetivamente
+   registrado correspondente na mesma competência, o dia (e o valor) exibidos passam a ser os do lançamento
+   real, "subindo" a linha para o dia em que realmente ocorreu — em vez de ficar fixo no dia previsto
+   original. A própria linha previsto é ajustada (nunca duplicada): por isso nunca aparecem previsto E
+   efetivo ao mesmo tempo para a mesma operação. Correspondência: mesma descrição (normalizada, ver
+   normalizarTexto) + mesmo tipo (Receita/Despesa) + algum lançamento real na mesma competência. Ambíguo
+   (0 ou 2+ correspondências) mantém o previsto original — nunca arrisca escolher a transação errada. */
+function encontrarLancamentoEfetivoParaProjecao(item, competencia){
+  const descNorm = normalizarTexto(item.descricao);
+  if(!descNorm) return null;
+  // Lançamentos comuns (não vinculados a fatura de cartão) não preenchem o campo `competencia` — usa o
+  // mês/ano da própria data (t.data.slice(0,7)) para saber a que competência pertencem, em vez desse campo
+  // (que só é populado para parcelas de cartão).
+  const candidatos = STATE.transactions.filter(t=>
+    t.data && t.data.slice(0,7)===competencia && t.tipo===item.tipo && !ehSaldoAnterior(t) &&
+    normalizarTexto(t.descricao)===descNorm
+  );
+  return candidatos.length===1 ? candidatos[0] : null;
+}
+/* Contracheque TRT (item 8): mesma ideia acima, mas com regra própria — o dia vem do lançamento de receita
+   efetivamente creditado na conta do tipo Contracheque nesta competência (não por correspondência de
+   descrição, já que toda receita de conta Contracheque já é forçada para a categoria "Salário TRT" — ver
+   forcarPadraoDaConta), e o valor considerado é o total de entradas já efetivamente creditado nessa conta
+   nesta competência (mesma lógica de calcSaldoConta/entradas usada no restante da aplicação), não o valor
+   fixo recorrente do lançamento previsto. */
+function encontrarEfetivoContrachequeTRT(competencia){
+  const [ano, mes] = competencia.split('-').map(Number);
+  const contaContracheque = STATE.contas.find(c=>STATE.contaTipos[c]==='Contracheque');
+  if(!contaContracheque) return null;
+  const creditos = STATE.transactions
+    .filter(t=> t.conta===contaContracheque && t.data && t.data.slice(0,7)===competencia && t.tipo==='Receita' && !ehSaldoAnterior(t))
+    .sort((a,b)=> a.data<b.data ? -1 : (a.data>b.data ? 1 : 0));
+  if(!creditos.length) return null;
+  const valorTotal = calcSaldoConta(contaContracheque, ano, mes).entradas;
+  return { dia: Number(creditos[0].data.slice(8,10)), valor: valorTotal };
+}
 /* Monta a projeção de um único mês a partir de um saldo inicial já dado (usado tanto para o mês
    selecionado no topo do app quanto para cada um dos meses seguintes, encadeados). */
 function calcProjecoesMes(ano, mes, saldoInicial){
@@ -7059,7 +7208,18 @@ function calcProjecoesMes(ano, mes, saldoInicial){
       // vencimento atual do cartão (diaVencimentoCartaoNaCompetencia) — nunca do item.dia gravado no
       // lançamento previsto, que poderia ter ficado desatualizado desde a criação.
       const diaCartao = item.cartao ? diaVencimentoCartaoNaCompetencia(item.cartao, competencia) : null;
-      return { ...item, competencia, valorCalculado: valorProjecaoItem(item, competencia), dia: diaCartao || item.dia };
+      let dia = diaCartao || item.dia;
+      let valorCalculado = valorProjecaoItem(item, competencia);
+      if(!item.cartao){
+        if(normalizarTexto(item.descricao)==='contrachequetrt'){
+          const efetivoTRT = encontrarEfetivoContrachequeTRT(competencia);
+          if(efetivoTRT){ dia = efetivoTRT.dia; valorCalculado = efetivoTRT.valor; }
+        } else {
+          const efetivo = encontrarLancamentoEfetivoParaProjecao(item, competencia);
+          if(efetivo){ dia = Number(efetivo.data.slice(8,10)); valorCalculado = Number(efetivo.valor)||0; }
+        }
+      }
+      return { ...item, competencia, valorCalculado, dia };
     })
     .sort((a,b)=>(Number(a.dia)||0)-(Number(b.dia)||0));
   let saldo = saldoInicial;
@@ -7289,6 +7449,7 @@ function renderBannerPWA(){
   </div>`;
 }
 function render(){
+  document.documentElement.classList.toggle('forcar-nav-mobile', UI.forcarNavMobile);
   if(!STATE.ready){ root.innerHTML = '<div class="empty-state" style="padding-top:80px;">Carregando...</div>'; return; }
   chartInstances.forEach(c=>c.destroy()); chartInstances=[];
   // A tela inicial só dá lugar ao app depois do clique explícito em "<svg width="13" height="13" viewBox="-0.016 0 0.39 0.39" xmlns="http://www.w3.org/2000/svg"><path d="M.36.21v.001a.2.2 0 0 1-.015.07V.28C.317.345.253.39.179.39S.042.345.015.281V.28A.2.2 0 0 1 0 .211V.21C0 .152.028.1.072.067A.03.03 0 0 1 .095.061a.03.03 0 0 1 .019.012.03.03 0 0 1 .006.022.03.03 0 0 1-.012.02.12.12 0 0 0-.048.096.12.12 0 1 0 .192-.096.03.03 0 0 1-.012-.02.03.03 0 0 1 .006-.022.03.03 0 0 1 .02-.012.03.03 0 0 1 .022.006A.18.18 0 0 1 .36.21M.21.03v.151a.03.03 0 0 1-.06 0V.03q0-.013.009-.021T.18 0c.013-.001.016.003.021.009A.03.03 0 0 1 .21.03"/></svg>️ Iniciar App" (ver UI.appIniciado)
@@ -7364,7 +7525,36 @@ function render(){
   window.scrollTo(0, scrollY);
   const novosWraps = document.querySelectorAll('.table-wrap, .modal, .filtro-multisel-lista');
   novosWraps.forEach((w,i)=>{ if(wrapScrolls[i]!==undefined) w.scrollTop = wrapScrolls[i]; });
+  requestAnimationFrame(ajustarNavResponsiva);
 }
+/* Item 20 do requisito: decide se a tabbar cabe numa única linha na largura atual — se não couber (mesmo
+   acima do breakpoint fixo de 700px, ex.: janela do navegador estreitada), força bottom-nav via classe no
+   <html> em vez de permitir rolagem horizontal (proibida) ou corte de abas. Abaixo de 700px o próprio CSS
+   já esconde a tabbar incondicionalmente, então a medição é dispensada nessa faixa. Reavalia a cada render
+   e a cada resize (com um novo render, já que trocar a navegação muda a própria tabbar que está sendo
+   medida) — sempre tenta a tabbar normal primeiro (reset da classe) antes de decidir forçar o bottom-nav,
+   para nunca ficar "preso" em bottom-nav depois que a janela volta a ter espaço suficiente. */
+function ajustarNavResponsiva(){
+  if(!UI.appIniciado || window.innerWidth<=700){ return; }
+  const tb = document.querySelector('.tabbar');
+  if(!tb) return;
+  if(UI.forcarNavMobile){
+    document.documentElement.classList.remove('forcar-nav-mobile');
+    const cabe = tb.scrollWidth <= tb.clientWidth + 1;
+    document.documentElement.classList.add('forcar-nav-mobile');
+    if(cabe){ UI.forcarNavMobile=false; render(); }
+    return;
+  }
+  if(tb.scrollWidth > tb.clientWidth + 1){
+    UI.forcarNavMobile = true;
+    render();
+  }
+}
+let ajustarNavResponsivaTimer=null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(ajustarNavResponsivaTimer);
+  ajustarNavResponsivaTimer = setTimeout(ajustarNavResponsiva, 120);
+});
 /* Tela inicial: exibida sempre que a sessão está zerada (nenhum arquivo .cfg/.log conectado ainda) — ao
    abrir a aplicação, ou depois de desconectar/fechar a sessão. Modelo semelhante a softwares tradicionais
    de gestão financeira (ex.: Microsoft Money): a aplicação nunca assume dados de uma sessão anterior. */
@@ -7403,12 +7593,12 @@ function renderTelaInicial(){
       <div class="ti-opcoes">
         <div class="ti-opcao">
           <div class="ti-opcao-icone">${ONEDRIVE_ICON_SVG}</div>
-          <div class="ti-opcao-titulo">${msalConta ? 'Conectado ao OneDrive' : 'Conectar ao OneDrive'}</div>
-          <div class="ti-opcao-desc">${msalConta ? 'Sua conta já está conectada. Os arquivos são lidos e gravados diretamente no seu OneDrive.' : 'Conecta com sua conta Microsoft para acessar os arquivos deste app no seu OneDrive.'}</div>
+          <div class="ti-opcao-titulo">${statusConexaoOneDrive==='conectado' ? 'Conectado ao OneDrive' : 'Conectar ao OneDrive'}</div>
+          <div class="ti-opcao-desc">${statusConexaoOneDrive==='conectado' ? 'Sua conta já está conectada. Os arquivos são lidos e gravados diretamente no seu OneDrive.' : (msalConta ? 'Não foi possível acessar os arquivos no OneDrive agora — tente novamente.' : 'Conecta com sua conta Microsoft para acessar os arquivos deste app no seu OneDrive.')}</div>
           <div class="ti-status-conexao ti-status-${statusConexaoOneDrive}">${statusConexaoOneDriveInfo().emoji} ${statusConexaoOneDriveInfo().texto}</div>
-          ${msalConta
+          ${statusConexaoOneDrive==='conectado'
             ? `<button class="btn btn-ghost" id="tiSairMicrosoft"><span class="icone-onedrive-discreto">${ONEDRIVE_ICON_SVG}</span> Desconectar do OneDrive</button>`
-            : `<button class="btn btn-gold" id="tiEntrarMicrosoft" ${(!hasFSAccess || statusConexaoOneDrive==='conectando')?'disabled':''}>${ONEDRIVE_ICON_SVG} Conectar ao OneDrive</button>`}
+            : `<button class="btn btn-gold" id="tiEntrarMicrosoft" ${(!hasFSAccess || statusConexaoOneDrive==='conectando')?'disabled':''}>${ONEDRIVE_ICON_SVG} ${statusConexaoOneDrive==='conectando' ? 'Conectando...' : ((msalConta||oneDriveIndisponivelMsg) ? 'Tentar Novamente' : 'Conectar ao OneDrive')}</button>`}
         </div>
         ${msalConta && faltamCriar && nivelAcessoPasta!=='leitura' ? `
         <div class="ti-opcao">
@@ -7422,13 +7612,6 @@ function renderTelaInicial(){
           <div class="ti-opcao-icone">👁️</div>
           <div class="ti-opcao-titulo">Somente leitura</div>
           <div class="ti-opcao-desc">Os arquivos ainda não existem em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b> e sua conta tem apenas permissão de leitura nesta pasta — você não pode criá-los. Peça ao proprietário para criá-los, ou para conceder permissão de edição à sua conta.</div>
-        </div>` : ''}
-        ${msalConta && comErro ? `
-        <div class="ti-opcao">
-          <div class="ti-opcao-icone">🔄</div>
-          <div class="ti-opcao-titulo">Tentar novamente</div>
-          <div class="ti-opcao-desc">Tenta acessar novamente os arquivos no OneDrive (útil após um problema de conexão ou sessão expirada).</div>
-          <button class="btn btn-primary" id="tiTentarNovamente">🔄 Tentar novamente</button>
         </div>` : ''}
         <div class="ti-opcao">
           <div class="ti-opcao-icone">🛡️</div>
@@ -7594,7 +7777,9 @@ function renderPainelSync(){
       ${syncUltimoErro ? `<p class="sync-erro-texto">⚠ ${escapeHtml(syncUltimoErro)}</p>` : ''}
     </div>
     <div class="sync-painel-acoes">
-      ${!onlineStatus ? '' : !msalConta ? `<button type="button" class="btn btn-gold btn-sm" id="spConectar">Conectar novamente</button>` :
+      ${!onlineStatus ? '' :
+        statusConexaoOneDrive==='conectando' ? `<button type="button" class="btn btn-ghost btn-sm" disabled>Conectando...</button>` :
+        statusConexaoOneDrive==='desconectado' ? `<button type="button" class="btn btn-gold btn-sm" id="spConectar">${msalConta ? 'Tentar novamente' : 'Conectar'}</button>` :
         syncEstado===SYNC_ESTADOS.ERRO_SINCRONIZACAO ? `<button type="button" class="btn btn-primary btn-sm" id="spTentarNovamente">Tentar novamente</button>` :
         nivelAcessoPasta!=='leitura' ? `<button type="button" class="btn btn-primary btn-sm" id="spSincronizarAgora">Sincronizar agora</button>` : ''}
     </div>
@@ -7883,9 +8068,10 @@ function renderMapaCalorDiaModal(){
           ${UI.filtrosMobileAberto==='MapaCalor' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropMapaCalor"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="mapaCalorBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarMapaCalor" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarMapaCalor" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'MapaCalor', camposFiltroMapaCalor)}
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, idsPagina, idsFiltrados)}</div>
         <div class="table-wrap table-wrap-registros reg-tabela-principal" style="margin-top:14px;"><table>
@@ -7911,6 +8097,7 @@ function renderMapaCalorDiaModal(){
           valorTexto: t=>fmtBRL(t.valor), valorClasse: ()=>'neg',
           secundario: t=>`${t.categoria||'Sem categoria'} · ${t.grupo||'Sem Grupo'}`,
           tags: t=> `${t.conta ? `<span class="tag" style="background:var(--navy-100);color:var(--navy-900);">${escapeHtml(t.conta)}</span>` : ''}${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
+          prefixo: 'MapaCalor', selecionados: UI.mapaCalorDiaModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoMapaCalor}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhuma despesa encontrada com esses filtros.</div>`}`}
       </div>
@@ -7926,7 +8113,10 @@ function renderDashboard(){
   const saldoAtual = calcSaldoAtualFluxoCaixa();
   return `
   <div class="dash-hero-saldo">
-    <div class="dash-hero-saldo-lbl">💼 Saldo atual (hoje)</div>
+    <div class="dash-hero-saldo-topo">
+      <div class="dash-hero-saldo-lbl">💼 Saldo Atual (Hoje)</div>
+      <div class="dash-hero-saldo-data">${fmtData(hojeISO())}</div>
+    </div>
     <div class="dash-hero-saldo-val ${saldoAtual<0?'neg':''}">${fmtBRL(saldoAtual)}</div>
   </div>
   <div class="grid-cards">
@@ -8585,6 +8775,31 @@ function bindFiltrosPadrao(f, prefixo, campos, onChange){
 function renderBarraFiltrosPadrao(f, prefixo, campos){
   return `${renderFiltroDataRange(f, prefixo)}${campos.map(c=>renderFiltroMultiSelect(f, prefixo, c.campo, c.label, c.options)).join('')}`;
 }
+/* Item 2 do requisito (rodada de ajustes globais): chips dos filtros aplicados, entre a toolbar de
+   filtros e a tabela — um chip por filtro ativo (Data + cada campo de seleção múltipla com opção
+   marcada), cada um removível individualmente sem precisar abrir o painel do filtro correspondente.
+   Função genérica reutilizada pelos 6 pontos da aplicação com este motor de filtros. */
+function renderChipsFiltrosAtivos(f, prefixo, campos){
+  const chips = [];
+  if(f.dataInicio || f.dataFim) chips.push({ texto: dataRangeLabel(f), attr: `data-chip-limpar-data="${prefixo}"` });
+  campos.forEach(c=>{
+    const sel = f[c.campo];
+    if(sel.size===0) return;
+    const texto = sel.size===1 ? `${c.label}: ${c.options.find(o=>o.value===[...sel][0])?.label ?? [...sel][0]}` : `${c.label}: ${sel.size} selecionados`;
+    chips.push({ texto, attr: `data-chip-limpar-campo="${prefixo}|${c.campo}"` });
+  });
+  if(!chips.length) return '';
+  return `<div class="chips-filtros-ativos no-print">${chips.map(ch=>`<span class="chip-filtro-ativo">${escapeHtml(ch.texto)}<button type="button" class="chip-filtro-remover" ${ch.attr} title="Remover este filtro" aria-label="Remover filtro ${escapeHtml(ch.texto)}">✕</button></span>`).join('')}</div>`;
+}
+function bindChipsFiltrosAtivos(f, prefixo, onChange){
+  document.querySelectorAll(`[data-chip-limpar-data="${prefixo}"]`).forEach(b=> b.addEventListener('click', ()=>{
+    f.dataPreset='todos'; f.dataInicio=''; f.dataFim=''; onChange(true);
+  }));
+  document.querySelectorAll(`[data-chip-limpar-campo^="${prefixo}|"]`).forEach(b=> b.addEventListener('click', ()=>{
+    const campo = b.dataset.chipLimparCampo.split('|')[1];
+    f[campo].clear(); onChange(true);
+  }));
+}
 /* Filtros no mobile funcionam como na aba Registros: um único botão "Filtros" (id btnFiltrosMobile<prefixo>)
    abre a mesma folha inferior (.filtros-barra/.aberto-mobile) usada em Registros — fechar pelo X, pelo
    fundo escurecido (backdrop) ou pelo botão "Aplicar" faz a mesma coisa (UI.filtrosMobileAberto=null),
@@ -8644,7 +8859,15 @@ function bindSelecaoLote(prefixo, selecionados, onChange){
   const dadosEl = document.querySelector(`[data-ids-lote="${prefixo}"]`);
   const todosIdsFiltrados = dadosEl ? dadosEl.dataset.ids.split(',').filter(Boolean) : [];
   document.querySelectorAll(`[data-indet-lote]`).forEach(el=>{ el.indeterminate = el.dataset.indetLote==='true'; });
+  // Itens 4/13 do requisito: o mesmo "selecionar todos" também existe no mobile (ver renderCardsLancamentosModal/
+  // renderListaMobileRegistros), com id próprio (sufixo "Mobile") já que o checkbox do <thead> desktop
+  // continua no DOM (só oculto por CSS) e não pode ter dois elementos com o mesmo id.
   document.getElementById('chkTodosLote'+prefixo)?.addEventListener('change', e=>{
+    if(e.target.checked) idsVisiveis.forEach(id=>selecionados.add(id));
+    else idsVisiveis.forEach(id=>selecionados.delete(id));
+    onChange();
+  });
+  document.getElementById('chkTodosLote'+prefixo+'Mobile')?.addEventListener('change', e=>{
     if(e.target.checked) idsVisiveis.forEach(id=>selecionados.add(id));
     else idsVisiveis.forEach(id=>selecionados.delete(id));
     onChange();
@@ -8848,7 +9071,22 @@ function renderListaMobileRegistros(pageList){
    então não há risco de colisão entre os vários modais que usam esta função. */
 function renderCardsLancamentosModal(itens, opts){
   if(!itens.length) return '';
-  const { valorTexto, valorClasse, secundario, tags, extra, semAcao, tituloGrupo } = opts;
+  const { valorTexto, valorClasse, secundario, tags, extra, semAcao, tituloGrupo, prefixo, selecionados } = opts;
+  // Itens 4/13 do requisito: seleção em lote também disponível no mobile — cada card ganha uma caixa
+  // própria (classe chkLote<prefixo>, mesma convenção da tabela desktop, então bindSelecaoLote já liga o
+  // evento de ambas sem nenhum código extra) e a lista ganha "Selecionar todos" no mesmo padrão visual da
+  // aba Registros (renderListaMobileRegistros). Só existe quando o chamador passa `prefixo`+`selecionados`.
+  let cabecalhoSelecao = '';
+  if(prefixo && selecionados){
+    const idsVisiveis = itens.filter(t=> !(semAcao && semAcao(t))).map(t=>t.id);
+    const todosMarcados = idsVisiveis.every(id=>selecionados.has(id));
+    const algunsMarcados = !todosMarcados && idsVisiveis.some(id=>selecionados.has(id));
+    cabecalhoSelecao = `
+    <label class="reg-select-all-mobile no-print">
+      <input type="checkbox" id="chkTodosLote${prefixo}Mobile" ${todosMarcados?'checked':''} data-indet-lote="${algunsMarcados}">
+      Selecionar todos nesta página (${idsVisiveis.length})
+    </label>`;
+  }
   let grupoAtual;
   let corpo = '';
   itens.forEach(t=>{
@@ -8859,6 +9097,7 @@ function renderCardsLancamentosModal(itens, opts){
     const semAcaoItem = semAcao ? semAcao(t) : false;
     corpo += `
     <div class="reg-card${semAcaoItem?' reg-card-sem-acao':''}">
+      ${(prefixo && selecionados && !semAcaoItem) ? `<label class="reg-card-check"><input type="checkbox" class="chkLote${prefixo}" value="${escapeHtml(t.id)}" ${selecionados.has(t.id)?'checked':''} aria-label="Selecionar lançamento"></label>` : ''}
       <div class="reg-card-principal">
         <div class="reg-card-linha1">
           <span class="reg-card-descricao">${escapeHtml(t.descricao)}</span>
@@ -8882,7 +9121,7 @@ function renderCardsLancamentosModal(itens, opts){
       </div>`}
     </div>`;
   });
-  return `<div class="reg-lista-mobile">${corpo}</div>`;
+  return `<div class="reg-lista-mobile">${cabecalhoSelecao}${corpo}</div>`;
 }
 function renderRegistros(){
   const f = UI.regFiltros;
@@ -8957,7 +9196,7 @@ function renderRegistros(){
     <details class="ajuda-fluxo" data-ajuda-registros ${UI.ajudaRegistrosAberta?'open':''}>
       <summary>ℹ️ Informações sobre esta tela</summary>
       <div class="ajuda-fluxo-conteudo">
-        <p><b>Busca</b>: o campo de busca considera exclusivamente a <b>Descrição</b> do lançamento — não busca por categoria, conta ou valor. Pressione Enter ou clique em "🔍 Buscar" para aplicar.</p>
+        <p><b>Busca</b>: o campo de busca considera exclusivamente a <b>Descrição</b> do lançamento — não busca por categoria, conta ou valor. Pressione Enter ou clique no ícone 🔍 para aplicar.</p>
         <p><b>Filtros</b>: o filtro <b>Data</b> permite escolher um intervalo (data inicial e final) livremente, com atalhos para períodos comuns (Hoje, Ontem, Últimos 7/30 dias, Este mês, Mês anterior) ou um período Personalizado — totalmente independente do período exibido no cabeçalho da aplicação. Grupo, Natureza, Tipo, Conta e Fatura aceitam marcar mais de uma opção ao mesmo tempo (dentro do mesmo filtro, os registros que atendem a qualquer uma das opções marcadas aparecem); filtros diferentes se combinam entre si. Cada alteração já atualiza a lista e os totais na hora, sem recarregar a página. Use "↺ Restaurar filtros padrão" para voltar a ver todos os lançamentos.</p>
         <p><b>Seleção em lote</b>: marque as caixas na primeira coluna (ou o checkbox "selecionar todos" no cabeçalho, que cobre a página atual) para abrir a barra de ações — mesmo componente usado nos modais da aba Contas e Cartões. Com pelo menos um lançamento marcado, é possível "✏️ Editar em Lote" (altera só os campos habilitados, em todos os selecionados de uma vez) ou "🗑️ Excluir selecionados" (pede confirmação antes de remover).</p>
         <p><b>Verificar duplicidade</b>: compara todos os lançamentos já registrados e aponta pares com data, valor e conta muito parecidos — útil depois de uma importação para conferir se algo entrou duas vezes.</p>
@@ -8979,14 +9218,15 @@ function renderRegistros(){
     ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
     <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
       <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg" title="Filtros">🔍 <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
-      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">🔍 <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
+      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">${ICONE_DUPLICIDADE_SVG} <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
       <button class="btn btn-gold" id="btnImportar" title="Importar arquivo do banco">📥 <span class="reg-toolbar-label">Importar arquivo do banco</span></button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
       <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
         <input type="search" id="regBusca" placeholder="Buscar na descrição..." value="${escapeHtml(UI.regFiltro)}">
-        <button class="btn btn-primary btn-sm" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+        <button type="button" class="btn-buscar-icone" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
       </div>
     </div>
+    ${renderChipsFiltrosAtivos(f, 'Reg', camposFiltroReg)}
     <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
     ${list.length===0 ? `<div class="empty-state"><div class="big">🗒️</div>Nenhum lançamento encontrado com esses filtros.</div>
     <div class="registros-rodape registros-rodape-vazio">${rodapePaginacao}</div>` : `
@@ -9086,7 +9326,7 @@ function renderBotoesAcoesLancamentoModal(conta, temLancamentos){
   // textual continua existindo no HTML (some só via CSS em telas ≤700px) para não duplicar o data-attribute.
   return `
   <div class="acoes-lancamento-modal no-print">
-    ${temLancamentos ? `<button class="btn btn-ghost btn-sm" data-modal-verificar-dup="${escapeHtml(conta)}">🔍 Verificar duplicidade</button>` : ''}
+    ${temLancamentos ? `<button class="btn btn-ghost btn-sm" data-modal-verificar-dup="${escapeHtml(conta)}">${ICONE_DUPLICIDADE_SVG} Verificar duplicidade</button>` : ''}
     <button class="btn btn-primary btn-sm btn-novo-lanc-modal" data-modal-novo-lanc="${escapeHtml(conta)}">+ Novo Lançamento</button>
   </div>
   <button type="button" class="fab-novo-lancamento-modal no-print" data-modal-novo-lanc="${escapeHtml(conta)}" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
@@ -9165,7 +9405,7 @@ function renderCartoes(){
     </div>
     <div class="cc-accordion-body ${UI.cartoesSecaoAtiva==='cartoes'?'aberto':''}">
       <div class="panel">
-    <div class="cartoes-resumo-grid">
+    <div class="cartoes-resumo-grid cartoes-resumo-grid-flex-fill">
       <div class="cartoes-resumo-item"><span class="ico">💳</span><div><div class="val">${resumo.qtdCartoes}</div><div class="lbl">cartão${resumo.qtdCartoes===1?'':'s'}</div></div></div>
       <div class="cartoes-resumo-item"><span class="ico">💰</span><div><div class="val">${fmtBRL(resumo.valorTotal)}</div><div class="lbl">total das faturas</div></div></div>
       <div class="cartoes-resumo-item"><span class="ico">🟢</span><div><div class="val">${resumo.pagas}</div><div class="lbl">paga${resumo.pagas===1?'':'s'}</div></div></div>
@@ -9241,6 +9481,9 @@ function renderCartoes(){
               <button type="button" class="icon-btn edit-data-icon" data-edit-fatura="${escapeHtml(c)}|${competencia}" title="Ajustar data de vencimento desta fatura">✏️</button>
             </div>
           </td>
+          <td data-label="" class="col-editar-fatura-mobile">
+            <button type="button" class="icon-btn edit-data-icon" data-edit-fatura="${escapeHtml(c)}|${competencia}" title="Ajustar fechamento e vencimento desta fatura" aria-label="Ajustar fechamento e vencimento desta fatura">✏️</button>
+          </td>
           <td data-label="Status" style="text-align:center;">
             <div class="status-col">
               <span class="status-pill-novo ${st.chave}" title="${escapeHtml(tituloStatusFatura(st))}">${st.emoji} ${st.label}</span>
@@ -9278,8 +9521,8 @@ function renderPainelContasBancarias(ano, mes){
     <div class="cartoes-resumo-grid">
       <div class="cartoes-resumo-item"><span class="ico">🏦</span><div><div class="val">${resumo.qtdContas}</div><div class="lbl">conta${resumo.qtdContas===1?'':'s'}</div></div></div>
       <div class="cartoes-resumo-item"><span class="ico">💰</span><div><div class="val">${fmtBRL(resumo.saldoTotal)}</div><div class="lbl">saldo total</div></div></div>
-      <div class="cartoes-resumo-item"><span class="ico">📥</span><div><div class="val">${fmtBRL(resumo.entradasTotal)}</div><div class="lbl">entradas no período</div></div></div>
-      <div class="cartoes-resumo-item"><span class="ico">📤</span><div><div class="val">${fmtBRL(resumo.saidasTotal)}</div><div class="lbl">saídas no período</div></div></div>
+      <div class="cartoes-resumo-item"><span class="ico">📈</span><div><div class="val">${fmtBRL(resumo.entradasTotal)}</div><div class="lbl">entradas no período</div></div></div>
+      <div class="cartoes-resumo-item"><span class="ico">📉</span><div><div class="val">${fmtBRL(resumo.saidasTotal)}</div><div class="lbl">saídas no período</div></div></div>
     </div>
     ${contas.length ? `<div class="contas-financeiras-grid">
       ${contas.map(c=>{
@@ -9474,9 +9717,10 @@ function renderFaturaAtualModal(){
           ${UI.filtrosMobileAberto==='Fatura' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFatura"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="faturaBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarFatura" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarFatura" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'Fatura', camposFiltroFatura)}
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Fatura', UI.faturaAtualModal.selecionados, itensPagina.map(t=>t.id), itensFiltrados.map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
@@ -9488,6 +9732,7 @@ function renderFaturaAtualModal(){
           secundario: t=>fmtData(t.data),
           tags: t=> Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : '',
           extra: t=> t.tipo==='Receita' ? `<div class="reg-card-extra"><span class="tag Receita">➕ Crédito</span></div>` : '',
+          prefixo: 'Fatura', selecionados: UI.faturaAtualModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoFatura}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento nesta fatura ainda.</div>`}
       </div>
@@ -9596,9 +9841,10 @@ function renderProjecaoFaturaModal(){
           ${UI.filtrosMobileAberto==='Projecao' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropProjecao"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="projecaoBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarProjecao" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarProjecao" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'Projecao', camposFiltroProjecao)}
         ${itens.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Projecao', UI.projecaoFaturaModal.selecionados, itensPagina.map(t=>t.id), itens.map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:12px;"><table>
@@ -9626,6 +9872,7 @@ function renderProjecaoFaturaModal(){
           secundario: t=>fmtData(t.data),
           tags: t=> Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : '',
           extra: t=> t.tipo==='Receita' ? `<div class="reg-card-extra"><span class="tag Receita">➕ Crédito</span></div>` : '',
+          prefixo: 'Projecao', selecionados: UI.projecaoFaturaModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoProjecao}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📦</div>Nenhum lançamento previsto${selecionada?' nesta competência':' para os próximos meses'}.</div>`}
         ` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state"><div class="big">✅</div>Nenhuma despesa prevista para os próximos meses neste cartão.</div>`}
@@ -10652,7 +10899,7 @@ function renderCategorias(){
     <div class="toolbar cat-toolbar" style="margin-bottom:16px;">
       <div class="cat-toolbar-busca">
         <input type="text" id="buscaCategoriasInput" class="cat-busca-input" placeholder="Buscar por palavra" value="${escapeHtml(UI.buscaCategorias)}">
-        <button class="btn btn-primary btn-sm" id="btnBuscarCategorias">🔍 Buscar</button>
+        <button type="button" class="btn-buscar-icone" id="btnBuscarCategorias" title="Buscar" aria-label="Buscar">🔍</button>
         ${UI.buscaCategorias ? `<button class="btn btn-ghost btn-sm" id="btnLimparBuscaCategorias">✕ Limpar</button><span class="badge-count">${totalResultados} resultado(s)</span>` : ''}
       </div>
       <div class="cat-toolbar-acoes">
@@ -11078,7 +11325,7 @@ function renderBackupModal(){
   const m = UI.backupModal;
   return `
   <div class="overlay" id="ovBackup" ${attrZIndexModal('backupModal')}>
-    <div class="modal modal-backup" style="width:1280px;height:100%;">
+    <div class="modal modal-backup" style="width:1280px;">
       <div class="modal-head"><h3>📚 Backup e Restauração</h3><button class="close-x" id="closeBackupModal">✕</button></div>
       <div class="modal-body">
         <div class="tabs-secundarias" style="margin-bottom:14px;">
@@ -11109,13 +11356,18 @@ function renderBackupModal(){
           <button type="button" class="btn btn-danger btn-sm" id="btnExcluirBackupsSelecionados">🗑️ Excluir selecionados</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnLimparSelecaoBackup">✕ Limpar seleção</button>
         </div>` : ''}
+        ${podeExcluir ? `
+        <label class="reg-select-all-mobile backup-select-all-mobile no-print">
+          <input type="checkbox" id="chkSelecionarTodosBackupMobile" ${nomesVisiveis.length>0 && nomesVisiveis.every(n=>sel.has(n))?'checked':''} data-indet-lote="${sel.size>0 && !nomesVisiveis.every(n=>sel.has(n))}">
+          Selecionar todos (${nomesVisiveis.length})
+        </label>` : ''}
         <div class="table-wrap"><table class="tabela-cards-mobile">
           <thead><tr>
             ${podeExcluir ? `<th style="width:1%;"><input type="checkbox" id="chkSelecionarTodosBackup" ${nomesVisiveis.length>0 && nomesVisiveis.every(n=>sel.has(n))?'checked':''}></th>` : ''}
             <th>Data/Hora</th><th>Tipo</th><th>Arquivo</th><th style="text-align:right;">Tamanho</th><th style="text-align:right;">Registros</th><th style="text-align:center;">Integridade</th><th class="col-acoes">Ações</th></tr></thead>
           <tbody>
             ${m.backups.map(b=>`<tr>
-              ${podeExcluir ? `<td data-label=""><input type="checkbox" class="chk-selecionar-backup" data-backup-nome="${escapeHtml(b.nome)}" ${sel.has(b.nome)?'checked':''}></td>` : ''}
+              ${podeExcluir ? `<td data-label="" class="backup-linha-checkbox"><input type="checkbox" class="chk-selecionar-backup" data-backup-nome="${escapeHtml(b.nome)}" ${sel.has(b.nome)?'checked':''}></td>` : ''}
               <td data-label="Data/Hora" style="white-space:nowrap;">${formatarDataHoraCurta(b.criadoEm)}</td>
               <td data-label="Tipo">${BACKUP_TIPO_INFO[b.tipo]?.icone||''} ${BACKUP_TIPO_INFO[b.tipo]?.label||b.tipo}</td>
               <td data-label="Arquivo" style="word-break:break-all;">${escapeHtml(b.nome)}</td>
@@ -12452,7 +12704,11 @@ function bindEvents(){
   document.getElementById('btnSyncIndicador')?.addEventListener('click', ()=>{ UI.syncPainelAberto = !UI.syncPainelAberto; render(); });
   document.getElementById('spSincronizarAgora')?.addEventListener('click', ()=>{ UI.syncPainelAberto=false; salvarArquivos(); });
   document.getElementById('spTentarNovamente')?.addEventListener('click', ()=>{ UI.syncPainelAberto=false; syncUltimoErro=null; reconectarPacote(); });
-  document.getElementById('spConectar')?.addEventListener('click', ()=>{ UI.syncPainelAberto=false; loginOneDrive(); });
+  document.getElementById('spConectar')?.addEventListener('click', async ()=>{
+    UI.syncPainelAberto=false;
+    if(msalConta){ statusConexaoOneDrive='conectando'; render(); await carregarArquivosDoOneDrive(); statusConexaoOneDrive = (fileStatusCfg==='erro'||fileStatusReg==='erro') ? 'desconectado' : 'conectado'; render(); }
+    else loginOneDrive();
+  });
   document.getElementById('btnMenuArquivo')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = !UI.menuArquivoAberto; render(); });
   document.getElementById('btnFecharMenuArquivo')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = false; render(); });
   document.getElementById('menuArquivoBackdrop')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = false; render(); });
@@ -12466,10 +12722,15 @@ function bindEvents(){
   document.getElementById('maTrocarConta')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; loginOneDrive(); });
   document.getElementById('maDesconectar')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; desconectarArquivos(); });
   // Tela inicial (sessão zerada)
-  document.getElementById('tiEntrarMicrosoft')?.addEventListener('click', ()=>loginOneDrive());
+  // Item 5 do requisito: um único botão cobre tanto "Conectar"/"Tentar Novamente" quanto o caso de já
+  // haver uma sessão Microsoft válida mas os arquivos não terem carregado (comErro) — reconecta os
+  // arquivos em vez de reabrir o login, já que a conta Microsoft continua válida nesse caso.
+  document.getElementById('tiEntrarMicrosoft')?.addEventListener('click', async ()=>{
+    if(msalConta){ statusConexaoOneDrive='conectando'; render(); await carregarArquivosDoOneDrive(); statusConexaoOneDrive = (fileStatusCfg==='erro'||fileStatusReg==='erro') ? 'desconectado' : 'conectado'; render(); }
+    else loginOneDrive();
+  });
   document.getElementById('tiSairMicrosoft')?.addEventListener('click', ()=>desconectarArquivos());
   document.getElementById('tiCriarArquivos')?.addEventListener('click', ()=>criarArquivosFaltantesNoOneDrive());
-  document.getElementById('tiTentarNovamente')?.addEventListener('click', async ()=>{ await carregarArquivosDoOneDrive(); render(); });
   document.getElementById('tiRestaurarBackup')?.addEventListener('click', ()=>restaurarBackup());
   document.getElementById('tiVerHistoricoBackups')?.addEventListener('click', ()=>abrirBackupModal());
   document.getElementById('tiIniciarApp')?.addEventListener('click', ()=>{
@@ -12525,6 +12786,7 @@ function bindEvents(){
       {campo:'conta', options:contasUsadasReg.map(c=>({value:c}))},
       {campo:'fatura', options:faturasUsadasReg.map(c=>({value:c}))},
     ], resetPagina=>{ if(resetPagina) UI.regPagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.regFiltros, 'Reg', ()=>{ UI.regPagina = 1; render(); });
   }
   // Rodapé de paginação: trocar a quantidade por página recalcula tudo e volta para a 1ª página (evita
   // ficar numa página que deixou de existir); os botões ‹ › e os números de página só trocam UI.regPagina.
@@ -12771,6 +13033,7 @@ function bindEvents(){
       {campo:'tipo', options:[{value:'Receita'},{value:'Despesa'}]},
       {campo:'parcela', options:[{value:'parcelado'},{value:'avista'}]},
     ], resetPagina=>{ if(resetPagina) UI.projecaoFaturaModal.pagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.projecaoFaturaModal.filtros, 'Projecao', ()=>{ UI.projecaoFaturaModal.pagina = 1; render(); });
     bindSelecaoLote('Projecao', UI.projecaoFaturaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosProjecao')?.addEventListener('click', ()=>{
@@ -12810,6 +13073,7 @@ function bindEvents(){
       {campo:'tipo', options:[{value:'Receita'},{value:'Despesa'}]},
       {campo:'parcela', options:[{value:'parcelado'},{value:'avista'}]},
     ], resetPagina=>{ if(resetPagina) UI.faturaAtualModal.pagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.faturaAtualModal.filtros, 'Fatura', ()=>{ UI.faturaAtualModal.pagina = 1; render(); });
     bindSelecaoLote('Fatura', UI.faturaAtualModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosFatura')?.addEventListener('click', ()=>{
@@ -12851,6 +13115,7 @@ function bindEvents(){
       {campo:'grupo', options:[{value:'__sem_grupo__'}, ...gruposExtratoAtual.map(g=>({value:g}))]},
       {campo:'tipo', options:[{value:'Receita'},{value:'Despesa'}]},
     ], resetPagina=>{ if(resetPagina) UI.extratoContaModal.pagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.extratoContaModal.filtros, 'Extrato', ()=>{ UI.extratoContaModal.pagina = 1; render(); });
     bindSelecaoLote('Extrato', UI.extratoContaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosExtrato')?.addEventListener('click', ()=>{
@@ -12890,6 +13155,7 @@ function bindEvents(){
     bindFiltrosPadrao(UI.futurosContaModal.filtros, 'Futuros', [
       {campo:'tipo', options:[{value:'Receita'},{value:'Despesa'}]},
     ], resetPagina=>{ if(resetPagina) UI.futurosContaModal.pagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.futurosContaModal.filtros, 'Futuros', ()=>{ UI.futurosContaModal.pagina = 1; render(); });
     bindSelecaoLote('Futuros', UI.futurosContaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosFuturos')?.addEventListener('click', ()=>{
@@ -12951,6 +13217,7 @@ function bindEvents(){
       {campo:'conta', options:contasMapaCalorAtual.map(c=>({value:c}))},
     ];
     camposFiltroMapaCalorBind.forEach(c=> bindFiltroMultiSelect(UI.mapaCalorDiaModal.filtros, 'MapaCalor', c.campo, c.options, resetPagina=>{ if(resetPagina) UI.mapaCalorDiaModal.pagina = 1; render(); }));
+    bindChipsFiltrosAtivos(UI.mapaCalorDiaModal.filtros, 'MapaCalor', ()=>{ UI.mapaCalorDiaModal.pagina = 1; render(); });
     bindSelecaoLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosMapaCalor')?.addEventListener('click', ()=>{
@@ -13228,16 +13495,20 @@ function bindEvents(){
     document.getElementById('btnAplicarFiltrosMobileReg')?.addEventListener('click', ()=>{
       UI.filtrosMobileAberto = null; render();
     });
-    // Menu de ações (✏️/📄/🗑️) de cada card na lista mobile de Registros — mesmo padrão de "um aberto por
-    // vez" usado nos demais menus contextuais da aplicação (☰ Menu, Mais opções).
-    document.querySelectorAll('[data-reg-card-menu]').forEach(b=> b.addEventListener('click', e=>{
-      e.stopPropagation();
-      UI.regCardMenuAberto = UI.regCardMenuAberto===b.dataset.regCardMenu ? null : b.dataset.regCardMenu;
-      render();
-    }));
-    if(UI.regCardMenuAberto){
-      document.addEventListener('click', ()=>{ UI.regCardMenuAberto = null; render(); }, { once:true });
-    }
+  }
+  // Menu de ações (✏️/📄/🗑️) de cada card mobile de lançamentos — mesmo padrão de "um aberto por vez" usado
+  // nos demais menus contextuais da aplicação (☰ Menu, Mais opções). Item 16 do requisito (rodada de ajustes
+  // globais): este bind ficava DENTRO do "if(UI.tab==='registros')" acima, então o menu (⋮) nunca abria nos
+  // cards mobile renderizados por renderCardsLancamentosModal (Ver Extrato, Lançamentos futuros, Mapa de
+  // Calor, Ver Fatura, Ver Próximas Faturas — todos na aba Contas e Cartões, UI.tab!=='registros') mesmo o
+  // markup/estado (UI.regCardMenuAberto) sendo o mesmo. Fica fora do "if" para funcionar em qualquer aba.
+  document.querySelectorAll('[data-reg-card-menu]').forEach(b=> b.addEventListener('click', e=>{
+    e.stopPropagation();
+    UI.regCardMenuAberto = UI.regCardMenuAberto===b.dataset.regCardMenu ? null : b.dataset.regCardMenu;
+    render();
+  }));
+  if(UI.regCardMenuAberto){
+    document.addEventListener('click', ()=>{ UI.regCardMenuAberto = null; render(); }, { once:true });
   }
 
   document.querySelectorAll('#btnNovaProjecao, #fabNovaProjecao').forEach(b=> b.addEventListener('click', ()=>{
@@ -13798,33 +14069,48 @@ function bindEvents(){
       if(removeu) await atualizarListaBackupModal();
     }));
     if(!bm.selecionados) bm.selecionados = new Set();
-    document.getElementById('chkSelecionarTodosBackup')?.addEventListener('change', e=>{
+    const alternarTodos = e=>{
       const nomes = (bm.backups||[]).map(x=>x.nome);
       if(e.target.checked) nomes.forEach(n=> bm.selecionados.add(n));
       else nomes.forEach(n=> bm.selecionados.delete(n));
       render();
-    });
+    };
+    document.getElementById('chkSelecionarTodosBackup')?.addEventListener('change', alternarTodos);
+    document.getElementById('chkSelecionarTodosBackupMobile')?.addEventListener('change', alternarTodos);
     document.querySelectorAll('.chk-selecionar-backup').forEach(chk=> chk.addEventListener('change', ()=>{
       const nome = chk.dataset.backupNome;
       if(chk.checked) bm.selecionados.add(nome); else bm.selecionados.delete(nome);
       render();
     }));
     document.getElementById('btnLimparSelecaoBackup')?.addEventListener('click', ()=>{ bm.selecionados.clear(); render(); });
+    // Item 1 do requisito: exclusão múltipla pede UMA ÚNICA confirmação para todo o lote (nunca uma por
+    // item — ver excluirBackupSemConfirmar, que não confirma nada sozinha), tenta excluir todos os
+    // selecionados mesmo que algum falhe no meio do caminho, e ao final relata exatamente quais backups
+    // foram excluídos, quais não puderam ser e o motivo específico de cada falha.
     document.getElementById('btnExcluirBackupsSelecionados')?.addEventListener('click', async ()=>{
       const nomes = Array.from(bm.selecionados);
+      if(nomes.length===0) return;
+      if(!confirm(`Excluir permanentemente ${nomes.length} backup${nomes.length===1?'':'s'} selecionado${nomes.length===1?'':'s'}?\n\nEsta ação não pode ser desfeita.`)) return;
       let restantes = (bm.backups||[]).slice();
-      let algumExcluido = false;
+      const excluidos = [];
+      const falhados = [];
       for(const nome of nomes){
         const item = restantes.find(x=>x.nome===nome);
-        if(!item) continue;
-        const removeu = await excluirBackupDoHistorico(item, restantes);
-        if(removeu){
+        if(!item){ falhados.push({ nome, motivo:'não encontrado na lista atual.' }); continue; }
+        const r = await excluirBackupSemConfirmar(item, restantes);
+        if(r.ok){
+          excluidos.push(nome);
           bm.selecionados.delete(nome);
           restantes = restantes.filter(x=>x.nome!==nome);
-          algumExcluido = true;
+        } else {
+          falhados.push({ nome, motivo:r.motivo });
         }
       }
-      if(algumExcluido) await atualizarListaBackupModal();
+      let relatorio = '';
+      if(excluidos.length) relatorio += `✓ ${excluidos.length} backup${excluidos.length===1?'':'s'} excluído${excluidos.length===1?'':'s'}:\n${excluidos.map(n=>`  • ${n}`).join('\n')}`;
+      if(falhados.length) relatorio += `${relatorio?'\n\n':''}✕ ${falhados.length} backup${falhados.length===1?'':'s'} NÃO excluído${falhados.length===1?'':'s'}:\n${falhados.map(f=>`  • ${f.nome}: ${f.motivo}`).join('\n')}`;
+      alert(relatorio || 'Nenhum backup foi processado.');
+      if(excluidos.length) await atualizarListaBackupModal();
       else render();
     });
     document.getElementById('cfgBackupPeriodicidade')?.addEventListener('change', e=>{ backupConfig.periodicidade = e.target.value; render(); });
