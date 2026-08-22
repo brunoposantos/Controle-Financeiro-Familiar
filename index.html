@@ -6506,6 +6506,7 @@ function renderExtratoContaModal(){
           tags: t=> ehSaldoAnterior(t) ? '' : `<span class="tag ${t.tipo}">${t.tipo}</span>${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
           extra: t=>`<div class="reg-card-extra">Saldo: <b class="val-cell ${t.saldoAcumulado>=0?'pos':'neg'}">${fmtBRL(t.saldoAcumulado)}</b></div>`,
           semAcao: t=> ehSaldoAnterior(t),
+          prefixo: 'Extrato', selecionados: UI.extratoContaModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoExtrato}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento nesta conta na competência selecionada.</div>`}
       </div>
@@ -6625,6 +6626,7 @@ function renderFuturosContaModal(){
           secundario: t=>`${fmtData(t.data)} (prevista)`,
           tags: t=>`<span class="tag ${t.tipo}">${t.tipo}</span>${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
           extra: t=>`<div class="reg-card-extra">Saldo projetado: <b class="val-cell ${t.saldoProjetado>=0?'pos':'neg'}">${fmtBRL(t.saldoProjetado)}</b></div>`,
+          prefixo: 'Futuros', selecionados: UI.futurosContaModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoFuturos}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📅</div>Nenhum lançamento futuro cadastrado para esta conta.</div>`}
       </div>
@@ -7986,6 +7988,7 @@ function renderMapaCalorDiaModal(){
           valorTexto: t=>fmtBRL(t.valor), valorClasse: ()=>'neg',
           secundario: t=>`${t.categoria||'Sem categoria'} · ${t.grupo||'Sem Grupo'}`,
           tags: t=> `${t.conta ? `<span class="tag" style="background:var(--navy-100);color:var(--navy-900);">${escapeHtml(t.conta)}</span>` : ''}${Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : ''}`,
+          prefixo: 'MapaCalor', selecionados: UI.mapaCalorDiaModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoMapaCalor}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhuma despesa encontrada com esses filtros.</div>`}`}
       </div>
@@ -8719,7 +8722,15 @@ function bindSelecaoLote(prefixo, selecionados, onChange){
   const dadosEl = document.querySelector(`[data-ids-lote="${prefixo}"]`);
   const todosIdsFiltrados = dadosEl ? dadosEl.dataset.ids.split(',').filter(Boolean) : [];
   document.querySelectorAll(`[data-indet-lote]`).forEach(el=>{ el.indeterminate = el.dataset.indetLote==='true'; });
+  // Itens 4/13 do requisito: o mesmo "selecionar todos" também existe no mobile (ver renderCardsLancamentosModal/
+  // renderListaMobileRegistros), com id próprio (sufixo "Mobile") já que o checkbox do <thead> desktop
+  // continua no DOM (só oculto por CSS) e não pode ter dois elementos com o mesmo id.
   document.getElementById('chkTodosLote'+prefixo)?.addEventListener('change', e=>{
+    if(e.target.checked) idsVisiveis.forEach(id=>selecionados.add(id));
+    else idsVisiveis.forEach(id=>selecionados.delete(id));
+    onChange();
+  });
+  document.getElementById('chkTodosLote'+prefixo+'Mobile')?.addEventListener('change', e=>{
     if(e.target.checked) idsVisiveis.forEach(id=>selecionados.add(id));
     else idsVisiveis.forEach(id=>selecionados.delete(id));
     onChange();
@@ -8923,7 +8934,22 @@ function renderListaMobileRegistros(pageList){
    então não há risco de colisão entre os vários modais que usam esta função. */
 function renderCardsLancamentosModal(itens, opts){
   if(!itens.length) return '';
-  const { valorTexto, valorClasse, secundario, tags, extra, semAcao, tituloGrupo } = opts;
+  const { valorTexto, valorClasse, secundario, tags, extra, semAcao, tituloGrupo, prefixo, selecionados } = opts;
+  // Itens 4/13 do requisito: seleção em lote também disponível no mobile — cada card ganha uma caixa
+  // própria (classe chkLote<prefixo>, mesma convenção da tabela desktop, então bindSelecaoLote já liga o
+  // evento de ambas sem nenhum código extra) e a lista ganha "Selecionar todos" no mesmo padrão visual da
+  // aba Registros (renderListaMobileRegistros). Só existe quando o chamador passa `prefixo`+`selecionados`.
+  let cabecalhoSelecao = '';
+  if(prefixo && selecionados){
+    const idsVisiveis = itens.filter(t=> !(semAcao && semAcao(t))).map(t=>t.id);
+    const todosMarcados = idsVisiveis.every(id=>selecionados.has(id));
+    const algunsMarcados = !todosMarcados && idsVisiveis.some(id=>selecionados.has(id));
+    cabecalhoSelecao = `
+    <label class="reg-select-all-mobile no-print">
+      <input type="checkbox" id="chkTodosLote${prefixo}Mobile" ${todosMarcados?'checked':''} data-indet-lote="${algunsMarcados}">
+      Selecionar todos nesta página (${idsVisiveis.length})
+    </label>`;
+  }
   let grupoAtual;
   let corpo = '';
   itens.forEach(t=>{
@@ -8934,6 +8960,7 @@ function renderCardsLancamentosModal(itens, opts){
     const semAcaoItem = semAcao ? semAcao(t) : false;
     corpo += `
     <div class="reg-card${semAcaoItem?' reg-card-sem-acao':''}">
+      ${(prefixo && selecionados && !semAcaoItem) ? `<label class="reg-card-check"><input type="checkbox" class="chkLote${prefixo}" value="${escapeHtml(t.id)}" ${selecionados.has(t.id)?'checked':''} aria-label="Selecionar lançamento"></label>` : ''}
       <div class="reg-card-principal">
         <div class="reg-card-linha1">
           <span class="reg-card-descricao">${escapeHtml(t.descricao)}</span>
@@ -8957,7 +8984,7 @@ function renderCardsLancamentosModal(itens, opts){
       </div>`}
     </div>`;
   });
-  return `<div class="reg-lista-mobile">${corpo}</div>`;
+  return `<div class="reg-lista-mobile">${cabecalhoSelecao}${corpo}</div>`;
 }
 function renderRegistros(){
   const f = UI.regFiltros;
@@ -9563,6 +9590,7 @@ function renderFaturaAtualModal(){
           secundario: t=>fmtData(t.data),
           tags: t=> Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : '',
           extra: t=> t.tipo==='Receita' ? `<div class="reg-card-extra"><span class="tag Receita">➕ Crédito</span></div>` : '',
+          prefixo: 'Fatura', selecionados: UI.faturaAtualModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoFatura}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento nesta fatura ainda.</div>`}
       </div>
@@ -9701,6 +9729,7 @@ function renderProjecaoFaturaModal(){
           secundario: t=>fmtData(t.data),
           tags: t=> Number(t.totalParcelas)>1 ? `<span class="tag Fixo">${t.parcelaAtual}/${t.totalParcelas}</span>` : '',
           extra: t=> t.tipo==='Receita' ? `<div class="reg-card-extra"><span class="tag Receita">➕ Crédito</span></div>` : '',
+          prefixo: 'Projecao', selecionados: UI.projecaoFaturaModal.selecionados,
         })}
         <div class="registros-rodape no-print">${rodapePaginacaoProjecao}</div>` : `<div class="empty-state" style="margin-top:14px;"><div class="big">🧾</div>Nenhum lançamento encontrado com esses filtros.</div>`}` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state" style="margin-top:14px;"><div class="big">📦</div>Nenhum lançamento previsto${selecionada?' nesta competência':' para os próximos meses'}.</div>`}
         ` : `${renderBotoesAcoesLancamentoModal(conta, false)}<div class="empty-state"><div class="big">✅</div>Nenhuma despesa prevista para os próximos meses neste cartão.</div>`}
