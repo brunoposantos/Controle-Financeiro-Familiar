@@ -933,19 +933,21 @@ tbody tr:hover{background:var(--navy-50);}
      texto quebrava no meio ("Bus/car") — item 18 do requisito de responsividade: nenhum botão pode quebrar
      texto. O botão nunca encolhe; só o input (com min-width:0 acima) cede espaço. */
   .reg-busca-wrap button{flex-shrink:0;white-space:nowrap;}
-  /* Itens 10/11 do requisito: Filtros / Verificar duplicidade / Importar arquivo do banco precisam caber
-     numa única linha no mobile, sem quebra — os 3 dividem a largura igualmente (flex-basis:0, mesma técnica
-     usada em .reg-busca-wrap/.filbar-info nesta sessão); em telas muito estreitas o rótulo de texto encolhe
-     com reticências (ellipsis) mas o ícone nunca some, e o título (atributo title) mantém a ação identificável. */
+  /* Itens 10/11/19 do requisito: Filtros / Verificar duplicidade / Importar arquivo do banco no mobile.
+     "Verificar duplicidade" é bem mais longo que "Filtros" — dividir a largura igualmente entre os dois
+     (flex-basis:0) forçava o texto mais longo a truncar com reticências mesmo quando o rótulo curto sobrava
+     espaço. Cada botão agora usa a largura do próprio conteúdo (flex:0 1 auto, sem ellipsis) — nenhum texto
+     é cortado; se os dois não couberem lado a lado com o ícone de Importar, a própria toolbar (.toolbar já
+     tem flex-wrap:wrap) empurra o que não coube para uma segunda linha, nunca corta o texto do botão. */
   .reg-toolbar-acoes{align-items:stretch;gap:6px;}
   .reg-toolbar-acoes #btnFiltrosMobileReg,
   .reg-toolbar-acoes #btnVerificarDuplicidade{
-    flex:1 1 0;min-width:0;padding-left:6px;padding-right:6px;
-    overflow:hidden;white-space:nowrap;font-size:12px;
+    flex:0 1 auto;min-width:0;padding-left:8px;padding-right:8px;
+    white-space:nowrap;font-size:12px;
   }
   .reg-toolbar-acoes #btnFiltrosMobileReg .reg-toolbar-label,
   .reg-toolbar-acoes #btnVerificarDuplicidade .reg-toolbar-label{
-    flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    white-space:nowrap;
   }
   /* Item 15 do requisito: no mobile, "Importar arquivo do banco" mostra somente o ícone — libera espaço
      para Filtros/Verificar duplicidade manterem o rótulo de texto legível. */
@@ -1015,11 +1017,14 @@ tbody tr:hover{background:var(--navy-50);}
      display:none (ver .filtros-barra) e não ocupa espaço nenhum. */
   .filtros-mobile-toggle{ order:1; flex:1 1 100%; text-align:left; }
   .toolbar-modal-padrao-filtros{ order:1; flex:1 1 100%; }
-  /* "Verificar duplicidade" (único botão que sobra aqui, já que "+ Novo Lançamento" virou FAB) não pode
-     tomar mais da metade da linha, senão o campo de busca fica espremido a quase 0px — largura travada em
-     ~42% garante espaço mínimo pro input, com ellipsis se o texto não couber. */
-  .acoes-lancamento-modal{ order:2; flex:0 1 42%; max-width:180px; min-width:0; margin:0; }
-  .acoes-lancamento-modal button{ width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-left:8px; padding-right:8px; }
+  /* Item 19 do requisito (rodada de ajustes globais): "Verificar duplicidade" (único botão que sobra aqui,
+     já que "+ Novo Lançamento" virou FAB) tomava uma largura travada (~42%/180px) pensada para dividir a
+     linha com o campo de busca — texto mais longo que "Filtros" acabava cortado com reticências mesmo
+     quando cabia. Agora usa a largura do próprio conteúdo (flex:0 1 auto, sem ellipsis); se não sobrar
+     espaço ao lado do campo de busca, a própria toolbar (.toolbar-modal-padrao já tem flex-wrap:wrap)
+     empurra a busca para a linha seguinte — nunca corta o texto do botão. */
+  .acoes-lancamento-modal{ order:2; flex:0 1 auto; min-width:0; margin:0; }
+  .acoes-lancamento-modal button{ width:auto; white-space:nowrap; padding-left:8px; padding-right:8px; }
   .toolbar-modal-padrao-busca{ order:2; flex:1 1 120px; min-width:0; margin-left:0; flex-wrap:nowrap; }
   .toolbar-modal-padrao-busca input[type="search"]{ flex:1; min-width:50px; }
   .toolbar-modal-padrao-busca button{ flex-shrink:0; white-space:nowrap; }
