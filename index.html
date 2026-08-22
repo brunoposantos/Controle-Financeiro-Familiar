@@ -13399,16 +13399,20 @@ function bindEvents(){
     document.getElementById('btnAplicarFiltrosMobileReg')?.addEventListener('click', ()=>{
       UI.filtrosMobileAberto = null; render();
     });
-    // Menu de ações (✏️/📄/🗑️) de cada card na lista mobile de Registros — mesmo padrão de "um aberto por
-    // vez" usado nos demais menus contextuais da aplicação (☰ Menu, Mais opções).
-    document.querySelectorAll('[data-reg-card-menu]').forEach(b=> b.addEventListener('click', e=>{
-      e.stopPropagation();
-      UI.regCardMenuAberto = UI.regCardMenuAberto===b.dataset.regCardMenu ? null : b.dataset.regCardMenu;
-      render();
-    }));
-    if(UI.regCardMenuAberto){
-      document.addEventListener('click', ()=>{ UI.regCardMenuAberto = null; render(); }, { once:true });
-    }
+  }
+  // Menu de ações (✏️/📄/🗑️) de cada card mobile de lançamentos — mesmo padrão de "um aberto por vez" usado
+  // nos demais menus contextuais da aplicação (☰ Menu, Mais opções). Item 16 do requisito (rodada de ajustes
+  // globais): este bind ficava DENTRO do "if(UI.tab==='registros')" acima, então o menu (⋮) nunca abria nos
+  // cards mobile renderizados por renderCardsLancamentosModal (Ver Extrato, Lançamentos futuros, Mapa de
+  // Calor, Ver Fatura, Ver Próximas Faturas — todos na aba Contas e Cartões, UI.tab!=='registros') mesmo o
+  // markup/estado (UI.regCardMenuAberto) sendo o mesmo. Fica fora do "if" para funcionar em qualquer aba.
+  document.querySelectorAll('[data-reg-card-menu]').forEach(b=> b.addEventListener('click', e=>{
+    e.stopPropagation();
+    UI.regCardMenuAberto = UI.regCardMenuAberto===b.dataset.regCardMenu ? null : b.dataset.regCardMenu;
+    render();
+  }));
+  if(UI.regCardMenuAberto){
+    document.addEventListener('click', ()=>{ UI.regCardMenuAberto = null; render(); }, { once:true });
   }
 
   document.querySelectorAll('#btnNovaProjecao, #fabNovaProjecao').forEach(b=> b.addEventListener('click', ()=>{
