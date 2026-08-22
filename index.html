@@ -804,6 +804,11 @@ tbody tr:hover{background:var(--navy-50);}
   display:flex;align-items:center;gap:8px;font-size:12.5px;color:#5b6b85;font-weight:600;
   padding:6px 2px 10px;user-select:none;
 }
+/* Backups (item 1 do requisito): mesmo componente visual/comportamental de "Selecionar todos" da aba
+   Registros (.reg-select-all-mobile), mas só existe no mobile — no desktop o checkbox já mora no
+   cabeçalho (<thead>) da própria tabela, então este rótulo fica oculto para não duplicar a ação. */
+.backup-select-all-mobile{display:none;}
+@media(max-width:700px){ .backup-select-all-mobile{display:flex;} }
 .reg-card-principal{flex:1;min-width:0;}
 .reg-card-linha1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
 .reg-card-descricao{font-size:14px;font-weight:600;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -1029,8 +1034,10 @@ tbody tr:hover{background:var(--navy-50);}
 .modal-mapa-calor{ width:min(1280px, 96vw); }
 /* Modal de Backup e Restauração: mesmo padrão de largura responsiva (teto 1280px) usado pelos demais
    modais grandes acima — inline style="width:1280px" no markup é quem efetivamente fixa a largura
-   (ver comentário do .modal-mapa-calor sobre a ordem de especificidade do CSS); altura 100% também vai
-   inline (style="height:100%"), respeitando o teto global .modal{max-height:96vh}. */
+   (ver comentário do .modal-mapa-calor sobre a ordem de especificidade do CSS). SEM altura forçada: o
+   modal cresce com o conteúdo (mais backups = mais alto), até o teto global .modal{max-height:96vh}; só
+   aí o scroll único do próprio .modal (overflow:auto) entra em ação — nunca height:100% fixo, que deixaria
+   espaço vazio embaixo da tabela quando há poucos backups. */
 .modal-backup{ width:min(1280px, 96vw); }
 .modal-mapa-calor .cartoes-resumo-grid{ margin-bottom:10px; }
 .modal-fatura-cartao .modal-body{ padding:12px 18px 14px; }
@@ -1493,10 +1500,14 @@ summary::marker{content:'';}
      lado a lado, preservando a quebra de linha interna da célula. */
   .tabela-cards-mobile td.val-cell{display:block;text-align:right!important;}
   .tabela-cards-mobile td.val-cell[data-label]:not([data-label=""])::before{display:block;text-align:left;margin-bottom:2px;}
-  /* Backups (item 21 do requisito): "Restaurar" continua a ação principal, em destaque, numa linha própria. */
-  .tabela-cards-mobile td.backup-linha-acoes{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding-top:10px;}
-  .tabela-cards-mobile td.backup-linha-acoes .btn{width:100%;min-height:var(--touch-min);}
-  .tabela-cards-mobile td.backup-linha-acoes .icon-btn{align-self:center;min-height:var(--touch-min);min-width:var(--touch-min);}
+  /* Backups (item 1 do requisito de responsividade): "Restaurar" e "Excluir" ficam na MESMA linha — Restaurar
+     ocupa o espaço disponível à esquerda, Excluir (só ícone) fica alinhado à direita do card. */
+  .tabela-cards-mobile td.backup-linha-acoes{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;padding-top:10px;}
+  .tabela-cards-mobile td.backup-linha-acoes .btn{flex:1 1 auto;min-height:var(--touch-min);}
+  .tabela-cards-mobile td.backup-linha-acoes .icon-btn{flex:0 0 auto;margin-left:auto;min-height:var(--touch-min);min-width:var(--touch-min);}
+  /* Checkbox de seleção de cada card de backup: mesma célula "sem rótulo" das ações, mas alinhada à
+     esquerda no topo do card em vez de dentro da linha de botões. */
+  .tabela-cards-mobile td.backup-linha-checkbox{justify-content:flex-start;border-bottom:none;padding-bottom:0;}
   /* Revisão da importação (item 20 do requisito): cada linha vira um card com os campos editáveis
      empilhados (rótulo acima do campo, não ao lado) — os mesmos <input>/<select>, sem duplicar estado. */
   .tabela-import-revisao td{display:block;padding:8px 0;}
@@ -4918,6 +4929,20 @@ function importarBackupExterno(){
 /* Excluir um backup do histórico — manuais e de pré-restauração sempre pedem uma confirmação adicional
    mais explícita (seção 10: nunca excluir automaticamente sem confirmação), e nunca é permitido excluir o
    único backup válido restante. */
+/* Valida e exclui UM backup, sem pedir confirmação (a confirmação é responsabilidade de quem chama —
+   uma vez só para exclusão individual, uma vez só para o LOTE inteiro na exclusão múltipla, nunca por
+   item). Retorna {ok:true} ou {ok:false, motivo} para permitir relatório detalhado no caso de lote. */
+async function excluirBackupSemConfirmar(item, listaCompleta){
+  if(nivelAcessoPasta==='leitura') return { ok:false, motivo:'sua conta tem apenas permissão de leitura na pasta compartilhada.' };
+  const validosRestantes = listaCompleta.filter(b=>b.integro && b.nome!==item.nome);
+  if(item.integro && validosRestantes.length===0) return { ok:false, motivo:'é o único backup válido disponível — não é permitido excluí-lo.' };
+  const dir = await obterPastaBackup(true);
+  if(!dir) return { ok:false, motivo:'não foi possível acessar a pasta de backup no OneDrive.' };
+  try{ await dir.removeEntry(item.nome); registrarAuditoria('excluir-backup', item.nome, 'sucesso'); return { ok:true }; }
+  catch(e){ registrarAuditoria('excluir-backup', item.nome, 'falha', e.mensagemAmigavel||e.message); return { ok:false, motivo:e.mensagemAmigavel||e.message||String(e) }; }
+}
+/* Exclusão de UM backup a partir do botão 🗑️ de cada linha/card — pede confirmação individual (mantido
+   exatamente como antes; a exclusão MÚLTIPLA usa uma confirmação única, ver btnExcluirBackupsSelecionados). */
 async function excluirBackupDoHistorico(item, listaCompleta){
   if(nivelAcessoPasta==='leitura'){ alert('Sua conta tem apenas permissão de leitura na pasta compartilhada e não pode excluir backups.'); return false; }
   const validosRestantes = listaCompleta.filter(b=>b.integro && b.nome!==item.nome);
@@ -4927,10 +4952,9 @@ async function excluirBackupDoHistorico(item, listaCompleta){
   }
   const avisoExtra = (item.tipo==='manual'||item.tipo==='pre-restore') ? '\n\nEste é um backup MANUAL ou de PRÉ-RESTAURAÇÃO — normalmente preservado pela política de retenção.' : '';
   if(!confirm(`Excluir permanentemente o backup "${item.nome}"?${avisoExtra}\n\nEsta ação não pode ser desfeita.`)) return false;
-  const dir = await obterPastaBackup(true);
-  if(!dir) return false;
-  try{ await dir.removeEntry(item.nome); registrarAuditoria('excluir-backup', item.nome, 'sucesso'); return true; }
-  catch(e){ registrarAuditoria('excluir-backup', item.nome, 'falha', e.mensagemAmigavel||e.message); alert(`Não foi possível excluir o backup.\n\nMotivo técnico: ${e.message||e}`); return false; }
+  const r = await excluirBackupSemConfirmar(item, listaCompleta);
+  if(!r.ok) alert(`Não foi possível excluir o backup.\n\nMotivo: ${r.motivo}`);
+  return r.ok;
 }
 /* Backup automático (seção 3, 11): "ao iniciar" dispara logo depois de clicar em <svg width="13" height="13" viewBox="-0.016 0 0.39 0.39" xmlns="http://www.w3.org/2000/svg"><path d="M.36.21v.001a.2.2 0 0 1-.015.07V.28C.317.345.253.39.179.39S.042.345.015.281V.28A.2.2 0 0 1 0 .211V.21C0 .152.028.1.072.067A.03.03 0 0 1 .095.061a.03.03 0 0 1 .019.012.03.03 0 0 1 .006.022.03.03 0 0 1-.012.02.12.12 0 0 0-.048.096.12.12 0 1 0 .192-.096.03.03 0 0 1-.012-.02.03.03 0 0 1 .006-.022.03.03 0 0 1 .02-.012.03.03 0 0 1 .022.006A.18.18 0 0 1 .36.21M.21.03v.151a.03.03 0 0 1-.06 0V.03q0-.013.009-.021T.18 0c.013-.001.016.003.021.009A.03.03 0 0 1 .21.03"/></svg>️ Iniciar App; "periódico"
    usa um timer; "após alterações" é chamado (com debounce) de dentro de scheduleSave(); "ao fechar" é
@@ -11129,7 +11153,7 @@ function renderBackupModal(){
   const m = UI.backupModal;
   return `
   <div class="overlay" id="ovBackup" ${attrZIndexModal('backupModal')}>
-    <div class="modal modal-backup" style="width:1280px;height:100%;">
+    <div class="modal modal-backup" style="width:1280px;">
       <div class="modal-head"><h3>📚 Backup e Restauração</h3><button class="close-x" id="closeBackupModal">✕</button></div>
       <div class="modal-body">
         <div class="tabs-secundarias" style="margin-bottom:14px;">
@@ -11160,13 +11184,18 @@ function renderBackupModal(){
           <button type="button" class="btn btn-danger btn-sm" id="btnExcluirBackupsSelecionados">🗑️ Excluir selecionados</button>
           <button type="button" class="btn btn-ghost btn-sm" id="btnLimparSelecaoBackup">✕ Limpar seleção</button>
         </div>` : ''}
+        ${podeExcluir ? `
+        <label class="reg-select-all-mobile backup-select-all-mobile no-print">
+          <input type="checkbox" id="chkSelecionarTodosBackupMobile" ${nomesVisiveis.length>0 && nomesVisiveis.every(n=>sel.has(n))?'checked':''} data-indet-lote="${sel.size>0 && !nomesVisiveis.every(n=>sel.has(n))}">
+          Selecionar todos (${nomesVisiveis.length})
+        </label>` : ''}
         <div class="table-wrap"><table class="tabela-cards-mobile">
           <thead><tr>
             ${podeExcluir ? `<th style="width:1%;"><input type="checkbox" id="chkSelecionarTodosBackup" ${nomesVisiveis.length>0 && nomesVisiveis.every(n=>sel.has(n))?'checked':''}></th>` : ''}
             <th>Data/Hora</th><th>Tipo</th><th>Arquivo</th><th style="text-align:right;">Tamanho</th><th style="text-align:right;">Registros</th><th style="text-align:center;">Integridade</th><th class="col-acoes">Ações</th></tr></thead>
           <tbody>
             ${m.backups.map(b=>`<tr>
-              ${podeExcluir ? `<td data-label=""><input type="checkbox" class="chk-selecionar-backup" data-backup-nome="${escapeHtml(b.nome)}" ${sel.has(b.nome)?'checked':''}></td>` : ''}
+              ${podeExcluir ? `<td data-label="" class="backup-linha-checkbox"><input type="checkbox" class="chk-selecionar-backup" data-backup-nome="${escapeHtml(b.nome)}" ${sel.has(b.nome)?'checked':''}></td>` : ''}
               <td data-label="Data/Hora" style="white-space:nowrap;">${formatarDataHoraCurta(b.criadoEm)}</td>
               <td data-label="Tipo">${BACKUP_TIPO_INFO[b.tipo]?.icone||''} ${BACKUP_TIPO_INFO[b.tipo]?.label||b.tipo}</td>
               <td data-label="Arquivo" style="word-break:break-all;">${escapeHtml(b.nome)}</td>
@@ -13858,33 +13887,48 @@ function bindEvents(){
       if(removeu) await atualizarListaBackupModal();
     }));
     if(!bm.selecionados) bm.selecionados = new Set();
-    document.getElementById('chkSelecionarTodosBackup')?.addEventListener('change', e=>{
+    const alternarTodos = e=>{
       const nomes = (bm.backups||[]).map(x=>x.nome);
       if(e.target.checked) nomes.forEach(n=> bm.selecionados.add(n));
       else nomes.forEach(n=> bm.selecionados.delete(n));
       render();
-    });
+    };
+    document.getElementById('chkSelecionarTodosBackup')?.addEventListener('change', alternarTodos);
+    document.getElementById('chkSelecionarTodosBackupMobile')?.addEventListener('change', alternarTodos);
     document.querySelectorAll('.chk-selecionar-backup').forEach(chk=> chk.addEventListener('change', ()=>{
       const nome = chk.dataset.backupNome;
       if(chk.checked) bm.selecionados.add(nome); else bm.selecionados.delete(nome);
       render();
     }));
     document.getElementById('btnLimparSelecaoBackup')?.addEventListener('click', ()=>{ bm.selecionados.clear(); render(); });
+    // Item 1 do requisito: exclusão múltipla pede UMA ÚNICA confirmação para todo o lote (nunca uma por
+    // item — ver excluirBackupSemConfirmar, que não confirma nada sozinha), tenta excluir todos os
+    // selecionados mesmo que algum falhe no meio do caminho, e ao final relata exatamente quais backups
+    // foram excluídos, quais não puderam ser e o motivo específico de cada falha.
     document.getElementById('btnExcluirBackupsSelecionados')?.addEventListener('click', async ()=>{
       const nomes = Array.from(bm.selecionados);
+      if(nomes.length===0) return;
+      if(!confirm(`Excluir permanentemente ${nomes.length} backup${nomes.length===1?'':'s'} selecionado${nomes.length===1?'':'s'}?\n\nEsta ação não pode ser desfeita.`)) return;
       let restantes = (bm.backups||[]).slice();
-      let algumExcluido = false;
+      const excluidos = [];
+      const falhados = [];
       for(const nome of nomes){
         const item = restantes.find(x=>x.nome===nome);
-        if(!item) continue;
-        const removeu = await excluirBackupDoHistorico(item, restantes);
-        if(removeu){
+        if(!item){ falhados.push({ nome, motivo:'não encontrado na lista atual.' }); continue; }
+        const r = await excluirBackupSemConfirmar(item, restantes);
+        if(r.ok){
+          excluidos.push(nome);
           bm.selecionados.delete(nome);
           restantes = restantes.filter(x=>x.nome!==nome);
-          algumExcluido = true;
+        } else {
+          falhados.push({ nome, motivo:r.motivo });
         }
       }
-      if(algumExcluido) await atualizarListaBackupModal();
+      let relatorio = '';
+      if(excluidos.length) relatorio += `✓ ${excluidos.length} backup${excluidos.length===1?'':'s'} excluído${excluidos.length===1?'':'s'}:\n${excluidos.map(n=>`  • ${n}`).join('\n')}`;
+      if(falhados.length) relatorio += `${relatorio?'\n\n':''}✕ ${falhados.length} backup${falhados.length===1?'':'s'} NÃO excluído${falhados.length===1?'':'s'}:\n${falhados.map(f=>`  • ${f.nome}: ${f.motivo}`).join('\n')}`;
+      alert(relatorio || 'Nenhum backup foi processado.');
+      if(excluidos.length) await atualizarListaBackupModal();
       else render();
     });
     document.getElementById('cfgBackupPeriodicidade')?.addEventListener('change', e=>{ backupConfig.periodicidade = e.target.value; render(); });
