@@ -1343,14 +1343,49 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
   border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
 }
 .chip-filtro-remover:hover{background:rgba(0,0,0,.08);}
-/* Botão "Filtros" com badge (item 12 do requisito de responsividade): só existe visualmente no mobile —
-   no desktop a barra de filtros já fica sempre visível, então o botão fica oculto por CSS. */
+/* Botão "Filtros" com badge (item 2 do requisito): só existe visualmente quando os filtros estão
+   agrupados (classe .agrupado, ver ajustarAgrupamentoFiltros) — quando não agrupados, a barra de filtros
+   já fica sempre visível, então o botão fica oculto por CSS. */
 .filtros-mobile-toggle{display:none;}
+.filtros-mobile-toggle.agrupado{display:inline-flex;}
 .filtros-mobile-badge{
   display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;
   border-radius:var(--radius-full);background:var(--gold);color:var(--navy-950);font-size:11px;font-weight:700;
 }
-@media(max-width:700px){
+/* Item 2 do requisito (rodada de ajustes globais): o agrupamento dos filtros num único botão "Filtros"
+   deixou de depender de um breakpoint fixo de largura — cada toolbar de filtros (identificada por
+   `prefixo`) mede a si mesma após cada render (ver ajustarAgrupamentoFiltros) e só recebe a classe
+   ".agrupado" quando os filtros realmente não cabem numa única linha, em qualquer largura de tela. As
+   regras abaixo, antes presas a @media(max-width:700px)/@media(min-width:701px), agora reagem só à classe. */
+.filtros-barra:not(.agrupado){display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+/* Usada só transitoriamente por ajustarAgrupamentoFiltros() para medir se os filtros cabem numa única
+   linha, independente do estado (agrupado ou não) em que a barra esteja no momento da medição — nunca
+   visível de fato (visibility:hidden), removida no mesmo tick antes do navegador pintar a tela. */
+.filtros-barra.medindo-filtros{
+  display:flex !important;position:static !important;visibility:hidden !important;pointer-events:none !important;
+  flex-direction:row !important;flex-wrap:wrap !important;max-height:none !important;width:auto !important;
+}
+.filtros-barra.agrupado{
+  display:none;position:fixed;left:0;right:0;bottom:0;z-index:220;background:#fff;
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:0 -12px 32px rgba(0,0,0,.28);
+  padding:16px var(--sp-5) calc(16px + var(--safe-bottom));flex-direction:column;align-items:stretch;
+  max-height:75vh;overflow-y:auto;
+}
+.filtros-barra.agrupado.aberto-mobile{display:flex;}
+.filtros-barra.agrupado .filtro-data,.filtros-barra.agrupado .filtro-multisel{width:100%;}
+.filtros-barra.agrupado .filtro-data-btn-abrir{width:100%;text-align:left;}
+.filtros-barra-titulo-mobile{display:none;}
+.filtros-barra.agrupado .filtros-barra-titulo-mobile{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:var(--navy-950);margin-bottom:6px;}
+.filtros-barra-acoes-mobile{display:none;}
+.filtros-barra.agrupado .filtros-barra-acoes-mobile{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
+/* Itens 10/11: o botão "Filtros" mudou de lugar (agora dentro de .reg-toolbar-acoes e equivalentes) —
+   .filtros-mobile-toolbar passa a existir só como âncora de posicionamento da folha fixa .filtros-barra
+   quando agrupada; nesse caso não deve deixar nenhum espaço vazio (margem) no meio do layout. */
+.filtros-mobile-toolbar.agrupado{margin-bottom:0;min-height:0;}
+/* Abaixo de 480px, agrupar é sempre a escolha certa (nenhuma tela de celular real cabe os filtros
+   individualizados) — piso de segurança que garante o layout correto já no primeiro paint, antes mesmo da
+   1ª medição JS rodar (ver ajustarAgrupamentoFiltros, que já nasce concordando com este piso). */
+@media(max-width:480px){
   .filtros-mobile-toggle{display:inline-flex;}
   .filtros-barra{
     display:none;position:fixed;left:0;right:0;bottom:0;z-index:220;background:#fff;
@@ -1363,13 +1398,7 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
   .filtros-barra .filtro-data-btn-abrir{width:100%;text-align:left;}
   .filtros-barra-titulo-mobile{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:var(--navy-950);margin-bottom:6px;}
   .filtros-barra-acoes-mobile{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
-  /* Itens 10/11: o botão "Filtros" mudou de lugar (agora dentro de .reg-toolbar-acoes e equivalentes) —
-     .filtros-mobile-toolbar passa a existir só como âncora de posicionamento da folha fixa .filtros-barra;
-     fechada, ela não deve deixar nenhum espaço vazio (margem) no meio do layout. */
   .filtros-mobile-toolbar{margin-bottom:0;min-height:0;}
-}
-@media(min-width:701px){
-  .filtros-barra-titulo-mobile,.filtros-barra-acoes-mobile{display:none;}
 }
 /* Toasts (item 22 do requisito de responsividade) — empilham no canto superior direito no desktop/tablet,
    e centralizados logo abaixo do cabeçalho no mobile, sempre acima da barra de navegação inferior. */
@@ -3620,6 +3649,7 @@ let UI = {
   ano: new Date().getFullYear(),
   mes: new Date().getMonth()+1,
   forcarNavMobile: false, // item 20 do requisito: quando a tabbar não cabe numa única linha em nenhuma largura de viewport (não só abaixo de 700px), força bottom-nav em vez de permitir rolagem horizontal — ver ajustarNavResponsiva()
+  filtrosAgrupadoMap: {}, // item 2 do requisito: { [prefixo]: boolean } — agrupamento dos botões de filtro num único botão "Filtros" medido pelo espaço real disponível (não breakpoint fixo) — ver ajustarAgrupamentoFiltros()
   regFiltro: "",
   regFiltros: criarFiltrosPadrao(), // filtro de Data por período (com predefinidos) + seleção múltipla de Grupo/Natureza/Tipo/Conta/Fatura (ver motor genérico de filtros)
   regPorPagina: 10,    // 10 | 25 | 50 | 100 | 'TODOS' — quantidade de registros por página na tabela de Registros
@@ -6523,8 +6553,8 @@ function renderExtratoContaModal(){
         ${det.itens.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itensFiltrados.length>0)}
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileExtrato" title="Filtros">🔍 Filtros${qtdAtivosExtrato>0?` <span class="filtros-mobile-badge">${qtdAtivosExtrato}</span>`:''}</button>
-          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Extrato'?'aberto-mobile':''}">
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Extrato')?'agrupado':''}" id="btnFiltrosMobileExtrato" title="Filtros">🔍 Filtros${qtdAtivosExtrato>0?` <span class="filtros-mobile-badge">${qtdAtivosExtrato}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('Extrato')?'agrupado':''} ${UI.filtrosMobileAberto==='Extrato'?'aberto-mobile':''}" data-prefixo-filtros="Extrato">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileExtrato" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Extrato', camposFiltroExtrato)}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosExtrato">↺ Restaurar filtros padrão</button>` : ''}
@@ -6646,8 +6676,8 @@ function renderFuturosContaModal(){
         ${futuros.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, futurosFiltrados.length>0)}
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileFuturos" title="Filtros">🔍 Filtros${qtdAtivosFuturos>0?` <span class="filtros-mobile-badge">${qtdAtivosFuturos}</span>`:''}</button>
-          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Futuros'?'aberto-mobile':''}">
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Futuros')?'agrupado':''}" id="btnFiltrosMobileFuturos" title="Filtros">🔍 Filtros${qtdAtivosFuturos>0?` <span class="filtros-mobile-badge">${qtdAtivosFuturos}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('Futuros')?'agrupado':''} ${UI.filtrosMobileAberto==='Futuros'?'aberto-mobile':''}" data-prefixo-filtros="Futuros">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFuturos" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Futuros', camposFiltroFuturos)}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFuturos">↺ Restaurar filtros padrão</button>` : ''}
@@ -7526,6 +7556,7 @@ function render(){
   const novosWraps = document.querySelectorAll('.table-wrap, .modal, .filtro-multisel-lista');
   novosWraps.forEach((w,i)=>{ if(wrapScrolls[i]!==undefined) w.scrollTop = wrapScrolls[i]; });
   requestAnimationFrame(ajustarNavResponsiva);
+  requestAnimationFrame(ajustarAgrupamentoFiltros);
 }
 /* Item 20 do requisito: decide se a tabbar cabe numa única linha na largura atual — se não couber (mesmo
    acima do breakpoint fixo de 700px, ex.: janela do navegador estreitada), força bottom-nav via classe no
@@ -7550,10 +7581,64 @@ function ajustarNavResponsiva(){
     render();
   }
 }
+/* Item 2 do requisito (rodada de ajustes globais): true quando os filtros de `prefixo` devem aparecer
+   agrupados num único botão "Filtros" — piso incondicional abaixo de 700px (nenhuma tela de celular real
+   cabe os filtros individualizados, e evita depender só da medição JS logo no 1º render) OU quando a
+   última medição (ver ajustarAgrupamentoFiltros) descobriu que não cabem numa única linha na largura
+   atual, em qualquer largura de tela — nunca só um breakpoint fixo. */
+function filtrosEstaoAgrupados(prefixo){
+  return window.innerWidth<=700 || !!UI.filtrosAgrupadoMap[prefixo];
+}
+/* Mede cada toolbar de filtros atualmente na tela (identificada pelo atributo data-prefixo-filtros no
+   wrapper .filtros-barra) e decide se cabe numa única linha na largura atual — se não couber, agrupa; se
+   já estava agrupada e agora cabe (ex.: janela alargada de novo), volta a mostrar individualizada. Nunca
+   mede abaixo de 700px (o piso de filtrosEstaoAgrupados já força agrupado ali, sem precisar medir).
+   Técnica de medição: força a barra a um layout "flex row wrap" totalmente fora do fluxo/invisível
+   (classe .medindo-filtros, ver CSS) e compara o offsetTop do primeiro e do último filho "de conteúdo"
+   (ignora o título/rodapé exclusivos do modo agrupado) — se algum ficar numa linha diferente do primeiro,
+   os filtros não cabem numa única linha. */
+let filtrosAbaixoDoPiso = (typeof window!=='undefined' && window.innerWidth<=700);
+function ajustarAgrupamentoFiltros(){
+  if(!UI.appIniciado) return;
+  const abaixoDoPisoAgora = window.innerWidth<=700;
+  if(abaixoDoPisoAgora!==filtrosAbaixoDoPiso){
+    // Cruzou o piso de 700px (pra cima ou pra baixo): mesmo sem nenhuma medição, filtrosEstaoAgrupados()
+    // já calcularia diferente na próxima chamada (lê window.innerWidth direto) — só falta um render() para
+    // o template reavaliar as classes .agrupado com a largura atual (sem isto, o botão/barra ficavam presos
+    // na classe calculada no último render, mesmo já tendo cruzado o piso).
+    filtrosAbaixoDoPiso = abaixoDoPisoAgora;
+    render();
+    return;
+  }
+  if(abaixoDoPisoAgora) return; // abaixo do piso: já agrupado incondicionalmente, não precisa medir
+  let mudou = false;
+  document.querySelectorAll('.filtros-barra[data-prefixo-filtros]').forEach(barra=>{
+    const prefixo = barra.dataset.prefixoFiltros;
+    const agrupadoAtual = !!UI.filtrosAgrupadoMap[prefixo];
+    // Remove .agrupado durante a medição: enquanto presente, seletores descendentes específicos do modo
+    // agrupado (ex.: ".filtros-barra.agrupado .filtro-data{width:100%}") forçam cada filtro a ocupar a
+    // largura toda, quebrando linha sempre — o que mediria "não cabe" mesmo quando cabe perfeitamente.
+    const tinhaAgrupado = barra.classList.contains('agrupado');
+    barra.classList.remove('agrupado');
+    barra.classList.add('medindo-filtros');
+    const filhos = Array.from(barra.children).filter(el=>
+      !el.classList.contains('filtros-barra-titulo-mobile') && !el.classList.contains('filtros-barra-acoes-mobile')
+    );
+    let multiLinha = false;
+    if(filhos.length>1){
+      const topoPrimeiro = filhos[0].offsetTop;
+      multiLinha = filhos.some(el=>Math.abs(el.offsetTop-topoPrimeiro)>4);
+    }
+    barra.classList.remove('medindo-filtros');
+    if(tinhaAgrupado) barra.classList.add('agrupado');
+    if(multiLinha!==agrupadoAtual){ UI.filtrosAgrupadoMap[prefixo] = multiLinha; mudou = true; }
+  });
+  if(mudou) render();
+}
 let ajustarNavResponsivaTimer=null;
 window.addEventListener('resize', ()=>{
   clearTimeout(ajustarNavResponsivaTimer);
-  ajustarNavResponsivaTimer = setTimeout(ajustarNavResponsiva, 120);
+  ajustarNavResponsivaTimer = setTimeout(()=>{ ajustarNavResponsiva(); ajustarAgrupamentoFiltros(); }, 120);
 });
 /* Tela inicial: exibida sempre que a sessão está zerada (nenhum arquivo .cfg/.log conectado ainda) — ao
    abrir a aplicação, ou depois de desconectar/fechar a sessão. Modelo semelhante a softwares tradicionais
@@ -8058,8 +8143,8 @@ function renderMapaCalorDiaModal(){
         </div>
         ${itensBase.length===0 ? `<div class="empty-state"><div class="big">🔥</div>Nenhuma despesa encontrada neste dia.</div>` : `
         <div class="toolbar toolbar-modal-padrao no-print">
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileMapaCalor" title="Filtros">🔍 Filtros${qtdAtivosMapaCalor>0?` <span class="filtros-mobile-badge">${qtdAtivosMapaCalor}</span>`:''}</button>
-          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='MapaCalor'?'aberto-mobile':''}">
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('MapaCalor')?'agrupado':''}" id="btnFiltrosMobileMapaCalor" title="Filtros">🔍 Filtros${qtdAtivosMapaCalor>0?` <span class="filtros-mobile-badge">${qtdAtivosMapaCalor}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('MapaCalor')?'agrupado':''} ${UI.filtrosMobileAberto==='MapaCalor'?'aberto-mobile':''}" data-prefixo-filtros="MapaCalor">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileMapaCalor" title="Fechar">✕</button></div>
             ${camposFiltroMapaCalor.map(c=>renderFiltroMultiSelect(f, 'MapaCalor', c.campo, c.label, c.options)).join('')}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosMapaCalor">↺ Restaurar filtros padrão</button>` : ''}
@@ -8687,7 +8772,7 @@ function renderFiltroMultiSelect(f, prefixo, campo, label, options){
   const tudoChecked = options.length>0 && selected.size===options.length;
   return `
   <div class="filtro-data filtro-multisel ${abertoAqui?'aberto':''}">
-    <button type="button" class="mini filtro-data-btn-abrir" id="btnAbrirMultisel${prefixo}${campo}">${labelBtn}</button>
+    <button type="button" class="mini filtro-data-btn-abrir" id="btnAbrirMultisel${prefixo}${campo}">${labelBtn}${selected.size>0?` <span class="filtros-mobile-badge" title="${selected.size} selecionado${selected.size===1?'':'s'}">${selected.size}</span>`:''}</button>
     ${abertoAqui ? `
     <div class="filtro-data-painel filtro-multisel-painel">
       <div class="filtro-data-painel-topo">
@@ -9205,8 +9290,8 @@ function renderRegistros(){
         <p style="margin-bottom:0;"><b>Ações de cada linha</b>: <b>✏️ Editar</b> abre o lançamento no formulário para alterar qualquer campo; <b>📄 Duplicar</b> cria uma cópia idêntica (mesma data, valor, categoria etc.) para agilizar lançamentos repetidos, sem afetar o original; <b>🗑️ Excluir</b> remove o lançamento — se ele fizer parte de uma transferência entre contas, o lado espelhado na outra conta é removido junto, e pede confirmação antes.</p>
       </div>
     </details>
-    <div class="toolbar filtros-mobile-toolbar" style="justify-content:flex-start;">
-      <div class="filtros-barra ${UI.filtrosMobileAberto==='Reg'?'aberto-mobile':''}">
+    <div class="toolbar filtros-mobile-toolbar ${filtrosEstaoAgrupados('Reg')?'agrupado':''}" style="justify-content:flex-start;">
+      <div class="filtros-barra ${filtrosEstaoAgrupados('Reg')?'agrupado':''} ${UI.filtrosMobileAberto==='Reg'?'aberto-mobile':''}" data-prefixo-filtros="Reg">
         <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileReg" title="Fechar">✕</button></div>
         ${renderBarraFiltrosPadrao(f, 'Reg', camposFiltroReg)}
         <div class="filtros-barra-acoes-mobile">
@@ -9217,7 +9302,7 @@ function renderRegistros(){
     </div>
     ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
     <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
-      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg" title="Filtros">🔍 <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
+      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Reg')?'agrupado':''}" id="btnFiltrosMobileReg" title="Filtros">🔍 <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
       ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">${ICONE_DUPLICIDADE_SVG} <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
       <button class="btn btn-gold" id="btnImportar" title="Importar arquivo do banco">📥 <span class="reg-toolbar-label">Importar arquivo do banco</span></button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
@@ -9707,8 +9792,8 @@ function renderFaturaAtualModal(){
         ${det.itens.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itensFiltrados.length>0)}
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileFatura" title="Filtros">🔍 Filtros${qtdAtivosFatura>0?` <span class="filtros-mobile-badge">${qtdAtivosFatura}</span>`:''}</button>
-          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Fatura'?'aberto-mobile':''}">
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Fatura')?'agrupado':''}" id="btnFiltrosMobileFatura" title="Filtros">🔍 Filtros${qtdAtivosFatura>0?` <span class="filtros-mobile-badge">${qtdAtivosFatura}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('Fatura')?'agrupado':''} ${UI.filtrosMobileAberto==='Fatura'?'aberto-mobile':''}" data-prefixo-filtros="Fatura">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFatura" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Fatura', camposFiltroFatura)}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosFatura">↺ Restaurar filtros padrão</button>` : ''}
@@ -9831,8 +9916,8 @@ function renderProjecaoFaturaModal(){
         ${itensBase.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itens.length>0)}
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileProjecao" title="Filtros">🔍 Filtros${qtdAtivosProjecao>0?` <span class="filtros-mobile-badge">${qtdAtivosProjecao}</span>`:''}</button>
-          <div class="toolbar-modal-padrao-filtros filtros-barra ${UI.filtrosMobileAberto==='Projecao'?'aberto-mobile':''}">
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Projecao')?'agrupado':''}" id="btnFiltrosMobileProjecao" title="Filtros">🔍 Filtros${qtdAtivosProjecao>0?` <span class="filtros-mobile-badge">${qtdAtivosProjecao}</span>`:''}</button>
+          <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('Projecao')?'agrupado':''} ${UI.filtrosMobileAberto==='Projecao'?'aberto-mobile':''}" data-prefixo-filtros="Projecao">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileProjecao" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Projecao', camposFiltroProjecao)}
             ${filtrosAtivos ? `<button class="btn btn-ghost btn-sm" id="btnLimparFiltrosProjecao">↺ Restaurar filtros padrão</button>` : ''}
