@@ -6553,7 +6553,7 @@ function renderExtratoContaModal(){
         ${det.itens.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itensFiltrados.length>0)}
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Extrato')?'agrupado':''}" id="btnFiltrosMobileExtrato" title="Filtros">🔍 Filtros${qtdAtivosExtrato>0?` <span class="filtros-mobile-badge">${qtdAtivosExtrato}</span>`:''}</button>
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Extrato')?'agrupado':''}" id="btnFiltrosMobileExtrato" title="Filtros">${ICONE_FILTRO_SVG} Filtros${qtdAtivosExtrato>0?` <span class="filtros-mobile-badge">${qtdAtivosExtrato}</span>`:''}</button>
           <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('Extrato')?'agrupado':''} ${UI.filtrosMobileAberto==='Extrato'?'aberto-mobile':''}" data-prefixo-filtros="Extrato">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileExtrato" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Extrato', camposFiltroExtrato)}
@@ -6676,7 +6676,7 @@ function renderFuturosContaModal(){
         ${futuros.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, futurosFiltrados.length>0)}
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Futuros')?'agrupado':''}" id="btnFiltrosMobileFuturos" title="Filtros">🔍 Filtros${qtdAtivosFuturos>0?` <span class="filtros-mobile-badge">${qtdAtivosFuturos}</span>`:''}</button>
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Futuros')?'agrupado':''}" id="btnFiltrosMobileFuturos" title="Filtros">${ICONE_FILTRO_SVG} Filtros${qtdAtivosFuturos>0?` <span class="filtros-mobile-badge">${qtdAtivosFuturos}</span>`:''}</button>
           <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('Futuros')?'agrupado':''} ${UI.filtrosMobileAberto==='Futuros'?'aberto-mobile':''}" data-prefixo-filtros="Futuros">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFuturos" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Futuros', camposFiltroFuturos)}
@@ -8143,7 +8143,7 @@ function renderMapaCalorDiaModal(){
         </div>
         ${itensBase.length===0 ? `<div class="empty-state"><div class="big">🔥</div>Nenhuma despesa encontrada neste dia.</div>` : `
         <div class="toolbar toolbar-modal-padrao no-print">
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('MapaCalor')?'agrupado':''}" id="btnFiltrosMobileMapaCalor" title="Filtros">🔍 Filtros${qtdAtivosMapaCalor>0?` <span class="filtros-mobile-badge">${qtdAtivosMapaCalor}</span>`:''}</button>
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('MapaCalor')?'agrupado':''}" id="btnFiltrosMobileMapaCalor" title="Filtros">${ICONE_FILTRO_SVG} Filtros${qtdAtivosMapaCalor>0?` <span class="filtros-mobile-badge">${qtdAtivosMapaCalor}</span>`:''}</button>
           <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('MapaCalor')?'agrupado':''} ${UI.filtrosMobileAberto==='MapaCalor'?'aberto-mobile':''}" data-prefixo-filtros="MapaCalor">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileMapaCalor" title="Fechar">✕</button></div>
             ${camposFiltroMapaCalor.map(c=>renderFiltroMultiSelect(f, 'MapaCalor', c.campo, c.label, c.options)).join('')}
@@ -8738,7 +8738,7 @@ function renderFiltroDataRange(f, prefixo){
   const modoLivre = f.dataPreset==='personalizado';
   return `
   <div class="filtro-data filtro-range ${f.aberto==='data'?'aberto':''}">
-    <button type="button" class="mini filtro-data-btn-abrir" id="btnAbrirFiltroData${prefixo}">📅 ${dataRangeLabel(f)}</button>
+    <button type="button" class="mini filtro-data-btn-abrir" id="btnAbrirFiltroData${prefixo}">${ICONE_FILTRO_SVG} ${dataRangeLabel(f)}</button>
     ${f.aberto==='data' ? `
     <div class="filtro-data-painel filtro-range-painel">
       <div class="filtro-data-painel-topo">
@@ -8772,7 +8772,7 @@ function renderFiltroMultiSelect(f, prefixo, campo, label, options){
   const tudoChecked = options.length>0 && selected.size===options.length;
   return `
   <div class="filtro-data filtro-multisel ${abertoAqui?'aberto':''}">
-    <button type="button" class="mini filtro-data-btn-abrir" id="btnAbrirMultisel${prefixo}${campo}">${labelBtn}${selected.size>0?` <span class="filtros-mobile-badge" title="${selected.size} selecionado${selected.size===1?'':'s'}">${selected.size}</span>`:''}</button>
+    <button type="button" class="mini filtro-data-btn-abrir" id="btnAbrirMultisel${prefixo}${campo}">${ICONE_FILTRO_SVG} ${labelBtn}${selected.size>0?` <span class="filtros-mobile-badge" title="${selected.size} selecionado${selected.size===1?'':'s'}">${selected.size}</span>`:''}</button>
     ${abertoAqui ? `
     <div class="filtro-data-painel filtro-multisel-painel">
       <div class="filtro-data-painel-topo">
@@ -9302,7 +9302,7 @@ function renderRegistros(){
     </div>
     ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
     <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
-      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Reg')?'agrupado':''}" id="btnFiltrosMobileReg" title="Filtros">🔍 <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
+      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Reg')?'agrupado':''}" id="btnFiltrosMobileReg" title="Filtros">${ICONE_FILTRO_SVG} <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
       ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">${ICONE_DUPLICIDADE_SVG} <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
       <button class="btn btn-gold" id="btnImportar" title="Importar arquivo do banco">📥 <span class="reg-toolbar-label">Importar arquivo do banco</span></button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
@@ -9792,7 +9792,7 @@ function renderFaturaAtualModal(){
         ${det.itens.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itensFiltrados.length>0)}
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Fatura')?'agrupado':''}" id="btnFiltrosMobileFatura" title="Filtros">🔍 Filtros${qtdAtivosFatura>0?` <span class="filtros-mobile-badge">${qtdAtivosFatura}</span>`:''}</button>
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Fatura')?'agrupado':''}" id="btnFiltrosMobileFatura" title="Filtros">${ICONE_FILTRO_SVG} Filtros${qtdAtivosFatura>0?` <span class="filtros-mobile-badge">${qtdAtivosFatura}</span>`:''}</button>
           <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('Fatura')?'agrupado':''} ${UI.filtrosMobileAberto==='Fatura'?'aberto-mobile':''}" data-prefixo-filtros="Fatura">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileFatura" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Fatura', camposFiltroFatura)}
@@ -9916,7 +9916,7 @@ function renderProjecaoFaturaModal(){
         ${itensBase.length ? `
         <div class="toolbar toolbar-modal-padrao no-print" style="margin-top:14px;">
           ${renderBotoesAcoesLancamentoModal(conta, itens.length>0)}
-          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Projecao')?'agrupado':''}" id="btnFiltrosMobileProjecao" title="Filtros">🔍 Filtros${qtdAtivosProjecao>0?` <span class="filtros-mobile-badge">${qtdAtivosProjecao}</span>`:''}</button>
+          <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Projecao')?'agrupado':''}" id="btnFiltrosMobileProjecao" title="Filtros">${ICONE_FILTRO_SVG} Filtros${qtdAtivosProjecao>0?` <span class="filtros-mobile-badge">${qtdAtivosProjecao}</span>`:''}</button>
           <div class="toolbar-modal-padrao-filtros filtros-barra ${filtrosEstaoAgrupados('Projecao')?'agrupado':''} ${UI.filtrosMobileAberto==='Projecao'?'aberto-mobile':''}" data-prefixo-filtros="Projecao">
             <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileProjecao" title="Fechar">✕</button></div>
             ${renderBarraFiltrosPadrao(f, 'Projecao', camposFiltroProjecao)}
