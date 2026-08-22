@@ -382,8 +382,12 @@ html.forcar-nav-mobile .acoes-lancamento-modal .btn-novo-lanc-modal{display:none
 /* Item 12 do requisito: dentro dos 4 modais de lançamentos, não existe bottom-nav visível (o modal cobre a
    tela toda no mobile — ver @media(max-width:700px) .modal acima), então o FAB do modal usa só a área
    segura inferior, sem descontar --bottom-nav-h; z-index baixo pois só precisa vencer .modal-head/.modal-foot
-   dentro do próprio contexto de empilhamento do overlay (já isolado por z-index dinâmico — attrZIndexModal). */
-.fab-novo-lancamento-modal{bottom:calc(var(--safe-bottom) + 18px);z-index:20;}
+   dentro do próprio contexto de empilhamento do overlay (já isolado por z-index dinâmico — attrZIndexModal).
+   Correção numa rodada seguinte: o deslocamento era baixo demais e o FAB acabava sobrepondo o próprio botão
+   "Fechar" do rodapé fixo (.modal-foot, também sticky no fundo da tela no mobile) — soma a altura
+   aproximada do rodapé (~64px: padding 11px×2 + botão ~34px + borda) ao deslocamento vertical do FAB, para
+   ele sempre flutuar ACIMA do rodapé, nunca em cima dele. */
+.fab-novo-lancamento-modal{bottom:calc(var(--safe-bottom) + 18px + 64px);z-index:20;}
 @media(max-width:700px){
   .tabbar{display:none;}
   .bottom-nav{display:flex;}
@@ -1387,24 +1391,12 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
    .filtros-mobile-toolbar passa a existir só como âncora de posicionamento da folha fixa .filtros-barra
    quando agrupada; nesse caso não deve deixar nenhum espaço vazio (margem) no meio do layout. */
 .filtros-mobile-toolbar.agrupado{margin-bottom:0;min-height:0;}
-/* Abaixo de 480px, agrupar é sempre a escolha certa (nenhuma tela de celular real cabe os filtros
-   individualizados) — piso de segurança que garante o layout correto já no primeiro paint, antes mesmo da
-   1ª medição JS rodar (ver ajustarAgrupamentoFiltros, que já nasce concordando com este piso). */
-@media(max-width:480px){
-  .filtros-mobile-toggle{display:inline-flex;}
-  .filtros-barra{
-    display:none;position:fixed;left:0;right:0;bottom:0;z-index:220;background:#fff;
-    border-radius:var(--radius-lg) var(--radius-lg) 0 0;box-shadow:0 -12px 32px rgba(0,0,0,.28);
-    padding:16px var(--sp-5) calc(16px + var(--safe-bottom));flex-direction:column;align-items:stretch;
-    max-height:75vh;overflow-y:auto;
-  }
-  .filtros-barra.aberto-mobile{display:flex;}
-  .filtros-barra .filtro-data,.filtros-barra .filtro-multisel{width:100%;}
-  .filtros-barra .filtro-data-btn-abrir{width:100%;text-align:left;}
-  .filtros-barra-titulo-mobile{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;color:var(--navy-950);margin-bottom:6px;}
-  .filtros-barra-acoes-mobile{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
-  .filtros-mobile-toolbar{margin-bottom:0;min-height:0;}
-}
+/* Removido o antigo piso incondicional "@media(max-width:480px)" que forçava QUALQUER .filtros-barra
+   (inclusive a de Inteligência Financeira, que nunca participa do sistema de agrupamento — não tem
+   data-prefixo-filtros nem botão toggle) para o layout de folha fixa (position:fixed), sem nenhuma forma
+   de fechar. Como render() é sempre síncrono no cliente (sem SSR), filtrosEstaoAgrupados() já resolve o
+   piso de 700px no PRÓPRIO 1º render (a classe .agrupado já nasce correta no HTML), então esse fallback
+   por media query era redundante para as 6 instâncias reais — e ativamente incorreto para as demais. */
 /* Toasts (item 22 do requisito de responsividade) — empilham no canto superior direito no desktop/tablet,
    e centralizados logo abaixo do cabeçalho no mobile, sempre acima da barra de navegação inferior. */
 #toastContainer{
@@ -1636,13 +1628,16 @@ summary::marker{content:'';}
   display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--navy-50);
 }
 .cartoes-resumo-item .ico{font-size:20px;line-height:1;flex-shrink:0;}
-/* Item 10 do requisito: o valor principal (fonte maior) do cartão-resumo NUNCA quebra em duas linhas —
-   como a regra é uma classe única compartilhada por TODOS os cartões-resumo da aplicação, qualquer redução
-   de fonte para caber (clamp abaixo) já se aplica igualmente a todos os cartões do mesmo conjunto, nunca
-   deixando um card visualmente diferente dos outros só por ter um valor maior. */
+/* Item 10 do requisito, refinado numa rodada seguinte: o valor principal (fonte maior) do cartão-resumo
+   NUNCA quebra, corta ou é suprimido — em vez de um clamp() baseado só na largura da viewport (que não
+   sabia se o texto realmente cabia no card), a fonte agora é medida de verdade (ver
+   ajustarFonteCartoesResumo, chamada após cada render) e reduzida só o necessário para todo texto caber
+   por inteiro, sempre igualmente em TODOS os cartões-resumo da tela (nunca um card com fonte diferente dos
+   demais só por ter um valor maior) — var(--val-font-size) começa em 15px e só diminui se algum valor
+   realmente não couber, nunca corta com reticências. */
 .cartoes-resumo-item{min-width:0;}
 .cartoes-resumo-item > div{min-width:0;}
-.cartoes-resumo-item .val{font-family:var(--mono);font-weight:800;font-size:clamp(12px, 3.6vw, 15px);color:var(--navy-900);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cartoes-resumo-item .val{font-family:var(--mono);font-weight:800;font-size:var(--val-font-size, 15px);color:var(--navy-900);line-height:1.2;white-space:nowrap;overflow:hidden;}
 .cartoes-resumo-item .lbl{font-size:10.5px;color:#6a7a97;font-weight:600;}
 .tabela-cartoes{min-width:640px;}
 /* Item 18 do requisito: célula extra só para o card mobile — um ÚNICO ícone de editar compartilhado entre
@@ -5133,6 +5128,18 @@ function importarCSVManual(tipo, file){
   };
   reader.readAsArrayBuffer(file);
 }
+/* Handler compartilhado do <input type="file" accept=".cfg,.log" multiple> — usado tanto pelo item
+   "Importar pacote" do ☰ Menu quanto pela opção "Carregar arquivos localmente" da tela inicial (item 7 do
+   requisito de responsividade), para nunca haver duas lógicas divergentes de leitura do mesmo pacote. */
+function processarInputImportPacote(e){
+  const arquivos = [...e.target.files];
+  const cfg = arquivos.find(f=>f.name.toLowerCase().endsWith('.cfg'));
+  const reg = arquivos.find(f=>f.name.toLowerCase().endsWith('.log'));
+  if(!cfg && !reg){ alert('Selecione o arquivo .cfg (configurações) e/ou o .log (registros) do pacote.'); e.target.value=''; return; }
+  if(cfg) importarCSVManual('cfg', cfg);
+  if(reg) importarCSVManual('reg', reg);
+  e.target.value = '';
+}
 
 /* ===================== HELPERS DE DADOS ===================== */
 function txInPeriod(tx, ano, mes){ const d = new Date(tx.data+"T00:00:00"); return d.getFullYear()===ano && (d.getMonth()+1)===mes; }
@@ -7276,7 +7283,14 @@ function calcProjecoesMes(ano, mes, saldoInicial){
    mesma função de corte por data já usada no Saldo Atual dos cards de Contas (saldoContaAteData). */
 function calcSaldoAtualFluxoCaixa(){
   const dataRef = hojeISO();
-  return contasElegiveisFluxoCaixa().reduce((s,c)=> s + saldoContaAteData(c, dataRef), 0);
+  const contasContracheque = STATE.contas.filter(c=>STATE.contaTipos[c]==='Contracheque');
+  // Item do requisito (rodada seguinte): o saldo atual da(s) conta(s) do tipo Contracheque (ex.: TRT) é
+  // somado ao saldo do dia atual/Saldo Atual (Hoje) — mesma fonte usada pela linha especial do Fluxo de
+  // Caixa (aplicarLinhaSaldoAtual) e pelo card "Saldo Atual (Hoje)" do Painel Financeiro (renderDashboard).
+  // Contracheque continua fora do Saldo Inicial/contasElegiveisFluxoCaixa (composição já documentada e
+  // usada como base da projeção mês a mês) — só o valor "hoje" passa a incluir o crédito já recebido.
+  return contasElegiveisFluxoCaixa().reduce((s,c)=> s + saldoContaAteData(c, dataRef), 0)
+    + contasContracheque.reduce((s,c)=> s + saldoContaAteData(c, dataRef), 0);
 }
 /* Injeta, no mês real corrente (e só nele — ver calcProjecoesMultiMes), uma linha especial "Saldo do dia
    atual" na posição correspondente ao dia de hoje dentro da lista de lançamentos previstos já ordenada por
@@ -7566,6 +7580,7 @@ function render(){
   novosWraps.forEach((w,i)=>{ if(wrapScrolls[i]!==undefined) w.scrollTop = wrapScrolls[i]; });
   requestAnimationFrame(ajustarNavResponsiva);
   requestAnimationFrame(ajustarAgrupamentoFiltros);
+  requestAnimationFrame(ajustarFonteCartoesResumo);
 }
 /* Item 20 do requisito: decide se a tabbar cabe numa única linha na largura atual — se não couber (mesmo
    acima do breakpoint fixo de 700px, ex.: janela do navegador estreitada), força bottom-nav via classe no
@@ -7606,6 +7621,24 @@ function filtrosEstaoAgrupados(prefixo){
    (classe .medindo-filtros, ver CSS) e compara o offsetTop do primeiro e do último filho "de conteúdo"
    (ignora o título/rodapé exclusivos do modo agrupado) — se algum ficar numa linha diferente do primeiro,
    os filtros não cabem numa única linha. */
+/* Item 10 do requisito (refinado numa rodada seguinte): reduz --val-font-size (herdada por todo
+   .cartoes-resumo-item .val da tela atual, ver CSS) só o suficiente para nenhum valor de cartão-resumo
+   ficar cortado — em vez de um clamp() baseado na viewport, mede de verdade (scrollWidth vs clientWidth)
+   e para assim que tudo couber, ou ao atingir um piso mínimo de legibilidade (9px). Uma única variável
+   global (não por grid) garante que todos os cartões-resumo da tela atual sempre usem a MESMA fonte. */
+function ajustarFonteCartoesResumo(){
+  const vals = document.querySelectorAll('.cartoes-resumo-item .val');
+  if(!vals.length) return;
+  document.documentElement.style.removeProperty('--val-font-size');
+  let tamanho = 15;
+  for(let tentativas=0; tentativas<8; tentativas++){
+    const estoura = Array.from(vals).some(v=>v.scrollWidth>v.clientWidth+1);
+    if(!estoura) break;
+    tamanho -= 1;
+    document.documentElement.style.setProperty('--val-font-size', tamanho+'px');
+    if(tamanho<=9) break;
+  }
+}
 let filtrosAbaixoDoPiso = (typeof window!=='undefined' && window.innerWidth<=700);
 function ajustarAgrupamentoFiltros(){
   if(!UI.appIniciado) return;
@@ -7647,7 +7680,7 @@ function ajustarAgrupamentoFiltros(){
 let ajustarNavResponsivaTimer=null;
 window.addEventListener('resize', ()=>{
   clearTimeout(ajustarNavResponsivaTimer);
-  ajustarNavResponsivaTimer = setTimeout(()=>{ ajustarNavResponsiva(); ajustarAgrupamentoFiltros(); }, 120);
+  ajustarNavResponsivaTimer = setTimeout(()=>{ ajustarNavResponsiva(); ajustarAgrupamentoFiltros(); ajustarFonteCartoesResumo(); }, 120);
 });
 /* Tela inicial: exibida sempre que a sessão está zerada (nenhum arquivo .cfg/.log conectado ainda) — ao
    abrir a aplicação, ou depois de desconectar/fechar a sessão. Modelo semelhante a softwares tradicionais
@@ -7663,11 +7696,20 @@ function statusConexaoOneDriveInfo(){
   return { emoji:'🔴', texto:'Desconectado' };
 }
 function renderTelaInicial(){
-  const cfgProntoOk = fileStatusCfg==='conectado';
-  const regProntoOk = fileStatusReg==='conectado';
+  /* 'carregado-manualmente' (item 7 do requisito de responsividade) conta como pronto para iniciar a
+     aplicação, ao lado de 'conectado': permite iniciar em modo offline quando não há conexão disponível
+     para o OneDrive, usando uma cópia local dos arquivos. Os indicadores de sincronização (status-resumo,
+     painel ☁, etc.) continuam exigindo 'conectado' estritamente, pois medem sincronização com o OneDrive,
+     não a prontidão para iniciar a aplicação. */
+  const cfgProntoOk = fileStatusCfg==='conectado' || fileStatusCfg==='carregado-manualmente';
+  const regProntoOk = fileStatusReg==='conectado' || fileStatusReg==='carregado-manualmente';
   const arquivosProntos = cfgProntoOk && regProntoOk;
   const faltamCriar = fileStatusCfg==='nao-existe' || fileStatusReg==='nao-existe';
   const comErro = fileStatusCfg==='erro' || fileStatusReg==='erro' || fileStatusCfg==='token-expirado' || fileStatusReg==='token-expirado';
+  /* Sem conexão disponível para o OneDrive: sem suporte configurado, navegador offline, ou última
+     tentativa de conexão falhou/está desconectada. Nesses casos habilita a opção de carregar os arquivos
+     localmente para iniciar a aplicação mesmo assim, em modo offline. */
+  const semConexaoDisponivel = !hasFSAccess || !onlineStatus || statusConexaoOneDrive==='desconectado';
   return `
   <div class="tela-inicial">
     <div class="tela-inicial-card">
@@ -7716,6 +7758,14 @@ function renderTelaInicial(){
             ${(hasFSAccess && msalConta) ? `<button type="button" class="btn btn-backup-historico" id="tiVerHistoricoBackups"><svg width="11" height="11" viewBox="0 0 0.206 0.206" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M.035.17.04.166zm.014.015v.007h.007V.185zm.048.014V.192L.096.206zM.103.103H.096l.002.005zm.09 0a.09.09 0 0 1-.09.09v.014A.1.1 0 0 0 .206.103zM.103.014a.09.09 0 0 1 .09.09h.014A.1.1 0 0 0 .103 0zm0-.014A.1.1 0 0 0 0 .103h.014A.09.09 0 0 1 .103.014zM.039.166A.1.1 0 0 1 .014.103H0a.1.1 0 0 0 .03.072zm-.01.009L.042.19l.01-.009L.039.166zm.074.018H.096v.013h.008zm0 0H.096v.013h.007zM.096.041v.062H.11V.041zm.002.067.041.041.01-.01L.108.098zM0 .193h.048V.179H0zM.055.186V.138H.041v.048z" fill="#000"/></svg> Ver histórico de backups (OneDrive)</button>` : ''}
           </div>
         </div>
+        ${(!arquivosProntos && semConexaoDisponivel) ? `
+        <div class="ti-opcao">
+          <div class="ti-opcao-icone">💻</div>
+          <div class="ti-opcao-titulo">Carregar arquivos localmente</div>
+          <div class="ti-opcao-desc">Sem conexão disponível para o OneDrive agora? Carregue uma cópia dos arquivos <b>configuracoes.cfg</b> e/ou <b>registros.log</b> salva neste dispositivo (ex.: baixada anteriormente pelo ☰ Menu) para iniciar a aplicação mesmo em modo offline. Ao reconectar ao OneDrive, use <b>Salvar</b> para gravar as alterações.</div>
+          <button type="button" class="btn btn-ghost" id="tiCarregarLocal">📂 Selecionar arquivos do dispositivo</button>
+          <input type="file" id="inputImportPacoteInicial" accept=".cfg,.log" multiple style="display:none;">
+        </div>` : ''}
       </div>
       <div class="ti-rodape">
         <div class="ti-checklist">
@@ -9299,6 +9349,20 @@ function renderRegistros(){
         <p style="margin-bottom:0;"><b>Ações de cada linha</b>: <b>✏️ Editar</b> abre o lançamento no formulário para alterar qualquer campo; <b>📄 Duplicar</b> cria uma cópia idêntica (mesma data, valor, categoria etc.) para agilizar lançamentos repetidos, sem afetar o original; <b>🗑️ Excluir</b> remove o lançamento — se ele fizer parte de uma transferência entre contas, o lado espelhado na outra conta é removido junto, e pede confirmação antes.</p>
       </div>
     </details>
+    <!-- Item do requisito (rodada seguinte): no desktop, a toolbar de ações fica ACIMA da toolbar de
+         filtros (antes era o contrário) — no mobile a ordem no DOM não muda a aparência, já que os filtros
+         viram uma folha fixa (position:fixed) sempre que agrupados (ver filtrosEstaoAgrupados), então
+         reordenar aqui é seguro para os dois modos. -->
+    <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
+      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Reg')?'agrupado':''}" id="btnFiltrosMobileReg" title="Filtros">${ICONE_FILTRO_SVG} <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
+      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">${ICONE_DUPLICIDADE_SVG} <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
+      <button class="btn btn-gold" id="btnImportar" title="Importar arquivo do banco">📥 <span class="reg-toolbar-label">Importar arquivo do banco</span></button>
+      <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
+      <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
+        <input type="search" id="regBusca" placeholder="Buscar na descrição..." value="${escapeHtml(UI.regFiltro)}">
+        <button type="button" class="btn-buscar-icone" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
+      </div>
+    </div>
     <div class="toolbar filtros-mobile-toolbar ${filtrosEstaoAgrupados('Reg')?'agrupado':''}" style="justify-content:flex-start;">
       <div class="filtros-barra ${filtrosEstaoAgrupados('Reg')?'agrupado':''} ${UI.filtrosMobileAberto==='Reg'?'aberto-mobile':''}" data-prefixo-filtros="Reg">
         <div class="filtros-barra-titulo-mobile">Filtros <button type="button" class="close-x-claro" id="btnFecharFiltrosMobileReg" title="Fechar">✕</button></div>
@@ -9310,16 +9374,6 @@ function renderRegistros(){
       </div>
     </div>
     ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
-    <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
-      <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle ${filtrosEstaoAgrupados('Reg')?'agrupado':''}" id="btnFiltrosMobileReg" title="Filtros">${ICONE_FILTRO_SVG} <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
-      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">${ICONE_DUPLICIDADE_SVG} <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
-      <button class="btn btn-gold" id="btnImportar" title="Importar arquivo do banco">📥 <span class="reg-toolbar-label">Importar arquivo do banco</span></button>
-      <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
-      <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
-        <input type="search" id="regBusca" placeholder="Buscar na descrição..." value="${escapeHtml(UI.regFiltro)}">
-        <button type="button" class="btn-buscar-icone" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
-      </div>
-    </div>
     ${renderChipsFiltrosAtivos(f, 'Reg', camposFiltroReg)}
     <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
     ${list.length===0 ? `<div class="empty-state"><div class="big">🗒️</div>Nenhum lançamento encontrado com esses filtros.</div>
@@ -12778,15 +12832,10 @@ function bindEvents(){
 
   document.getElementById('btnExportCSVPacote')?.addEventListener('click', ()=>{ exportarCSVManual('cfg'); exportarCSVManual('reg'); });
   document.getElementById('btnImportCSVPacote')?.addEventListener('click', ()=> document.getElementById('inputImportPacote').click());
-  document.getElementById('inputImportPacote')?.addEventListener('change', e=>{
-    const arquivos = [...e.target.files];
-    const cfg = arquivos.find(f=>f.name.toLowerCase().endsWith('.cfg'));
-    const reg = arquivos.find(f=>f.name.toLowerCase().endsWith('.log'));
-    if(!cfg && !reg){ alert('Selecione o arquivo .cfg (configurações) e/ou o .log (registros) do pacote.'); e.target.value=''; return; }
-    if(cfg) importarCSVManual('cfg', cfg);
-    if(reg) importarCSVManual('reg', reg);
-    e.target.value = '';
-  });
+  document.getElementById('inputImportPacote')?.addEventListener('change', e=> processarInputImportPacote(e));
+  // Tela inicial: carregar arquivos localmente quando não há conexão disponível para o OneDrive (item 7).
+  document.getElementById('tiCarregarLocal')?.addEventListener('click', ()=> document.getElementById('inputImportPacoteInicial').click());
+  document.getElementById('inputImportPacoteInicial')?.addEventListener('change', e=> processarInputImportPacote(e));
   // Menu unificado "📁 Arquivo" (cabeçalho, aparece assim que pelo menos um arquivo está conectado)
   document.getElementById('btnAtualizarPWA')?.addEventListener('click', ()=> aplicarAtualizacaoPWA());
   document.getElementById('btnInstalarPWA')?.addEventListener('click', async ()=>{
