@@ -543,8 +543,10 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
 @media(max-width:480px){
   .cenario-inputs-linha{flex-wrap:wrap;}
   /* Item 10 do requisito de responsividade: controles fáceis de tocar — os campos de variação percentual
-     ganham altura mínima de toque (--touch-min) só no mobile, sem alterar o desktop. */
-  .cenario-input-3d{min-height:var(--touch-min);font-size:14px;}
+     ganham altura mínima de toque (--touch-min) só no mobile, sem alterar o desktop. Item 9 (rodada de
+     ajustes globais): fonte do input exatamente 2pt menor que a do próprio label (.cenario-input-grupo,
+     font-size:11px) — calc() garante que os dois nunca se descolem se um dia o tamanho do label mudar. */
+  .cenario-input-3d{min-height:var(--touch-min);font-size:calc(11px - 2pt);}
 }
 @media(max-width:900px){.grid-cards{grid-template-columns:repeat(2,1fr);}}
 .kpi{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;background:var(--paper);position:relative;overflow:hidden;}
@@ -557,7 +559,11 @@ main{flex:1;padding:22px;max-width:1280px;margin:0 auto;width:100%;box-sizing:bo
   display:none;background:linear-gradient(135deg,var(--navy-900) 0%, var(--navy-950) 100%);color:#fff;
   border-radius:var(--radius-lg);padding:var(--sp-5) var(--sp-6);margin-bottom:var(--sp-4);text-align:center;
 }
-.dash-hero-saldo-lbl{font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:#b9c9ea;}
+/* Item 7 do requisito: rótulo à esquerda e data (dinâmica, sempre "hoje") à direita, na mesma linha,
+   alinhados verticalmente — mesmo quando o texto encolhe, os dois nunca quebram para linhas separadas. */
+.dash-hero-saldo-topo{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.dash-hero-saldo-lbl{font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:#b9c9ea;white-space:nowrap;}
+.dash-hero-saldo-data{font-size:12.5px;font-weight:600;color:#b9c9ea;white-space:nowrap;flex:0 0 auto;}
 .dash-hero-saldo-val{font-family:var(--mono);font-size:32px;font-weight:700;margin-top:6px;color:var(--gold);}
 .dash-hero-saldo-val.neg{color:#ff8a7a;}
 @media(max-width:700px){ .dash-hero-saldo{display:block;} }
@@ -959,6 +965,14 @@ tbody tr:hover{background:var(--navy-50);}
    permitido — e a tabela ganha rolagem horizontal própria em vez de forçar o modal a ultrapassar a
    viewport. */
 .modal-extrato-futuros{ width:1280px; }
+/* Item 12 do requisito: no modal Extrato da Conta (inclui Contracheque/TRT), "Imprimir" e "Replicar
+   Contracheque" ficam juntos, alinhados à direita, na mesma linha enquanto couberem; em telas estreitas
+   empilham um acima do outro (sempre à direita, nunca ultrapassando a largura do painel). */
+.extrato-conta-acoes-topo{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+@media(max-width:480px){
+  .extrato-conta-acoes-topo{flex-direction:column;align-items:stretch;width:100%;}
+  .extrato-conta-acoes-topo .btn{width:100%;text-align:center;}
+}
 /* Compacta os espaçamentos verticais internos destes dois modais (mesma lógica de .modal-fatura-cartao
    logo abaixo, aplicada aqui aos modais "Ver Extrato"/"Lançamentos futuros") — cabeçalho + botões de ação
    + resumo + filtros + tabela + paginação cabem sem precisar da rolagem própria do modal na maioria das
@@ -1471,7 +1485,12 @@ summary::marker{content:'';}
 .aportes-categoria-bloco:last-child{margin-bottom:0;}
 .aportes-categoria-cabecalho{display:flex;justify-content:space-between;background:var(--navy-900);color:#fff;padding:6px 10px;border-radius:6px;font-size:12.5px;}
 .aportes-subcategoria-bloco{margin:6px 0 0 10px;}
-.aportes-subcategoria-cabecalho{display:flex;justify-content:space-between;background:var(--navy-50,#eef2f9);padding:4px 10px;font-size:12px;font-weight:600;color:#4a5468;border-radius:4px;}
+.aportes-subcategoria-cabecalho{display:flex;justify-content:space-between;align-items:baseline;gap:8px;background:var(--navy-50,#eef2f9);padding:4px 10px;font-size:12px;font-weight:600;color:#4a5468;border-radius:4px;}
+/* Item 6 do requisito: o valor total do cabeçalho de subcategoria nunca quebra linha no mobile — encolhe
+   o nome da subcategoria (com reticências) antes de deixar o valor quebrar. */
+.aportes-subcategoria-cabecalho span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;}
+.aportes-subcategoria-cabecalho span:last-child{white-space:nowrap;flex:0 0 auto;}
+@media(max-width:700px){ .aportes-subcategoria-cabecalho{font-size:11.5px;} }
 .aportes-tabela-itens{width:100%;font-size:12px;border-collapse:collapse;}
 /* Classe genérica reutilizável para transformar qualquer tabela em cards empilhados no mobile (mesma
    técnica já usada em Fluxo de Caixa/Cartões/Economias) — usar quando a tabela não tem nenhum estilo
@@ -1565,8 +1584,14 @@ summary::marker{content:'';}
 .cartoes-resumo-item{
   display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:var(--navy-50);
 }
-.cartoes-resumo-item .ico{font-size:20px;line-height:1;}
-.cartoes-resumo-item .val{font-family:var(--mono);font-weight:800;font-size:15px;color:var(--navy-900);line-height:1.2;}
+.cartoes-resumo-item .ico{font-size:20px;line-height:1;flex-shrink:0;}
+/* Item 10 do requisito: o valor principal (fonte maior) do cartão-resumo NUNCA quebra em duas linhas —
+   como a regra é uma classe única compartilhada por TODOS os cartões-resumo da aplicação, qualquer redução
+   de fonte para caber (clamp abaixo) já se aplica igualmente a todos os cartões do mesmo conjunto, nunca
+   deixando um card visualmente diferente dos outros só por ter um valor maior. */
+.cartoes-resumo-item{min-width:0;}
+.cartoes-resumo-item > div{min-width:0;}
+.cartoes-resumo-item .val{font-family:var(--mono);font-weight:800;font-size:clamp(12px, 3.6vw, 15px);color:var(--navy-900);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cartoes-resumo-item .lbl{font-size:10.5px;color:#6a7a97;font-weight:600;}
 .tabela-cartoes{min-width:640px;}
 .tabela-cartoes td{padding:10px 8px;vertical-align:middle;}
@@ -6446,7 +6471,7 @@ function renderExtratoContaModal(){
                 </div>
               </div>
             </div>
-            <div class="no-print" style="display:flex;gap:8px;">
+            <div class="no-print extrato-conta-acoes-topo">
               ${tipo==='Contracheque' ? `<button type="button" class="btn btn-ghost btn-sm no-print btn-imprimir-fatura" data-replicar-contracheque="${escapeHtml(conta)}" title="Replica todos os lançamentos do contracheque atual para os meses seguintes, até a última parcela do empréstimo mais longo">🔁 Replicar Contracheque</button>` : ''}
               <button class="btn btn-ghost btn-sm no-print btn-imprimir-fatura" id="printExtratoConta">🖨️ Imprimir</button>
             </div>
@@ -8004,7 +8029,10 @@ function renderDashboard(){
   const saldoAtual = calcSaldoAtualFluxoCaixa();
   return `
   <div class="dash-hero-saldo">
-    <div class="dash-hero-saldo-lbl">💼 Saldo atual (hoje)</div>
+    <div class="dash-hero-saldo-topo">
+      <div class="dash-hero-saldo-lbl">💼 Saldo Atual (Hoje)</div>
+      <div class="dash-hero-saldo-data">${fmtData(hojeISO())}</div>
+    </div>
     <div class="dash-hero-saldo-val ${saldoAtual<0?'neg':''}">${fmtBRL(saldoAtual)}</div>
   </div>
   <div class="grid-cards">
