@@ -293,7 +293,16 @@ input,select{font-family:var(--sans);}
 .banner b{color:#5c3d00;}
 .pwa-banner{background:var(--navy-900);color:#fff;font-size:12.5px;padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center;}
 
-.tabbar{display:flex;gap:2px;background:var(--navy-800);padding:0 20px;overflow-x:auto;}
+.tabbar{display:flex;gap:2px;background:var(--navy-800);padding:0 20px;overflow:hidden;flex-wrap:nowrap;}
+/* Item 20 do requisito: a tabbar NUNCA pode rolar horizontalmente nem ficar cortada — quando as abas não
+   cabem numa única linha, mesmo acima de 700px (ex.: janela do navegador redimensionada), a aplicação troca
+   para bottom-nav via classe .forcar-nav-mobile no <html> (ver ajustarNavResponsiva/UI.forcarNavMobile),
+   com as MESMAS regras já usadas pelo breakpoint fixo abaixo — só a navegação muda, não o layout todo. */
+html.forcar-nav-mobile .tabbar{display:none;}
+html.forcar-nav-mobile .bottom-nav{display:flex;}
+html.forcar-nav-mobile .fab-novo-lancamento,html.forcar-nav-mobile .fab-novo-lancamento-modal{display:flex;align-items:center;justify-content:center;}
+html.forcar-nav-mobile main.app-main,html.forcar-nav-mobile .app>main{padding-bottom:calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);}
+html.forcar-nav-mobile .acoes-lancamento-modal .btn-novo-lanc-modal{display:none;}
 .tab-btn{
   border:none;background:transparent;color:#c7d3ea;padding:10px 20px 9px;font-size:13px;font-weight:600;
   font-family:var(--sans);clip-path:polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%);
@@ -878,6 +887,16 @@ tbody tr:hover{background:var(--navy-50);}
 }
 .icon-btn{background:transparent;border:none;color:#6a7a97;padding:4px;border-radius:5px;}
 .icon-btn:hover{background:var(--navy-100);color:var(--navy-900);}
+/* Botão de busca somente-ícone (item 11 do requisito): mesma aparência "fantasma" do .icon-btn, mas com
+   área de toque mínima garantida em qualquer largura (não só mobile), já que substitui um botão de texto
+   em toda a aplicação. */
+.btn-buscar-icone{background:transparent;border:none;color:#2f6fed;border-radius:6px;min-width:var(--touch-min);min-height:34px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex:0 0 auto;}
+.btn-buscar-icone:hover{background:var(--navy-100);}
+@media(max-width:700px){ .btn-buscar-icone{min-height:var(--touch-min);} }
+/* Ícone SVG padrão de filtro (item 3) e de "Verificar duplicidade" (item 14) — tamanho/alinhamento
+   consistentes em qualquer botão que os utilize. */
+.ico-filtro,.ico-dup{width:12px;height:12px;flex:0 0 auto;vertical-align:middle;display:inline-block;}
+.btn-filtro-padrao{display:inline-flex;align-items:center;gap:6px;}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
 /* Configurações — busca e controles superiores (itens 19/20 do requisito de responsividade): grupos
    próprios para nunca comprimir três botões numa única linha estreita, e um campo de busca que nunca
@@ -909,16 +928,18 @@ tbody tr:hover{background:var(--navy-50);}
      com reticências (ellipsis) mas o ícone nunca some, e o título (atributo title) mantém a ação identificável. */
   .reg-toolbar-acoes{align-items:stretch;gap:6px;}
   .reg-toolbar-acoes #btnFiltrosMobileReg,
-  .reg-toolbar-acoes #btnVerificarDuplicidade,
-  .reg-toolbar-acoes #btnImportar{
+  .reg-toolbar-acoes #btnVerificarDuplicidade{
     flex:1 1 0;min-width:0;padding-left:6px;padding-right:6px;
     overflow:hidden;white-space:nowrap;font-size:12px;
   }
   .reg-toolbar-acoes #btnFiltrosMobileReg .reg-toolbar-label,
-  .reg-toolbar-acoes #btnVerificarDuplicidade .reg-toolbar-label,
-  .reg-toolbar-acoes #btnImportar .reg-toolbar-label{
+  .reg-toolbar-acoes #btnVerificarDuplicidade .reg-toolbar-label{
     flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
+  /* Item 15 do requisito: no mobile, "Importar arquivo do banco" mostra somente o ícone — libera espaço
+     para Filtros/Verificar duplicidade manterem o rótulo de texto legível. */
+  .reg-toolbar-acoes #btnImportar{ flex:0 0 auto; min-width:var(--touch-min); min-height:var(--touch-min); padding:6px 10px; }
+  .reg-toolbar-acoes #btnImportar .reg-toolbar-label{ display:none; }
   .reg-toolbar-acoes .reg-busca-wrap{order:99;}
   /* No mobile o botão flutuante (FAB) já cobre "+ Novo lançamento"/"+ Novo lançamento previsto"/"+ Nova meta"
      (itens 7 e 14 do requisito) — evita duplicar a ação e a sobreposição do FAB fixo com esses botões em
@@ -3390,6 +3411,10 @@ function alertasFluxoCaixaMes(){
   return alertas.sort((a,b)=>a.dias-b.dias);
 }
 function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Ícone SVG padrão de filtro (item 3 do requisito) — usado em TODOS os botões de filtro da aplicação.
+const ICONE_FILTRO_SVG = '<svg class="ico-filtro" width="12" height="12" viewBox="0 0 0.24 0.24" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M.225.03v.025L.15.126V.21H.09V.126L.015.055V.03zm-.12.09v.075h.03V.12L.21.049V.045H.03v.004z"/></svg>';
+// Ícone SVG padrão de "Verificar duplicidade" (item 14 do requisito).
+const ICONE_DUPLICIDADE_SVG = '<svg class="ico-dup" width="12" height="12" viewBox="0 0 0.36 0.36" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M.142.09h.173v.097H.281L.27.209.217.21v.037H.183L.172.269H.09L.079.247H.045V.15h.098zm.022.06h.052v.038h.039L.266.166h.026V.112H.165zM.066.172v.053h.026l.011.022h.055L.169.225h.026V.173z" fill="currentColor"/></svg>';
 
 /* ---------- Lógica de competência de fatura (fechamento/vencimento por cartão) ---------- */
 function competenciaFatura(dataISO, conta){
@@ -3525,6 +3550,7 @@ let UI = {
   tab: "dashboard",
   ano: new Date().getFullYear(),
   mes: new Date().getMonth()+1,
+  forcarNavMobile: false, // item 20 do requisito: quando a tabbar não cabe numa única linha em nenhuma largura de viewport (não só abaixo de 700px), força bottom-nav em vez de permitir rolagem horizontal — ver ajustarNavResponsiva()
   regFiltro: "",
   regFiltros: criarFiltrosPadrao(), // filtro de Data por período (com predefinidos) + seleção múltipla de Grupo/Natureza/Tipo/Conta/Fatura (ver motor genérico de filtros)
   regPorPagina: 10,    // 10 | 25 | 50 | 100 | 'TODOS' — quantidade de registros por página na tabela de Registros
@@ -6408,8 +6434,8 @@ function renderExtratoContaModal(){
         </div>
         <div class="cartoes-resumo-grid">
           <div class="cartoes-resumo-item"><span class="ico">🏁</span><div><div class="val">${fmtBRL(det.saldoInicial)}</div><div class="lbl">saldo inicial</div></div></div>
-          <div class="cartoes-resumo-item"><span class="ico">📥</span><div><div class="val">${fmtBRL(entradasFiltradas)}</div><div class="lbl">entradas</div></div></div>
-          <div class="cartoes-resumo-item"><span class="ico">📤</span><div><div class="val">${fmtBRL(saidasFiltradas)}</div><div class="lbl">saídas</div></div></div>
+          <div class="cartoes-resumo-item"><span class="ico">📈</span><div><div class="val">${fmtBRL(entradasFiltradas)}</div><div class="lbl">entradas</div></div></div>
+          <div class="cartoes-resumo-item"><span class="ico">📉</span><div><div class="val">${fmtBRL(saidasFiltradas)}</div><div class="lbl">saídas</div></div></div>
           <div class="cartoes-resumo-item"><span class="ico">💰</span><div><div class="val">${fmtBRL(saldoFinalFiltrado)}</div><div class="lbl">saldo final</div></div></div>
         </div>
         ${det.itens.length ? `
@@ -6425,7 +6451,7 @@ function renderExtratoContaModal(){
           ${UI.filtrosMobileAberto==='Extrato' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropExtrato"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="extratoBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarExtrato" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarExtrato" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
         ${itensFiltrados.length ? `
@@ -6546,7 +6572,7 @@ function renderFuturosContaModal(){
           ${UI.filtrosMobileAberto==='Futuros' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFuturos"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="futurosBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarFuturos" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarFuturos" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
         ${futurosFiltrados.length ? `
@@ -7289,6 +7315,7 @@ function renderBannerPWA(){
   </div>`;
 }
 function render(){
+  document.documentElement.classList.toggle('forcar-nav-mobile', UI.forcarNavMobile);
   if(!STATE.ready){ root.innerHTML = '<div class="empty-state" style="padding-top:80px;">Carregando...</div>'; return; }
   chartInstances.forEach(c=>c.destroy()); chartInstances=[];
   // A tela inicial só dá lugar ao app depois do clique explícito em "<svg width="13" height="13" viewBox="-0.016 0 0.39 0.39" xmlns="http://www.w3.org/2000/svg"><path d="M.36.21v.001a.2.2 0 0 1-.015.07V.28C.317.345.253.39.179.39S.042.345.015.281V.28A.2.2 0 0 1 0 .211V.21C0 .152.028.1.072.067A.03.03 0 0 1 .095.061a.03.03 0 0 1 .019.012.03.03 0 0 1 .006.022.03.03 0 0 1-.012.02.12.12 0 0 0-.048.096.12.12 0 1 0 .192-.096.03.03 0 0 1-.012-.02.03.03 0 0 1 .006-.022.03.03 0 0 1 .02-.012.03.03 0 0 1 .022.006A.18.18 0 0 1 .36.21M.21.03v.151a.03.03 0 0 1-.06 0V.03q0-.013.009-.021T.18 0c.013-.001.016.003.021.009A.03.03 0 0 1 .21.03"/></svg>️ Iniciar App" (ver UI.appIniciado)
@@ -7364,7 +7391,36 @@ function render(){
   window.scrollTo(0, scrollY);
   const novosWraps = document.querySelectorAll('.table-wrap, .modal, .filtro-multisel-lista');
   novosWraps.forEach((w,i)=>{ if(wrapScrolls[i]!==undefined) w.scrollTop = wrapScrolls[i]; });
+  requestAnimationFrame(ajustarNavResponsiva);
 }
+/* Item 20 do requisito: decide se a tabbar cabe numa única linha na largura atual — se não couber (mesmo
+   acima do breakpoint fixo de 700px, ex.: janela do navegador estreitada), força bottom-nav via classe no
+   <html> em vez de permitir rolagem horizontal (proibida) ou corte de abas. Abaixo de 700px o próprio CSS
+   já esconde a tabbar incondicionalmente, então a medição é dispensada nessa faixa. Reavalia a cada render
+   e a cada resize (com um novo render, já que trocar a navegação muda a própria tabbar que está sendo
+   medida) — sempre tenta a tabbar normal primeiro (reset da classe) antes de decidir forçar o bottom-nav,
+   para nunca ficar "preso" em bottom-nav depois que a janela volta a ter espaço suficiente. */
+function ajustarNavResponsiva(){
+  if(!UI.appIniciado || window.innerWidth<=700){ return; }
+  const tb = document.querySelector('.tabbar');
+  if(!tb) return;
+  if(UI.forcarNavMobile){
+    document.documentElement.classList.remove('forcar-nav-mobile');
+    const cabe = tb.scrollWidth <= tb.clientWidth + 1;
+    document.documentElement.classList.add('forcar-nav-mobile');
+    if(cabe){ UI.forcarNavMobile=false; render(); }
+    return;
+  }
+  if(tb.scrollWidth > tb.clientWidth + 1){
+    UI.forcarNavMobile = true;
+    render();
+  }
+}
+let ajustarNavResponsivaTimer=null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(ajustarNavResponsivaTimer);
+  ajustarNavResponsivaTimer = setTimeout(ajustarNavResponsiva, 120);
+});
 /* Tela inicial: exibida sempre que a sessão está zerada (nenhum arquivo .cfg/.log conectado ainda) — ao
    abrir a aplicação, ou depois de desconectar/fechar a sessão. Modelo semelhante a softwares tradicionais
    de gestão financeira (ex.: Microsoft Money): a aplicação nunca assume dados de uma sessão anterior. */
@@ -7403,12 +7459,12 @@ function renderTelaInicial(){
       <div class="ti-opcoes">
         <div class="ti-opcao">
           <div class="ti-opcao-icone">${ONEDRIVE_ICON_SVG}</div>
-          <div class="ti-opcao-titulo">${msalConta ? 'Conectado ao OneDrive' : 'Conectar ao OneDrive'}</div>
-          <div class="ti-opcao-desc">${msalConta ? 'Sua conta já está conectada. Os arquivos são lidos e gravados diretamente no seu OneDrive.' : 'Conecta com sua conta Microsoft para acessar os arquivos deste app no seu OneDrive.'}</div>
+          <div class="ti-opcao-titulo">${statusConexaoOneDrive==='conectado' ? 'Conectado ao OneDrive' : 'Conectar ao OneDrive'}</div>
+          <div class="ti-opcao-desc">${statusConexaoOneDrive==='conectado' ? 'Sua conta já está conectada. Os arquivos são lidos e gravados diretamente no seu OneDrive.' : (msalConta ? 'Não foi possível acessar os arquivos no OneDrive agora — tente novamente.' : 'Conecta com sua conta Microsoft para acessar os arquivos deste app no seu OneDrive.')}</div>
           <div class="ti-status-conexao ti-status-${statusConexaoOneDrive}">${statusConexaoOneDriveInfo().emoji} ${statusConexaoOneDriveInfo().texto}</div>
-          ${msalConta
+          ${statusConexaoOneDrive==='conectado'
             ? `<button class="btn btn-ghost" id="tiSairMicrosoft"><span class="icone-onedrive-discreto">${ONEDRIVE_ICON_SVG}</span> Desconectar do OneDrive</button>`
-            : `<button class="btn btn-gold" id="tiEntrarMicrosoft" ${(!hasFSAccess || statusConexaoOneDrive==='conectando')?'disabled':''}>${ONEDRIVE_ICON_SVG} Conectar ao OneDrive</button>`}
+            : `<button class="btn btn-gold" id="tiEntrarMicrosoft" ${(!hasFSAccess || statusConexaoOneDrive==='conectando')?'disabled':''}>${ONEDRIVE_ICON_SVG} ${statusConexaoOneDrive==='conectando' ? 'Conectando...' : ((msalConta||oneDriveIndisponivelMsg) ? 'Tentar Novamente' : 'Conectar ao OneDrive')}</button>`}
         </div>
         ${msalConta && faltamCriar && nivelAcessoPasta!=='leitura' ? `
         <div class="ti-opcao">
@@ -7422,13 +7478,6 @@ function renderTelaInicial(){
           <div class="ti-opcao-icone">👁️</div>
           <div class="ti-opcao-titulo">Somente leitura</div>
           <div class="ti-opcao-desc">Os arquivos ainda não existem em <b>OneDrive/${ONEDRIVE_CONFIG.pastaApp}</b> e sua conta tem apenas permissão de leitura nesta pasta — você não pode criá-los. Peça ao proprietário para criá-los, ou para conceder permissão de edição à sua conta.</div>
-        </div>` : ''}
-        ${msalConta && comErro ? `
-        <div class="ti-opcao">
-          <div class="ti-opcao-icone">🔄</div>
-          <div class="ti-opcao-titulo">Tentar novamente</div>
-          <div class="ti-opcao-desc">Tenta acessar novamente os arquivos no OneDrive (útil após um problema de conexão ou sessão expirada).</div>
-          <button class="btn btn-primary" id="tiTentarNovamente">🔄 Tentar novamente</button>
         </div>` : ''}
         <div class="ti-opcao">
           <div class="ti-opcao-icone">🛡️</div>
@@ -7594,7 +7643,9 @@ function renderPainelSync(){
       ${syncUltimoErro ? `<p class="sync-erro-texto">⚠ ${escapeHtml(syncUltimoErro)}</p>` : ''}
     </div>
     <div class="sync-painel-acoes">
-      ${!onlineStatus ? '' : !msalConta ? `<button type="button" class="btn btn-gold btn-sm" id="spConectar">Conectar novamente</button>` :
+      ${!onlineStatus ? '' :
+        statusConexaoOneDrive==='conectando' ? `<button type="button" class="btn btn-ghost btn-sm" disabled>Conectando...</button>` :
+        statusConexaoOneDrive==='desconectado' ? `<button type="button" class="btn btn-gold btn-sm" id="spConectar">${msalConta ? 'Tentar novamente' : 'Conectar'}</button>` :
         syncEstado===SYNC_ESTADOS.ERRO_SINCRONIZACAO ? `<button type="button" class="btn btn-primary btn-sm" id="spTentarNovamente">Tentar novamente</button>` :
         nivelAcessoPasta!=='leitura' ? `<button type="button" class="btn btn-primary btn-sm" id="spSincronizarAgora">Sincronizar agora</button>` : ''}
     </div>
@@ -7883,7 +7934,7 @@ function renderMapaCalorDiaModal(){
           ${UI.filtrosMobileAberto==='MapaCalor' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropMapaCalor"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="mapaCalorBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarMapaCalor" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarMapaCalor" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
         ${itensFiltrados.length ? `
@@ -8957,7 +9008,7 @@ function renderRegistros(){
     <details class="ajuda-fluxo" data-ajuda-registros ${UI.ajudaRegistrosAberta?'open':''}>
       <summary>ℹ️ Informações sobre esta tela</summary>
       <div class="ajuda-fluxo-conteudo">
-        <p><b>Busca</b>: o campo de busca considera exclusivamente a <b>Descrição</b> do lançamento — não busca por categoria, conta ou valor. Pressione Enter ou clique em "🔍 Buscar" para aplicar.</p>
+        <p><b>Busca</b>: o campo de busca considera exclusivamente a <b>Descrição</b> do lançamento — não busca por categoria, conta ou valor. Pressione Enter ou clique no ícone 🔍 para aplicar.</p>
         <p><b>Filtros</b>: o filtro <b>Data</b> permite escolher um intervalo (data inicial e final) livremente, com atalhos para períodos comuns (Hoje, Ontem, Últimos 7/30 dias, Este mês, Mês anterior) ou um período Personalizado — totalmente independente do período exibido no cabeçalho da aplicação. Grupo, Natureza, Tipo, Conta e Fatura aceitam marcar mais de uma opção ao mesmo tempo (dentro do mesmo filtro, os registros que atendem a qualquer uma das opções marcadas aparecem); filtros diferentes se combinam entre si. Cada alteração já atualiza a lista e os totais na hora, sem recarregar a página. Use "↺ Restaurar filtros padrão" para voltar a ver todos os lançamentos.</p>
         <p><b>Seleção em lote</b>: marque as caixas na primeira coluna (ou o checkbox "selecionar todos" no cabeçalho, que cobre a página atual) para abrir a barra de ações — mesmo componente usado nos modais da aba Contas e Cartões. Com pelo menos um lançamento marcado, é possível "✏️ Editar em Lote" (altera só os campos habilitados, em todos os selecionados de uma vez) ou "🗑️ Excluir selecionados" (pede confirmação antes de remover).</p>
         <p><b>Verificar duplicidade</b>: compara todos os lançamentos já registrados e aponta pares com data, valor e conta muito parecidos — útil depois de uma importação para conferir se algo entrou duas vezes.</p>
@@ -8979,12 +9030,12 @@ function renderRegistros(){
     ${UI.filtrosMobileAberto==='Reg' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropReg"></div>` : ''}
     <div class="toolbar reg-toolbar-acoes" style="margin-top:0;">
       <button type="button" class="btn btn-ghost btn-sm filtros-mobile-toggle" id="btnFiltrosMobileReg" title="Filtros">🔍 <span class="reg-toolbar-label">Filtros</span>${qtdAtivos>0?` <span class="filtros-mobile-badge">${qtdAtivos}</span>`:''}</button>
-      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">🔍 <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
+      ${list.length ? `<button class="btn btn-ghost btn-sm" id="btnVerificarDuplicidade" title="Verificar duplicidade">${ICONE_DUPLICIDADE_SVG} <span class="reg-toolbar-label">Verificar duplicidade</span></button>` : ''}
       <button class="btn btn-gold" id="btnImportar" title="Importar arquivo do banco">📥 <span class="reg-toolbar-label">Importar arquivo do banco</span></button>
       <button class="btn btn-primary" id="btnNovoLancamento">+ Novo lançamento</button>
       <div class="reg-busca-wrap" style="display:flex;gap:10px;align-items:center;margin-left:auto;">
         <input type="search" id="regBusca" placeholder="Buscar na descrição..." value="${escapeHtml(UI.regFiltro)}">
-        <button class="btn btn-primary btn-sm" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+        <button type="button" class="btn-buscar-icone" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
       </div>
     </div>
     <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
@@ -9086,7 +9137,7 @@ function renderBotoesAcoesLancamentoModal(conta, temLancamentos){
   // textual continua existindo no HTML (some só via CSS em telas ≤700px) para não duplicar o data-attribute.
   return `
   <div class="acoes-lancamento-modal no-print">
-    ${temLancamentos ? `<button class="btn btn-ghost btn-sm" data-modal-verificar-dup="${escapeHtml(conta)}">🔍 Verificar duplicidade</button>` : ''}
+    ${temLancamentos ? `<button class="btn btn-ghost btn-sm" data-modal-verificar-dup="${escapeHtml(conta)}">${ICONE_DUPLICIDADE_SVG} Verificar duplicidade</button>` : ''}
     <button class="btn btn-primary btn-sm btn-novo-lanc-modal" data-modal-novo-lanc="${escapeHtml(conta)}">+ Novo Lançamento</button>
   </div>
   <button type="button" class="fab-novo-lancamento-modal no-print" data-modal-novo-lanc="${escapeHtml(conta)}" aria-label="Novo lançamento" title="Novo lançamento">＋</button>`;
@@ -9278,8 +9329,8 @@ function renderPainelContasBancarias(ano, mes){
     <div class="cartoes-resumo-grid">
       <div class="cartoes-resumo-item"><span class="ico">🏦</span><div><div class="val">${resumo.qtdContas}</div><div class="lbl">conta${resumo.qtdContas===1?'':'s'}</div></div></div>
       <div class="cartoes-resumo-item"><span class="ico">💰</span><div><div class="val">${fmtBRL(resumo.saldoTotal)}</div><div class="lbl">saldo total</div></div></div>
-      <div class="cartoes-resumo-item"><span class="ico">📥</span><div><div class="val">${fmtBRL(resumo.entradasTotal)}</div><div class="lbl">entradas no período</div></div></div>
-      <div class="cartoes-resumo-item"><span class="ico">📤</span><div><div class="val">${fmtBRL(resumo.saidasTotal)}</div><div class="lbl">saídas no período</div></div></div>
+      <div class="cartoes-resumo-item"><span class="ico">📈</span><div><div class="val">${fmtBRL(resumo.entradasTotal)}</div><div class="lbl">entradas no período</div></div></div>
+      <div class="cartoes-resumo-item"><span class="ico">📉</span><div><div class="val">${fmtBRL(resumo.saidasTotal)}</div><div class="lbl">saídas no período</div></div></div>
     </div>
     ${contas.length ? `<div class="contas-financeiras-grid">
       ${contas.map(c=>{
@@ -9474,7 +9525,7 @@ function renderFaturaAtualModal(){
           ${UI.filtrosMobileAberto==='Fatura' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropFatura"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="faturaBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarFatura" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarFatura" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
         ${itensFiltrados.length ? `
@@ -9596,7 +9647,7 @@ function renderProjecaoFaturaModal(){
           ${UI.filtrosMobileAberto==='Projecao' ? `<div class="menu-mobile-backdrop aberto" id="filtrosMobileBackdropProjecao"></div>` : ''}
           <div class="toolbar-modal-padrao-busca">
             <input type="search" id="projecaoBusca" class="mini" style="padding:5px 6px;" placeholder="Buscar na descrição..." value="${escapeHtml(fBusca)}">
-            <button class="btn btn-primary btn-sm" id="btnBuscarProjecao" title="Buscar (ou pressione Enter)">🔍 Buscar</button>
+            <button type="button" class="btn-buscar-icone" id="btnBuscarProjecao" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
         ${itens.length ? `
@@ -10652,7 +10703,7 @@ function renderCategorias(){
     <div class="toolbar cat-toolbar" style="margin-bottom:16px;">
       <div class="cat-toolbar-busca">
         <input type="text" id="buscaCategoriasInput" class="cat-busca-input" placeholder="Buscar por palavra" value="${escapeHtml(UI.buscaCategorias)}">
-        <button class="btn btn-primary btn-sm" id="btnBuscarCategorias">🔍 Buscar</button>
+        <button type="button" class="btn-buscar-icone" id="btnBuscarCategorias" title="Buscar" aria-label="Buscar">🔍</button>
         ${UI.buscaCategorias ? `<button class="btn btn-ghost btn-sm" id="btnLimparBuscaCategorias">✕ Limpar</button><span class="badge-count">${totalResultados} resultado(s)</span>` : ''}
       </div>
       <div class="cat-toolbar-acoes">
@@ -12452,7 +12503,11 @@ function bindEvents(){
   document.getElementById('btnSyncIndicador')?.addEventListener('click', ()=>{ UI.syncPainelAberto = !UI.syncPainelAberto; render(); });
   document.getElementById('spSincronizarAgora')?.addEventListener('click', ()=>{ UI.syncPainelAberto=false; salvarArquivos(); });
   document.getElementById('spTentarNovamente')?.addEventListener('click', ()=>{ UI.syncPainelAberto=false; syncUltimoErro=null; reconectarPacote(); });
-  document.getElementById('spConectar')?.addEventListener('click', ()=>{ UI.syncPainelAberto=false; loginOneDrive(); });
+  document.getElementById('spConectar')?.addEventListener('click', async ()=>{
+    UI.syncPainelAberto=false;
+    if(msalConta){ statusConexaoOneDrive='conectando'; render(); await carregarArquivosDoOneDrive(); statusConexaoOneDrive = (fileStatusCfg==='erro'||fileStatusReg==='erro') ? 'desconectado' : 'conectado'; render(); }
+    else loginOneDrive();
+  });
   document.getElementById('btnMenuArquivo')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = !UI.menuArquivoAberto; render(); });
   document.getElementById('btnFecharMenuArquivo')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = false; render(); });
   document.getElementById('menuArquivoBackdrop')?.addEventListener('click', ()=>{ UI.menuArquivoAberto = false; render(); });
@@ -12466,10 +12521,15 @@ function bindEvents(){
   document.getElementById('maTrocarConta')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; loginOneDrive(); });
   document.getElementById('maDesconectar')?.addEventListener('click', ()=>{ UI.menuArquivoAberto=false; desconectarArquivos(); });
   // Tela inicial (sessão zerada)
-  document.getElementById('tiEntrarMicrosoft')?.addEventListener('click', ()=>loginOneDrive());
+  // Item 5 do requisito: um único botão cobre tanto "Conectar"/"Tentar Novamente" quanto o caso de já
+  // haver uma sessão Microsoft válida mas os arquivos não terem carregado (comErro) — reconecta os
+  // arquivos em vez de reabrir o login, já que a conta Microsoft continua válida nesse caso.
+  document.getElementById('tiEntrarMicrosoft')?.addEventListener('click', async ()=>{
+    if(msalConta){ statusConexaoOneDrive='conectando'; render(); await carregarArquivosDoOneDrive(); statusConexaoOneDrive = (fileStatusCfg==='erro'||fileStatusReg==='erro') ? 'desconectado' : 'conectado'; render(); }
+    else loginOneDrive();
+  });
   document.getElementById('tiSairMicrosoft')?.addEventListener('click', ()=>desconectarArquivos());
   document.getElementById('tiCriarArquivos')?.addEventListener('click', ()=>criarArquivosFaltantesNoOneDrive());
-  document.getElementById('tiTentarNovamente')?.addEventListener('click', async ()=>{ await carregarArquivosDoOneDrive(); render(); });
   document.getElementById('tiRestaurarBackup')?.addEventListener('click', ()=>restaurarBackup());
   document.getElementById('tiVerHistoricoBackups')?.addEventListener('click', ()=>abrirBackupModal());
   document.getElementById('tiIniciarApp')?.addEventListener('click', ()=>{
