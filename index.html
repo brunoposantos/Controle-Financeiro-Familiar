@@ -1480,6 +1480,12 @@ summary::marker{content:'';}
 
 /* ---- Aba Contas e Cartões ---- */
 .cartoes-resumo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+/* Item 17 do requisito: resumo do painel Cartões — usa flex em vez de grid, então quando o último card
+   (ex.: "parcelado em aberto") sobra sozinho numa linha, ele estica (flex:1) até preencher todo o espaço
+   horizontal restante, em vez de ficar do tamanho de uma única coluna com vazio ao lado. Responsivo em
+   qualquer largura (desktop ou mobile), já que é o mesmo flex-wrap em ambos. */
+.cartoes-resumo-grid-flex-fill{display:flex;flex-wrap:wrap;}
+.cartoes-resumo-grid-flex-fill .cartoes-resumo-item{flex:1 1 140px;}
 /* Modal "Ver detalhes" de Economias — agrupamento Categoria → Subcategoria → lançamentos. */
 .aportes-categoria-bloco{margin-bottom:14px;}
 .aportes-categoria-bloco:last-child{margin-bottom:0;}
@@ -1594,6 +1600,11 @@ summary::marker{content:'';}
 .cartoes-resumo-item .val{font-family:var(--mono);font-weight:800;font-size:clamp(12px, 3.6vw, 15px);color:var(--navy-900);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cartoes-resumo-item .lbl{font-size:10.5px;color:#6a7a97;font-weight:600;}
 .tabela-cartoes{min-width:640px;}
+/* Item 18 do requisito: célula extra só para o card mobile — um ÚNICO ícone de editar compartilhado entre
+   Fechamento e Vencimento (a edição já altera as duas datas de uma vez, então dois ícones eram redundantes).
+   Fica oculta no desktop (onde cada coluna já tem o próprio ícone, revelado no hover) — table-layout:fixed
+   ignora células display:none na contagem de colunas, então não desalinha o <thead> de 7 colunas. */
+.col-editar-fatura-mobile{display:none;}
 .tabela-cartoes td{padding:10px 8px;vertical-align:middle;}
 .tabela-cartoes th{padding:8px;}
 .linha-fatura{transition:background-color .15s ease;}
@@ -1692,25 +1703,23 @@ summary::marker{content:'';}
      baixo em vez de ficar na mesma linha (item 13 do requisito), mesmo com overflow:hidden/ellipsis no nome. */
   .tabela-cartoes td:first-child .cartao-col{min-width:0;}
   .tabela-cartoes td.col-importar-cartao{flex:0 0 auto;order:2;border-bottom:none;padding-bottom:8px;justify-content:flex-end;}
-  /* Item 16 do requisito: ordem explícita das linhas do card no mobile — identificação (1/2), valor da
-     fatura (3), fechamento+vencimento lado a lado (4), status (5), parcelado em aberto com o resumo de
-     compras/parcelas (6) — nunca depender da ordem "3" genérica/empatada por ordem de documento. */
+  /* Item 16/18 do requisito: ordem explícita das linhas do card no mobile — identificação (1/2), valor da
+     fatura (3), fechamento+vencimento+ícone único de editar (4), status (5), parcelado em aberto com o
+     resumo de compras/parcelas (6) — nunca depender da ordem "3" genérica/empatada por ordem de documento.
+     Coluna 6 é a nova .col-editar-fatura-mobile (ver markup), então Status/Saldo parcelado avançaram uma
+     posição (7ª/8ª) em relação à versão anterior deste card. */
   .tabela-cartoes td:nth-child(3){order:3;}
-  .tabela-cartoes td:nth-child(6){order:5;}
-  .tabela-cartoes td:nth-child(7){order:6;}
+  .tabela-cartoes td:nth-child(7){order:5;}
+  .tabela-cartoes td:nth-child(8){order:6;}
   /* Fechamento e Vencimento (colunas 4 e 5) formam duas colunas de largura equilibrada na mesma linha, em
      vez de duas linhas cheias empilhadas — mesma técnica flex-basis:0 já usada nesta sessão para dividir
-     largura igualmente entre itens sem depender do tamanho do conteúdo. */
-  /* flex-basis:45% (não 0) é proposital aqui: junto com a linha anterior (Valor da fatura, basis:100%), o
-     total acumulado (100%+45%+45%=190%) ultrapassa a largura do container e força a quebra de linha ANTES
-     do par Fechamento/Vencimento — com basis:0 os dois ficavam "encaixados" na mesma linha do Valor da
-     fatura só que com largura zero (o algoritmo de quebra do flexbox só quebra quando o total excede o
-     espaço disponível, e 100%+0+0 nunca excede). min-width:0 continua garantindo que encolham se precisar. */
+     largura igualmente entre itens sem depender do tamanho do conteúdo. flex-basis:42% (não 45%) abre
+     espaço para o ícone único de editar (col-editar-fatura-mobile) ficar entre os dois na mesma linha. */
   /* Coluna estreita demais para rótulo+valor lado a lado (como nas outras linhas) — rótulo empilha ACIMA
      do valor em vez de à esquerda, senão o texto "Fechamento"/"Vencimento" espreme a data a ponto de
      quebrar caractere por caractere (largura efetiva de cada metade gira em torno de 110-170px). */
   .tabela-cartoes td:nth-child(4),.tabela-cartoes td:nth-child(5){
-    flex:1 1 45%;min-width:0;order:4;flex-direction:column;align-items:flex-start;gap:2px;
+    flex:1 1 42%;min-width:0;order:4;flex-direction:column;align-items:flex-start;gap:2px;
   }
   .tabela-cartoes td:nth-child(4) .data-editavel-linha,
   .tabela-cartoes td:nth-child(5) .data-editavel-linha{justify-content:flex-start;width:100%;}
@@ -1719,13 +1728,24 @@ summary::marker{content:'';}
      linhas), em vez das duas datas empurradas para o mesmo lado. */
   .tabela-cartoes td:nth-child(5){align-items:flex-end;}
   .tabela-cartoes td:nth-child(5) .data-editavel-linha{justify-content:flex-end;}
+  /* Item 18: só um ícone de editar entre Fechamento e Vencimento no mobile — os dois ícones originais (um
+     por coluna, revelados no hover no desktop) ficam ocultos; o ícone único (.col-editar-fatura-mobile,
+     mesma ação: ajusta as duas datas de uma vez) mora entre os dois, centralizado na própria linha. */
+  .tabela-cartoes td:nth-child(4) .edit-data-icon,
+  .tabela-cartoes td:nth-child(5) .edit-data-icon{display:none;}
+  .tabela-cartoes td.col-editar-fatura-mobile{
+    display:flex;order:4;flex:0 0 auto;align-self:center;justify-content:center;padding:0;border-bottom:none;
+  }
+  /* Item 18: linha de Status — a tag e a informação complementar (progresso/"Totalmente"/"Parcialmente")
+     ficam lado a lado (não mais empilhadas) e alinhadas à direita do card. */
+  .tabela-cartoes .status-col{flex-direction:row;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px;}
   /* Saldo parcelado em aberto: o valor continua na linha principal (rótulo à esquerda, valor+ícone à
      direita, igual às demais linhas), mas o hint "N compras · M parcelas" quebra para a linha de baixo em
      vez de ficar espremido ao lado do valor — flex-basis:100% força a quebra (mesma técnica já usada acima
-     para Fechamento/Vencimento), e o hint fica alinhado à direita, sob o valor. O seletor com "+" pega só o
-     hint que vem depois do valor (caso "—" sem parcelamento não é afetado, pois não tem valor antes). */
-  .tabela-cartoes td:nth-child(7){flex-wrap:wrap;}
-  .tabela-cartoes td:nth-child(7) .val-cell + .hint{flex:1 1 100%;min-width:0;text-align:right;margin-top:2px!important;}
+     para Fechamento/Vencimento). Item 18: gap reduzido (2px, não os 10px herdados de ".tabela-cartoes td")
+     para o hint ficar mais próximo verticalmente do valor, em vez do espaçamento grande anterior. */
+  .tabela-cartoes td:nth-child(8){flex-wrap:wrap;gap:2px;}
+  .tabela-cartoes td:nth-child(8) .val-cell + .hint{flex:1 1 100%;min-width:0;text-align:right;margin-top:0!important;}
   .tabela-cartoes td:last-child{border-bottom:none;}
   .tabela-cartoes td[data-label]:not([data-label=""])::before{
     content:attr(data-label);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;
@@ -1733,7 +1753,9 @@ summary::marker{content:'';}
   }
   .tabela-cartoes .data-editavel-linha{justify-content:flex-end;}
   .tabela-cartoes .edit-data-icon{opacity:1!important;transform:none!important;min-width:var(--touch-min);min-height:var(--touch-min);}
-  .tabela-cartoes .status-col{align-items:flex-end;}
+  /* Item 18 do requisito: todas as linhas do card usam justify-content:space-around para alinhamento
+     consistente entre os elementos (rótulo/valor, ou os múltiplos elementos da linha de Status). */
+  .tabela-cartoes td{justify-content:space-around;}
 }
 .status-col{display:flex;flex-direction:column;gap:5px;align-items:center;}
 .status-pill-novo{
@@ -9295,7 +9317,7 @@ function renderCartoes(){
     </div>
     <div class="cc-accordion-body ${UI.cartoesSecaoAtiva==='cartoes'?'aberto':''}">
       <div class="panel">
-    <div class="cartoes-resumo-grid">
+    <div class="cartoes-resumo-grid cartoes-resumo-grid-flex-fill">
       <div class="cartoes-resumo-item"><span class="ico">💳</span><div><div class="val">${resumo.qtdCartoes}</div><div class="lbl">cartão${resumo.qtdCartoes===1?'':'s'}</div></div></div>
       <div class="cartoes-resumo-item"><span class="ico">💰</span><div><div class="val">${fmtBRL(resumo.valorTotal)}</div><div class="lbl">total das faturas</div></div></div>
       <div class="cartoes-resumo-item"><span class="ico">🟢</span><div><div class="val">${resumo.pagas}</div><div class="lbl">paga${resumo.pagas===1?'':'s'}</div></div></div>
@@ -9370,6 +9392,9 @@ function renderCartoes(){
               </div>
               <button type="button" class="icon-btn edit-data-icon" data-edit-fatura="${escapeHtml(c)}|${competencia}" title="Ajustar data de vencimento desta fatura">✏️</button>
             </div>
+          </td>
+          <td data-label="" class="col-editar-fatura-mobile">
+            <button type="button" class="icon-btn edit-data-icon" data-edit-fatura="${escapeHtml(c)}|${competencia}" title="Ajustar fechamento e vencimento desta fatura" aria-label="Ajustar fechamento e vencimento desta fatura">✏️</button>
           </td>
           <td data-label="Status" style="text-align:center;">
             <div class="status-col">
