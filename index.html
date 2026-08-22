@@ -1741,7 +1741,11 @@ summary::marker{content:'';}
      "Importar arquivo do banco" para a linha de baixo mesmo podendo caber (item 13 do requisito: sempre na
      mesma linha). Com flex-basis:0, a distribuição de espaço passa a ser guiada só por flex-grow/min-width,
      nunca pelo conteúdo, então os dois sempre ficam na mesma linha. */
-  .tabela-cartoes td:first-child{flex:1 1 0;min-width:0;order:1;border-bottom:none;padding-bottom:8px;}
+  /* justify-content:flex-start explícito: sem isto, a regra genérica ".tabela-cartoes td{justify-content:
+     space-around}" (item 18) centralizava logo/nome/badges no meio da célula em vez de alinhá-los à
+     esquerda — só o ícone de "Importar arquivo do banco" (td.col-importar-cartao, com seu próprio
+     flex-end) deve ficar à direita nesta linha; o restante fica à esquerda. */
+  .tabela-cartoes td:first-child{flex:1 1 0;min-width:0;order:1;border-bottom:none;padding-bottom:8px;justify-content:flex-start;}
   /* Sem isto, .cartao-col (flex item de td:first-child, que também é flex por herdar a regra genérica
      ".tabela-cartoes td{display:flex}") mantém seu min-width:auto padrão e nunca encolhe abaixo do seu
      conteúdo — em nomes de cartão longos, isso empurra o botão "Importar arquivo do banco" para a linha de
