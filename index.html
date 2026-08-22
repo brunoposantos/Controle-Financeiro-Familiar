@@ -421,7 +421,7 @@ html.forcar-nav-mobile .acoes-lancamento-modal .btn-novo-lanc-modal{display:none
 @media(max-width:600px){
   .app-header{
     display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;
-    padding:10px 14px 8px;gap:0 10px;row-gap:8px;
+    padding:50px 14px 8px;gap:0 10px;row-gap:8px;
   }
   .app-title{display:contents;}
   .app-title-wrap{display:contents;}
@@ -11558,10 +11558,11 @@ function renderBackupModal(){
           </div>
           <p class="hint" style="margin-bottom:0;">A política de retenção só se aplica a backups <b>automáticos</b> — manuais e de pré-restauração nunca são excluídos automaticamente, e o backup automático mais recente nunca é removido.</p>
         </div>
-        <div class="modal-foot" style="padding:14px 0 0;justify-content:flex-end;">
-          <button type="button" class="btn btn-primary btn-sm" id="btnSalvarConfigBackup">💾 Salvar configuração</button>
-        </div>
         `}
+      </div>
+      <div class="modal-foot">
+        ${m.aba==='config' ? `<button type="button" class="btn btn-primary btn-sm" id="btnSalvarConfigBackup">💾 Salvar configuração</button>` : ''}
+        <button type="button" class="btn btn-ghost" id="closeBackupModal2">Fechar</button>
       </div>
     </div>
   </div>`;
@@ -14184,6 +14185,7 @@ function bindEvents(){
 
   // ---- Modal Backup e Restauração ----
   document.getElementById('closeBackupModal')?.addEventListener('click', ()=>{ UI.backupModal=null; render(); });
+  document.getElementById('closeBackupModal2')?.addEventListener('click', ()=>{ UI.backupModal=null; render(); });
   if(UI.backupModal){
     const bm = UI.backupModal;
     document.querySelectorAll('[data-backup-aba]').forEach(b=> b.addEventListener('click', ()=>{ bm.aba = b.dataset.backupAba; render(); }));
