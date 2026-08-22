@@ -7160,6 +7160,43 @@ function itemAtivoNaCompetencia(item, competencia){
   if(item.competenciaFim && competencia > item.competenciaFim) return false;
   return true;
 }
+/* Item 8 do requisito (rodada de ajustes globais): quando um lançamento previsto (não vinculado a cartão,
+   cujo dia já vem sempre do vencimento atual — ver diaCartao acima) já possui um lançamento efetivamente
+   registrado correspondente na mesma competência, o dia (e o valor) exibidos passam a ser os do lançamento
+   real, "subindo" a linha para o dia em que realmente ocorreu — em vez de ficar fixo no dia previsto
+   original. A própria linha previsto é ajustada (nunca duplicada): por isso nunca aparecem previsto E
+   efetivo ao mesmo tempo para a mesma operação. Correspondência: mesma descrição (normalizada, ver
+   normalizarTexto) + mesmo tipo (Receita/Despesa) + algum lançamento real na mesma competência. Ambíguo
+   (0 ou 2+ correspondências) mantém o previsto original — nunca arrisca escolher a transação errada. */
+function encontrarLancamentoEfetivoParaProjecao(item, competencia){
+  const descNorm = normalizarTexto(item.descricao);
+  if(!descNorm) return null;
+  // Lançamentos comuns (não vinculados a fatura de cartão) não preenchem o campo `competencia` — usa o
+  // mês/ano da própria data (t.data.slice(0,7)) para saber a que competência pertencem, em vez desse campo
+  // (que só é populado para parcelas de cartão).
+  const candidatos = STATE.transactions.filter(t=>
+    t.data && t.data.slice(0,7)===competencia && t.tipo===item.tipo && !ehSaldoAnterior(t) &&
+    normalizarTexto(t.descricao)===descNorm
+  );
+  return candidatos.length===1 ? candidatos[0] : null;
+}
+/* Contracheque TRT (item 8): mesma ideia acima, mas com regra própria — o dia vem do lançamento de receita
+   efetivamente creditado na conta do tipo Contracheque nesta competência (não por correspondência de
+   descrição, já que toda receita de conta Contracheque já é forçada para a categoria "Salário TRT" — ver
+   forcarPadraoDaConta), e o valor considerado é o total de entradas já efetivamente creditado nessa conta
+   nesta competência (mesma lógica de calcSaldoConta/entradas usada no restante da aplicação), não o valor
+   fixo recorrente do lançamento previsto. */
+function encontrarEfetivoContrachequeTRT(competencia){
+  const [ano, mes] = competencia.split('-').map(Number);
+  const contaContracheque = STATE.contas.find(c=>STATE.contaTipos[c]==='Contracheque');
+  if(!contaContracheque) return null;
+  const creditos = STATE.transactions
+    .filter(t=> t.conta===contaContracheque && t.data && t.data.slice(0,7)===competencia && t.tipo==='Receita' && !ehSaldoAnterior(t))
+    .sort((a,b)=> a.data<b.data ? -1 : (a.data>b.data ? 1 : 0));
+  if(!creditos.length) return null;
+  const valorTotal = calcSaldoConta(contaContracheque, ano, mes).entradas;
+  return { dia: Number(creditos[0].data.slice(8,10)), valor: valorTotal };
+}
 /* Monta a projeção de um único mês a partir de um saldo inicial já dado (usado tanto para o mês
    selecionado no topo do app quanto para cada um dos meses seguintes, encadeados). */
 function calcProjecoesMes(ano, mes, saldoInicial){
@@ -7171,7 +7208,18 @@ function calcProjecoesMes(ano, mes, saldoInicial){
       // vencimento atual do cartão (diaVencimentoCartaoNaCompetencia) — nunca do item.dia gravado no
       // lançamento previsto, que poderia ter ficado desatualizado desde a criação.
       const diaCartao = item.cartao ? diaVencimentoCartaoNaCompetencia(item.cartao, competencia) : null;
-      return { ...item, competencia, valorCalculado: valorProjecaoItem(item, competencia), dia: diaCartao || item.dia };
+      let dia = diaCartao || item.dia;
+      let valorCalculado = valorProjecaoItem(item, competencia);
+      if(!item.cartao){
+        if(normalizarTexto(item.descricao)==='contrachequetrt'){
+          const efetivoTRT = encontrarEfetivoContrachequeTRT(competencia);
+          if(efetivoTRT){ dia = efetivoTRT.dia; valorCalculado = efetivoTRT.valor; }
+        } else {
+          const efetivo = encontrarLancamentoEfetivoParaProjecao(item, competencia);
+          if(efetivo){ dia = Number(efetivo.data.slice(8,10)); valorCalculado = Number(efetivo.valor)||0; }
+        }
+      }
+      return { ...item, competencia, valorCalculado, dia };
     })
     .sort((a,b)=>(Number(a.dia)||0)-(Number(b.dia)||0));
   let saldo = saldoInicial;
