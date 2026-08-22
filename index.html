@@ -1332,6 +1332,17 @@ select.mini{padding:5px 6px;font-size:12px;border-radius:5px;border:1px solid va
 .filtro-multisel-lista{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
 .filtro-multisel-item{padding:3px 2px;}
 .filtros-barra{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+/* Item 2 do requisito: chips dos filtros ativos, entre a toolbar de filtros e a tabela. */
+.chips-filtros-ativos{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;}
+.chip-filtro-ativo{
+  display:inline-flex;align-items:center;gap:5px;background:var(--navy-100);color:var(--navy-900);
+  font-size:11.5px;font-weight:600;padding:4px 6px 4px 10px;border-radius:var(--radius-full);
+}
+.chip-filtro-remover{
+  background:transparent;border:none;color:var(--navy-900);cursor:pointer;padding:2px;line-height:1;
+  border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+}
+.chip-filtro-remover:hover{background:rgba(0,0,0,.08);}
 /* Botão "Filtros" com badge (item 12 do requisito de responsividade): só existe visualmente no mobile —
    no desktop a barra de filtros já fica sempre visível, então o botão fica oculto por CSS. */
 .filtros-mobile-toggle{display:none;}
@@ -6525,6 +6536,7 @@ function renderExtratoContaModal(){
             <button type="button" class="btn-buscar-icone" id="btnBuscarExtrato" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'Extrato', camposFiltroExtrato)}
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Extrato', UI.extratoContaModal.selecionados, itensPagina.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id), itensFiltrados.filter(t=>!ehSaldoAnterior(t)).map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
@@ -6647,6 +6659,7 @@ function renderFuturosContaModal(){
             <button type="button" class="btn-buscar-icone" id="btnBuscarFuturos" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'Futuros', camposFiltroFuturos)}
         ${futurosFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Futuros', UI.futurosContaModal.selecionados, futurosPagina.map(t=>t.id), futurosFiltrados.map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
@@ -8010,6 +8023,7 @@ function renderMapaCalorDiaModal(){
             <button type="button" class="btn-buscar-icone" id="btnBuscarMapaCalor" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'MapaCalor', camposFiltroMapaCalor)}
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, idsPagina, idsFiltrados)}</div>
         <div class="table-wrap table-wrap-registros reg-tabela-principal" style="margin-top:14px;"><table>
@@ -8713,6 +8727,31 @@ function bindFiltrosPadrao(f, prefixo, campos, onChange){
 function renderBarraFiltrosPadrao(f, prefixo, campos){
   return `${renderFiltroDataRange(f, prefixo)}${campos.map(c=>renderFiltroMultiSelect(f, prefixo, c.campo, c.label, c.options)).join('')}`;
 }
+/* Item 2 do requisito (rodada de ajustes globais): chips dos filtros aplicados, entre a toolbar de
+   filtros e a tabela — um chip por filtro ativo (Data + cada campo de seleção múltipla com opção
+   marcada), cada um removível individualmente sem precisar abrir o painel do filtro correspondente.
+   Função genérica reutilizada pelos 6 pontos da aplicação com este motor de filtros. */
+function renderChipsFiltrosAtivos(f, prefixo, campos){
+  const chips = [];
+  if(f.dataInicio || f.dataFim) chips.push({ texto: dataRangeLabel(f), attr: `data-chip-limpar-data="${prefixo}"` });
+  campos.forEach(c=>{
+    const sel = f[c.campo];
+    if(sel.size===0) return;
+    const texto = sel.size===1 ? `${c.label}: ${c.options.find(o=>o.value===[...sel][0])?.label ?? [...sel][0]}` : `${c.label}: ${sel.size} selecionados`;
+    chips.push({ texto, attr: `data-chip-limpar-campo="${prefixo}|${c.campo}"` });
+  });
+  if(!chips.length) return '';
+  return `<div class="chips-filtros-ativos no-print">${chips.map(ch=>`<span class="chip-filtro-ativo">${escapeHtml(ch.texto)}<button type="button" class="chip-filtro-remover" ${ch.attr} title="Remover este filtro" aria-label="Remover filtro ${escapeHtml(ch.texto)}">✕</button></span>`).join('')}</div>`;
+}
+function bindChipsFiltrosAtivos(f, prefixo, onChange){
+  document.querySelectorAll(`[data-chip-limpar-data="${prefixo}"]`).forEach(b=> b.addEventListener('click', ()=>{
+    f.dataPreset='todos'; f.dataInicio=''; f.dataFim=''; onChange(true);
+  }));
+  document.querySelectorAll(`[data-chip-limpar-campo^="${prefixo}|"]`).forEach(b=> b.addEventListener('click', ()=>{
+    const campo = b.dataset.chipLimparCampo.split('|')[1];
+    f[campo].clear(); onChange(true);
+  }));
+}
 /* Filtros no mobile funcionam como na aba Registros: um único botão "Filtros" (id btnFiltrosMobile<prefixo>)
    abre a mesma folha inferior (.filtros-barra/.aberto-mobile) usada em Registros — fechar pelo X, pelo
    fundo escurecido (backdrop) ou pelo botão "Aplicar" faz a mesma coisa (UI.filtrosMobileAberto=null),
@@ -9139,6 +9178,7 @@ function renderRegistros(){
         <button type="button" class="btn-buscar-icone" id="btnBuscarRegistros" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
       </div>
     </div>
+    ${renderChipsFiltrosAtivos(f, 'Reg', camposFiltroReg)}
     <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Reg', UI.regSelecionados, pageList.map(t=>t.id), list.map(t=>t.id))}</div>
     ${list.length===0 ? `<div class="empty-state"><div class="big">🗒️</div>Nenhum lançamento encontrado com esses filtros.</div>
     <div class="registros-rodape registros-rodape-vazio">${rodapePaginacao}</div>` : `
@@ -9632,6 +9672,7 @@ function renderFaturaAtualModal(){
             <button type="button" class="btn-buscar-icone" id="btnBuscarFatura" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'Fatura', camposFiltroFatura)}
         ${itensFiltrados.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Fatura', UI.faturaAtualModal.selecionados, itensPagina.map(t=>t.id), itensFiltrados.map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:14px;"><table>
@@ -9755,6 +9796,7 @@ function renderProjecaoFaturaModal(){
             <button type="button" class="btn-buscar-icone" id="btnBuscarProjecao" title="Buscar (ou pressione Enter)" aria-label="Buscar (ou pressione Enter)">🔍</button>
           </div>
         </div>
+        ${renderChipsFiltrosAtivos(f, 'Projecao', camposFiltroProjecao)}
         ${itens.length ? `
         <div class="barra-acoes-lote-wrap no-print">${renderBarraAcoesLote('Projecao', UI.projecaoFaturaModal.selecionados, itensPagina.map(t=>t.id), itens.map(t=>t.id))}</div>
         <div class="table-wrap table-wrap-registros tabela-impressao reg-tabela-principal" style="margin-top:12px;"><table>
@@ -12696,6 +12738,7 @@ function bindEvents(){
       {campo:'conta', options:contasUsadasReg.map(c=>({value:c}))},
       {campo:'fatura', options:faturasUsadasReg.map(c=>({value:c}))},
     ], resetPagina=>{ if(resetPagina) UI.regPagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.regFiltros, 'Reg', ()=>{ UI.regPagina = 1; render(); });
   }
   // Rodapé de paginação: trocar a quantidade por página recalcula tudo e volta para a 1ª página (evita
   // ficar numa página que deixou de existir); os botões ‹ › e os números de página só trocam UI.regPagina.
@@ -12942,6 +12985,7 @@ function bindEvents(){
       {campo:'tipo', options:[{value:'Receita'},{value:'Despesa'}]},
       {campo:'parcela', options:[{value:'parcelado'},{value:'avista'}]},
     ], resetPagina=>{ if(resetPagina) UI.projecaoFaturaModal.pagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.projecaoFaturaModal.filtros, 'Projecao', ()=>{ UI.projecaoFaturaModal.pagina = 1; render(); });
     bindSelecaoLote('Projecao', UI.projecaoFaturaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosProjecao')?.addEventListener('click', ()=>{
@@ -12981,6 +13025,7 @@ function bindEvents(){
       {campo:'tipo', options:[{value:'Receita'},{value:'Despesa'}]},
       {campo:'parcela', options:[{value:'parcelado'},{value:'avista'}]},
     ], resetPagina=>{ if(resetPagina) UI.faturaAtualModal.pagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.faturaAtualModal.filtros, 'Fatura', ()=>{ UI.faturaAtualModal.pagina = 1; render(); });
     bindSelecaoLote('Fatura', UI.faturaAtualModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosFatura')?.addEventListener('click', ()=>{
@@ -13022,6 +13067,7 @@ function bindEvents(){
       {campo:'grupo', options:[{value:'__sem_grupo__'}, ...gruposExtratoAtual.map(g=>({value:g}))]},
       {campo:'tipo', options:[{value:'Receita'},{value:'Despesa'}]},
     ], resetPagina=>{ if(resetPagina) UI.extratoContaModal.pagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.extratoContaModal.filtros, 'Extrato', ()=>{ UI.extratoContaModal.pagina = 1; render(); });
     bindSelecaoLote('Extrato', UI.extratoContaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosExtrato')?.addEventListener('click', ()=>{
@@ -13061,6 +13107,7 @@ function bindEvents(){
     bindFiltrosPadrao(UI.futurosContaModal.filtros, 'Futuros', [
       {campo:'tipo', options:[{value:'Receita'},{value:'Despesa'}]},
     ], resetPagina=>{ if(resetPagina) UI.futurosContaModal.pagina = 1; render(); });
+    bindChipsFiltrosAtivos(UI.futurosContaModal.filtros, 'Futuros', ()=>{ UI.futurosContaModal.pagina = 1; render(); });
     bindSelecaoLote('Futuros', UI.futurosContaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosFuturos')?.addEventListener('click', ()=>{
@@ -13122,6 +13169,7 @@ function bindEvents(){
       {campo:'conta', options:contasMapaCalorAtual.map(c=>({value:c}))},
     ];
     camposFiltroMapaCalorBind.forEach(c=> bindFiltroMultiSelect(UI.mapaCalorDiaModal.filtros, 'MapaCalor', c.campo, c.options, resetPagina=>{ if(resetPagina) UI.mapaCalorDiaModal.pagina = 1; render(); }));
+    bindChipsFiltrosAtivos(UI.mapaCalorDiaModal.filtros, 'MapaCalor', ()=>{ UI.mapaCalorDiaModal.pagina = 1; render(); });
     bindSelecaoLote('MapaCalor', UI.mapaCalorDiaModal.selecionados, ()=>render());
   }
   document.getElementById('btnLimparFiltrosMapaCalor')?.addEventListener('click', ()=>{
